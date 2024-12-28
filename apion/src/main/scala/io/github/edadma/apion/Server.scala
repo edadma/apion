@@ -29,9 +29,8 @@ class Server:
     router.use(middleware)
     this
 
-  def route(prefix: String)(routeSetup: Router => Unit): Server =
-    router.route(prefix)(routeSetup)
-    this
+  def route(prefix: String): Router =
+    router.route(prefix)
 
   private def handleRequest(req: ServerRequest, res: ServerResponse): Unit =
     // Convert Node.js request to our Request type

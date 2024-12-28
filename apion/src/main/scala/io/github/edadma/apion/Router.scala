@@ -3,57 +3,44 @@ package io.github.edadma.apion
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class Router:
-  case class Group(
-      prefix: String,
-      middleware: List[Middleware],
-  )
-
+class Router(prefix: String = "", parentMiddleware: List[Middleware] = Nil):
   private case class Route(
       method: String,
       pattern: String,
       endpoint: Endpoint,
       middleware: List[Middleware] = Nil,
+      subrouter: Option[Router] = None,
   )
 
-  private var routes: List[Route]         = Nil
-  private var currentGroup: Option[Group] = None
+  private var routes: List[Route]          = Nil
+  private var middleware: List[Middleware] = parentMiddleware
 
   def get(path: String, endpoint: Endpoint): Router =
-    val fullPath   = currentGroup.map(g => g.prefix + path).getOrElse(path)
-    val middleware = currentGroup.map(_.middleware).getOrElse(Nil)
-    routes = routes :+ Route("GET", fullPath, endpoint, middleware)
+    routes = routes :+ Route("GET", prefix + path, endpoint, middleware)
     this
 
   def post(path: String, endpoint: Endpoint): Router =
-    val fullPath   = currentGroup.map(g => g.prefix + path).getOrElse(path)
-    val middleware = currentGroup.map(_.middleware).getOrElse(Nil)
-    routes = routes :+ Route("POST", fullPath, endpoint, middleware)
+    routes = routes :+ Route("POST", prefix + path, endpoint, middleware)
     this
 
   def put(path: String, endpoint: Endpoint): Router =
-    val fullPath   = currentGroup.map(g => g.prefix + path).getOrElse(path)
-    val middleware = currentGroup.map(_.middleware).getOrElse(Nil)
-    routes = routes :+ Route("PUT", fullPath, endpoint, middleware)
+    routes = routes :+ Route("PUT", prefix + path, endpoint, middleware)
     this
 
   def use(mw: Middleware): Router =
-    currentGroup match
-      case Some(group) =>
-        currentGroup = Some(group.copy(middleware = group.middleware :+ mw))
-      case None =>
-        currentGroup = Some(Group("", List(mw)))
+    middleware = middleware :+ mw
     this
 
-  def route(prefix: String)(routeSetup: Router => Unit): Router =
-    val previousGroup = currentGroup
-    currentGroup = Some(Group(prefix, currentGroup.map(_.middleware).getOrElse(Nil)))
-
-    routeSetup(this)
-
-    // Restore previous group state
-    currentGroup = previousGroup
-    this
+  def route(pathPrefix: String): Router =
+    val subrouter = new Router(prefix + pathPrefix, middleware)
+    routes = routes :+ Route(
+      "ROUTE",
+      prefix + pathPrefix,
+      _ => Future.successful(Response(404, body = "Not Found")),
+      Nil,
+      Some(subrouter),
+    )
+    subrouter
 
   def handle(request: Request): Future[Response] =
     logger.debug(s"Handling ${request.method} ${request.url}")

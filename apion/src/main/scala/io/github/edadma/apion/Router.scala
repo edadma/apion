@@ -198,13 +198,23 @@ class Router(
     logger.debug(s"Final extracted parameters: $params", "Router")
     params
 
-  private def applyMiddleware(endpoint: Endpoint): Endpoint =
-    val allMiddleware = parent.map(_.getAllMiddleware).getOrElse(Nil) ++ middleware
-    logger.debug(s"Applying ${allMiddleware.size} middleware functions", "Router")
-    allMiddleware.foldLeft(endpoint) { (ep, mw) => mw(ep) }
-
   private def getAllMiddleware: List[Middleware] =
-    parent.map(_.getAllMiddleware).getOrElse(Nil) ++ middleware
+    logger.debug(s"Getting all middleware from router with basePath: $basePath", "Router")
+    val parentMiddleware = parent.map(_.getAllMiddleware).getOrElse(Nil)
+    logger.debug(s"Parent provided ${parentMiddleware.length} middleware functions", "Router")
+    logger.debug(s"This router has ${middleware.length} middleware functions", "Router")
+    val allMiddleware = parentMiddleware ++ middleware
+    logger.debug(s"Combined total of ${allMiddleware.length} middleware functions", "Router")
+    allMiddleware
+
+  private def applyMiddleware(endpoint: Endpoint): Endpoint =
+    val allMiddleware = getAllMiddleware
+    logger.debug(s"Applying ${allMiddleware.size} total middleware functions for basePath: $basePath", "Router")
+    // Apply middleware in reverse order so they execute in the order they were added
+    allMiddleware.reverse.foldLeft(endpoint) { (ep, mw) =>
+      logger.debug("Applying next middleware in chain", "Router")
+      mw(ep)
+    }
 
 object Router:
   def apply(): Router = new Router()

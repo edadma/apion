@@ -70,7 +70,7 @@ class SubrouterTests extends AsyncBaseSpec:
         }
       }
 
-      "should pass along path parameters" in withDebugLogging("should pass along path parameters") {
+      "should pass along path parameters" in {
         val router      = Router()
         val usersRouter = router.route("/users")
 
@@ -150,7 +150,7 @@ class SubrouterTests extends AsyncBaseSpec:
     }
 
     "nested routers" - {
-      "should handle multiple levels of nesting" in /*withDebugLogging("should handle multiple levels of nesting")*/ {
+      "should handle multiple levels of nesting" in {
         val router    = Router()
         val apiRouter = router.route("/api")
         val v1Router  = apiRouter.route("/v1")
@@ -168,7 +168,7 @@ class SubrouterTests extends AsyncBaseSpec:
         }
       }
 
-      "should handle path parameters at each level" in {
+      "should handle path parameters at each level" in withDebugLogging("should handle path parameters at each level") {
         val router      = Router()
         val usersRouter = router.route("/users/:userId")
         val postsRouter = usersRouter.route("/posts/:postId")

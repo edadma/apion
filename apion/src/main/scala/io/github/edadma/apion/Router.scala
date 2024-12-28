@@ -123,23 +123,41 @@ class Router(
           body = "Not Found",
         ))
 
+  private def matchPrefix(prefix: String, url: String): Boolean =
+    logger.debug(s"Checking if prefix '$prefix' matches URL '$url'", "Router")
+
+    val prefixParts = prefix.split("/").filter(_.nonEmpty)
+    val urlParts    = url.split("/").filter(_.nonEmpty)
+
+    logger.debug(s"Prefix parts: ${prefixParts.mkString(", ")}", "Router")
+    logger.debug(s"URL parts: ${urlParts.mkString(", ")}", "Router")
+
+    if (urlParts.length < prefixParts.length) {
+      logger.debug("URL is shorter than prefix, no match possible", "Router")
+      false
+    } else {
+      val relevantUrlParts = urlParts.take(prefixParts.length)
+      val matches = prefixParts.zip(relevantUrlParts).forall {
+        case (prefixPart, urlPart) if prefixPart.startsWith(":") =>
+          logger.debug(s"Parameter match in prefix: $prefixPart = $urlPart", "Router")
+          true
+        case (prefixPart, urlPart) =>
+          logger.debug(s"Exact match attempt in prefix: $prefixPart = $urlPart", "Router")
+          prefixPart == urlPart
+      }
+      logger.debug(s"Prefix match result: $matches", "Router")
+      matches
+    }
+
   private def findMatchingSubrouter(url: String): Option[(String, Router)] =
     logger.debug(s"Looking for subrouter matching URL: $url", "Router")
     logger.debug(s"Available subrouters: ${subrouters.map(_._1).mkString(", ")}", "Router")
 
-    val result = subrouters.find { case (prefix, _) =>
-      val matches = url.startsWith(prefix)
+    subrouters.find { case (prefix, _) =>
+      val matches = matchPrefix(prefix, url)
       logger.debug(s"Testing prefix '$prefix' against '$url': $matches", "Router")
       matches
     }
-
-    if (result.isDefined) {
-      logger.debug(s"Found matching subrouter with prefix: ${result.get._1}", "Router")
-    } else {
-      logger.debug("No matching subrouter found", "Router")
-    }
-
-    result
 
   private def combinePaths(base: String, path: String): String =
     val result = if base.isEmpty then path

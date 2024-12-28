@@ -1,0 +1,6 @@
+{
+  "watch": ["apion/target/scala-3.6.2/apion-fastopt/"],
+  "ext": "js",
+  "ignore": ["*.test.js"],
+  "exec": "node apion/target/scala-3.6.2/apion-fastopt/main.js"
+}

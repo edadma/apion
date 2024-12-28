@@ -1,0 +1,13 @@
+{
+  "name": "apion-dev",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "start": "nodemon",
+    "kill": "kill $(lsof -t -i:3000) || true",
+    "clean": "rm -rf apion/target nodejs/target target"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  }
+}

@@ -1,0 +1,19 @@
+; Apion project sources
+
+# Apion library
+./apion/src/main/scala/io/github/edadma/apion
+Main.scala
+
+# unit testing
+./apion/src/test/scala/io/github/edadma/apion
+Tests.scala
+
+# build files
+./
+build.sbt
+./project
+plugins.sbt
+
+# docs
+./
+README.md

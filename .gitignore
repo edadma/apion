@@ -20,3 +20,9 @@ project/plugins/project/
 .directory
 .idea/
 .bsp/
+
+node_modules/
+output.css
+code.txt
+*.zip
+log

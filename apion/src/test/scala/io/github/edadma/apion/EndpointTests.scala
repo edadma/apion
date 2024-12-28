@@ -3,6 +3,7 @@ package io.github.edadma.apion
 import org.scalatest.freespec.AsyncFreeSpec
 import org.scalatest.matchers.should.Matchers
 import scala.concurrent.ExecutionContext
+import zio.json.*
 
 class EndpointTests extends AsyncFreeSpec with Matchers:
   // Need implicit EC for Future transformations in tests
@@ -12,10 +13,18 @@ class EndpointTests extends AsyncFreeSpec with Matchers:
     "health check endpoint" - {
       "should return 200 OK with status information" in {
         // Define the endpoint
+        case class HealthStatus(
+            status: String,
+            timestamp: Long,
+        )
+
+        object HealthStatus:
+          given JsonEncoder[HealthStatus] = DeriveJsonEncoder.gen[HealthStatus]
+
         def healthCheck: Endpoint = req =>
-          val status = Map(
-            "status"    -> "ok",
-            "timestamp" -> System.currentTimeMillis.toString,
+          val status = HealthStatus(
+            status = "ok",
+            timestamp = System.currentTimeMillis,
           )
 
           scala.concurrent.Future.successful(

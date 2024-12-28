@@ -2,15 +2,29 @@
 
 # Apion library
 ./apion/src/main/scala/io/github/edadma/apion
+AuthMiddleware.scala
+Endpoint.scala
+JWT.scala
 Main.scala
+package.scala
+Server.scala
 
 # unit testing
 ./apion/src/test/scala/io/github/edadma/apion
-Tests.scala
+EndpointTests.scala
+JWTTests.scala
 
-# build files
+# Node.js facade library
+./nodejs/src/main/scala/io/github/edadma/nodejs
+buffer.scala
+crypto.scala
+http.scala
+
+# build/development files
 ./
 build.sbt
+nodemon.json
+package.json
 ./project
 plugins.sbt
 

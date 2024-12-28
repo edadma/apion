@@ -1,34 +1,62 @@
-ThisBuild / licenses += "ISC" -> url("https://opensource.org/licenses/ISC")
-ThisBuild / versionScheme     := Some("semver-spec")
+import org.scalajs.linker.interface.ModuleSplitStyle
 
-publish / skip := true
+ThisBuild / licenses += "ISC"  -> url("https://opensource.org/licenses/ISC")
+ThisBuild / versionScheme      := Some("semver-spec")
+ThisBuild / evictionErrorLevel := Level.Warn
+ThisBuild / scalaVersion       := "3.6.2"
+ThisBuild / organization       := "io.github.edadma"
+ThisBuild / version            := "0.0.1"
 
-lazy val scalajs_template = project
-  .in(file("."))
+lazy val commonSettings = Seq(
+  scalacOptions ++= Seq(
+    "-deprecation",
+    "-feature",
+    "-unchecked",
+    "-Xfatal-warnings",
+  ),
+  scalaJSLinkerConfig ~= { _.withModuleKind(ModuleKind.ESModule) },
+  //  scalaJSLinkerConfig ~= { _.withModuleSplitStyle(ModuleSplitStyle.SmallestModules) },
+  scalaJSLinkerConfig ~= { _.withSourceMap(false) },
+  githubOwner      := "edadma",
+  githubRepository := "fluxus",
+)
+
+lazy val apion = project
   .enablePlugins(ScalaJSPlugin)
-//  .enablePlugins(ScalablyTypedConverterPlugin)
+  .dependsOn(nodejs)
+  .settings(commonSettings)
   .settings(
-    name             := "scalajs-template",
-    version          := "0.0.1",
-    scalaVersion     := "3.6.2",
-    organization     := "io.github.edadma",
-    githubOwner      := "edadma",
-    githubRepository := name.value,
-//    libraryDependencies += "com.raquo" %%% "laminar" % "16.0.0",
-//    libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.6.0",
-    libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.19" % "test",
-//    libraryDependencies += "com.lihaoyi" %%% "pprint" % "0.9.0" % "test",
-//    Compile / npmDependencies ++= Seq(
-//      "socket.io" -> "4.7.3",
-//    ),
-    jsEnv                                  := new org.scalajs.jsenv.nodejs.NodeJSEnv(),
-    Test / scalaJSUseMainModuleInitializer := true,
-    Test / scalaJSUseTestModuleInitializer := false,
-//    Test / scalaJSUseMainModuleInitializer := false,
-//    Test / scalaJSUseTestModuleInitializer := true,
+    name := "apion",
+    libraryDependencies ++= Seq(
+      "org.scalatest"    %%% "scalatest" % "3.2.19" % "test",
+      "com.lihaoyi"      %%% "pprint"    % "0.9.0"  % "test",
+      "io.github.edadma" %%% "logger"    % "0.0.5",
+      "dev.zio"          %%% "zio-json"  % "0.7.3",
+    ),
+    jsEnv                           := new org.scalajs.jsenv.nodejs.NodeJSEnv(),
     scalaJSUseMainModuleInitializer := true,
-//    scalaJSLinkerConfig ~= { _.withModuleKind(ModuleKind.ESModule) },
-    publishMavenStyle      := true,
-    Test / publishArtifact := false,
-    licenses += "ISC"      -> url("https://opensource.org/licenses/ISC"),
+    //    Test / scalaJSUseMainModuleInitializer := true,
+    //    Test / scalaJSUseTestModuleInitializer := false,
+    Test / scalaJSUseMainModuleInitializer := false,
+    Test / scalaJSUseTestModuleInitializer := true,
+    publishMavenStyle                      := true,
+    Test / publishArtifact                 := false,
+  )
+
+lazy val nodejs = project
+  .enablePlugins(ScalaJSPlugin)
+  .settings(commonSettings)
+  .settings(
+    name                            := "nodejs",
+    scalaJSUseMainModuleInitializer := true,
+    publishMavenStyle               := true,
+    Test / publishArtifact          := false,
+  )
+
+lazy val apion_root = project
+  .in(file("."))
+  .aggregate(apion, nodejs)
+  .settings(
+    publish      := {},
+    publishLocal := {},
   )

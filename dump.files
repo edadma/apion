@@ -15,6 +15,7 @@ BaseSpec.scala
 EndpointTests.scala
 JWTTests.scala
 RouterTests.scala
+SubrouterTests.scala
 
 # Node.js facade library
 ./nodejs/src/main/scala/io/github/edadma/nodejs

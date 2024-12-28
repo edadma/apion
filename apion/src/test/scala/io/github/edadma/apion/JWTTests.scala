@@ -145,5 +145,46 @@ class JWTTests extends AnyFreeSpec with Matchers:
           case Right(_)    => fail("Should not verify with corrupt payload")
           case Left(error) => error.message should include("Invalid payload")
       }
+
+      "should fail with invalid JSON in header" in {
+        val token = JWT.sign(validPayload, secret)
+        val parts = token.split('.')
+        // Corrupt the header JSON but keep it as valid base64url
+        val corruptToken = s"${base64UrlEncode("{bad-header}")}.${parts(1)}.${parts(2)}"
+
+        JWT.verify[TestPayload](corruptToken, secret) match
+          case Right(_)    => fail("Should not verify with corrupt header")
+          case Left(error) => error.message should include("Invalid header")
+      }
+
+      "should handle special characters in payload" in {
+        val specialPayload = validPayload.copy(sub = "user+with/special=chars")
+        val token          = JWT.sign(specialPayload, secret)
+
+        JWT.verify[TestPayload](token, secret) match
+          case Right(payload) => payload shouldBe specialPayload
+          case Left(error)    => fail(s"Should verify with special characters: $error")
+      }
+
+      "should handle large payloads" in {
+        val largePayload = validPayload.copy(
+          sub = "x" * 1000, // 1KB of data
+          roles = Set("role" * 100),
+        )
+        val token = JWT.sign(largePayload, secret)
+
+        JWT.verify[TestPayload](token, secret) match
+          case Right(payload) => payload shouldBe largePayload
+          case Left(error)    => fail(s"Should verify large payload: $error")
+      }
+
+      "should handle empty strings in payload" in {
+        val emptyPayload = validPayload.copy(sub = "")
+        val token        = JWT.sign(emptyPayload, secret)
+
+        JWT.verify[TestPayload](token, secret) match
+          case Right(payload) => payload shouldBe emptyPayload
+          case Left(error)    => fail(s"Should verify with empty string: $error")
+      }
     }
   }

@@ -4,6 +4,10 @@ import scala.util.Try
 
 import io.github.edadma.nodejs.*
 
+import io.github.edadma.logger.LoggerFactory
+
+val logger = LoggerFactory.newLogger
+
 /** Encodes a string to base64url format. base64url is similar to base64 but uses URL-safe characters:
   *   - '+' becomes '-'
   *   - '/' becomes '_'

@@ -61,23 +61,32 @@ class Router(
   def handle(request: Request): Future[Response] =
     logger.debug(s"Handling ${request.method} ${request.url} in router with basePath: $basePath", "Router")
 
-    // First check if this request matches any of our subrouters
     findMatchingSubrouter(request.url) match
       case Some((prefix, subrouter)) =>
         logger.debug(s"Found matching subrouter for prefix: $prefix", "Router")
-        // Strip the matched prefix from the URL when delegating
-        val strippedUrl = request.url.substring(prefix.length)
-        logger.debug(s"Delegating request with stripped URL: $strippedUrl", "Router")
 
-        val delegatedRequest = request.copy(url = strippedUrl)
+        // Calculate the length of matched prefix parts
+        val prefixParts     = prefix.split("/").filter(_.nonEmpty)
+        val urlParts        = request.url.split("/").filter(_.nonEmpty)
+        val matchedSegments = prefixParts.length
 
-        // Apply our middleware before delegating
+        // Join the remaining URL parts back together
+        val remainingUrl = "/" + urlParts.drop(matchedSegments).mkString("/")
+        logger.debug(s"Delegating request with remaining URL: $remainingUrl", "Router")
+
+        val delegatedRequest = request.copy(url = remainingUrl)
+
+        // Extract and pass along path parameters from the matched prefix
+        val prefixParams = extractPathParams(prefix, request.url.split("/").take(matchedSegments + 1).mkString("/"))
+        val requestWithParams = delegatedRequest.copy(
+          context = delegatedRequest.context ++ prefixParams,
+        )
+
         val finalEndpoint = applyMiddleware(subrouter.handle)
-        finalEndpoint(delegatedRequest)
+        finalEndpoint(requestWithParams)
 
       case None =>
         logger.debug("No matching subrouter found, handling locally", "Router")
-        // No matching subrouter, try to handle locally
         handleLocal(request)
 
   private def handleLocal(request: Request): Future[Response] =
@@ -126,6 +135,7 @@ class Router(
   private def matchPrefix(prefix: String, url: String): Boolean =
     logger.debug(s"Checking if prefix '$prefix' matches URL '$url'", "Router")
 
+    // Split both paths into segments and filter out empty segments
     val prefixParts = prefix.split("/").filter(_.nonEmpty)
     val urlParts    = url.split("/").filter(_.nonEmpty)
 
@@ -136,15 +146,20 @@ class Router(
       logger.debug("URL is shorter than prefix, no match possible", "Router")
       false
     } else {
+      // Take only the relevant parts of the URL for comparison
       val relevantUrlParts = urlParts.take(prefixParts.length)
+
+      // Compare each segment, treating parameters (starting with :) as wildcards
       val matches = prefixParts.zip(relevantUrlParts).forall {
         case (prefixPart, urlPart) if prefixPart.startsWith(":") =>
+          // Parameter segment - matches any value
           logger.debug(s"Parameter match in prefix: $prefixPart = $urlPart", "Router")
           true
         case (prefixPart, urlPart) =>
           logger.debug(s"Exact match attempt in prefix: $prefixPart = $urlPart", "Router")
           prefixPart == urlPart
       }
+
       logger.debug(s"Prefix match result: $matches", "Router")
       matches
     }
@@ -172,6 +187,8 @@ class Router(
 
   private def matchPath(pattern: String, url: String): Boolean =
     logger.debug(s"Matching pattern '$pattern' against URL '$url'", "Router")
+
+    // Split into segments and filter empty ones
     val patternParts = pattern.split("/").filter(_.nonEmpty)
     val urlParts     = url.split("/").filter(_.nonEmpty)
 

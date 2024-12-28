@@ -5,14 +5,16 @@
 AuthMiddleware.scala
 Endpoint.scala
 JWT.scala
-Main.scala
 package.scala
+Router.scala
 Server.scala
 
 # unit testing
 ./apion/src/test/scala/io/github/edadma/apion
+BaseSpec.scala
 EndpointTests.scala
 JWTTests.scala
+RouterTests.scala
 
 # Node.js facade library
 ./nodejs/src/main/scala/io/github/edadma/nodejs

@@ -4,25 +4,55 @@ import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class Router:
+  case class Group(
+      prefix: String,
+      middleware: List[Middleware],
+  )
+
   private case class Route(
       method: String,
       pattern: String,
       endpoint: Endpoint,
+      middleware: List[Middleware] = Nil,
   )
 
-  private var routes: List[Route]          = Nil
-  private var middleware: List[Middleware] = Nil
+  private var routes: List[Route]         = Nil
+  private var currentGroup: Option[Group] = None
 
   def get(path: String, endpoint: Endpoint): Router =
-    routes = routes :+ Route("GET", path, endpoint) // Append instead of prepend
+    val fullPath   = currentGroup.map(g => g.prefix + path).getOrElse(path)
+    val middleware = currentGroup.map(_.middleware).getOrElse(Nil)
+    routes = routes :+ Route("GET", fullPath, endpoint, middleware)
     this
 
   def post(path: String, endpoint: Endpoint): Router =
-    routes = routes :+ Route("POST", path, endpoint) // Append instead of prepend
+    val fullPath   = currentGroup.map(g => g.prefix + path).getOrElse(path)
+    val middleware = currentGroup.map(_.middleware).getOrElse(Nil)
+    routes = routes :+ Route("POST", fullPath, endpoint, middleware)
+    this
+
+  def put(path: String, endpoint: Endpoint): Router =
+    val fullPath   = currentGroup.map(g => g.prefix + path).getOrElse(path)
+    val middleware = currentGroup.map(_.middleware).getOrElse(Nil)
+    routes = routes :+ Route("PUT", fullPath, endpoint, middleware)
     this
 
   def use(mw: Middleware): Router =
-    middleware = middleware :+ mw // Append instead of prepend
+    currentGroup match
+      case Some(group) =>
+        currentGroup = Some(group.copy(middleware = group.middleware :+ mw))
+      case None =>
+        currentGroup = Some(Group("", List(mw)))
+    this
+
+  def route(prefix: String)(routeSetup: Router => Unit): Router =
+    val previousGroup = currentGroup
+    currentGroup = Some(Group(prefix, currentGroup.map(_.middleware).getOrElse(Nil)))
+
+    routeSetup(this)
+
+    // Restore previous group state
+    currentGroup = previousGroup
     this
 
   def handle(request: Request): Future[Response] =
@@ -37,7 +67,8 @@ class Router:
       case Some(route) =>
         // Found a route matching both path and method
         logger.debug(s"Found matching route: ${route.method} ${route.pattern}")
-        val finalEndpoint = middleware.foldLeft(route.endpoint) {
+        // Apply the route's middleware chain to its endpoint
+        val finalEndpoint = route.middleware.foldLeft(route.endpoint) {
           (ep, mw) => mw(ep)
         }
 

@@ -2,6 +2,7 @@ package io.github.edadma.apion
 
 import zio.json.*
 import scala.concurrent.Future
+import io.github.edadma.nodejs.{ServerRequest}
 
 case class Request(
     method: String,
@@ -9,6 +10,7 @@ case class Request(
     headers: Map[String, String],
     auth: Option[Auth] = None,
     context: Map[String, Any] = Map(),
+    rawRequest: Option[ServerRequest] = None,
 )
 
 case class Response(

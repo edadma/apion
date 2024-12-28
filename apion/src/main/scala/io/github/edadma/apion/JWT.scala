@@ -90,6 +90,12 @@ object JWT:
           if header.alg != "HS256" then
             throw JWTError(s"Unsupported algorithm: ${header.alg}")
 
+          // Decode and verify payload before checking signature
+          val payload = base64UrlDecode(payloadB64).fromJson[A] match
+            case Right(p) => p
+            case Left(e)  => throw JWTError(s"Invalid payload: $e")
+
+          // Finally verify signature
           val data = s"$headerB64.$payloadB64"
           val expectedSignature = crypto
             .createHmac("sha256", secret)

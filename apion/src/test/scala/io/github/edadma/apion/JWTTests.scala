@@ -134,5 +134,16 @@ class JWTTests extends AnyFreeSpec with Matchers:
           case Left(error) =>
             error.message should include("Unsupported algorithm")
       }
+
+      "should fail with invalid JSON in payload" in {
+        val token = JWT.sign(validPayload, secret)
+        val parts = token.split('.')
+        // Corrupt the payload JSON but keep it as valid base64url
+        val corruptToken = s"${parts(0)}.${base64UrlEncode("{not-valid-json}")}.${parts(2)}"
+
+        JWT.verify[TestPayload](corruptToken, secret) match
+          case Right(_)    => fail("Should not verify with corrupt payload")
+          case Left(error) => error.message should include("Invalid payload")
+      }
     }
   }

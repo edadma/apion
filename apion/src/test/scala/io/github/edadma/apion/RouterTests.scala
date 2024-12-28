@@ -4,7 +4,7 @@ import org.scalatest.freespec.AsyncFreeSpec
 import org.scalatest.matchers.should.Matchers
 import scala.concurrent.{Future, ExecutionContext}
 
-class RouterTests extends AsyncFreeSpec with Matchers:
+class RouterTests extends AsyncBaseSpec:
   // Need implicit EC for Future transformations
   override implicit def executionContext: ExecutionContext = ExecutionContext.global
 
@@ -28,7 +28,9 @@ class RouterTests extends AsyncFreeSpec with Matchers:
           notFoundResponse.status shouldBe 404
       }
 
-      "should support method chaining and different HTTP methods" in {
+      "should support method chaining and different HTTP methods" in /*withDebugLogging(
+        "should support method chaining and different HTTP methods",
+      )*/ {
         val router       = Router()
         val getEndpoint  = (req: Request) => Future.successful(Response.text("GET"))
         val postEndpoint = (req: Request) => Future.successful(Response.text("POST"))

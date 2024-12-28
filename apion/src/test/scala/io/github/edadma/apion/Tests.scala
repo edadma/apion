@@ -1,6 +1,6 @@
 package io.github.edadma.apion
 
-import org.scalatest._
+import org.scalatest.*
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 

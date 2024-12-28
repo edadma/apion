@@ -5,7 +5,6 @@ ThisBuild / versionScheme      := Some("semver-spec")
 ThisBuild / evictionErrorLevel := Level.Warn
 ThisBuild / scalaVersion       := "3.6.2"
 ThisBuild / organization       := "io.github.edadma"
-ThisBuild / version            := "0.0.1"
 
 lazy val commonSettings = Seq(
   scalacOptions ++= Seq(
@@ -26,7 +25,8 @@ lazy val apion = project
   .dependsOn(nodejs)
   .settings(commonSettings)
   .settings(
-    name := "apion",
+    name    := "apion",
+    version := "0.0.1",
     libraryDependencies ++= Seq(
       "org.scalatest"    %%% "scalatest" % "3.2.19" % "test",
       "com.lihaoyi"      %%% "pprint"    % "0.9.0"  % "test",
@@ -35,6 +35,7 @@ lazy val apion = project
     ),
     jsEnv                           := new org.scalajs.jsenv.nodejs.NodeJSEnv(),
     scalaJSUseMainModuleInitializer := true,
+//    scalaJSMainModuleInitializer    := Some(_root_.io.github.edadma.apion.Main),
     //    Test / scalaJSUseMainModuleInitializer := true,
     //    Test / scalaJSUseTestModuleInitializer := false,
     Test / scalaJSUseMainModuleInitializer := false,
@@ -48,6 +49,7 @@ lazy val nodejs = project
   .settings(commonSettings)
   .settings(
     name                            := "nodejs",
+    version                         := "0.0.1",
     scalaJSUseMainModuleInitializer := true,
     publishMavenStyle               := true,
     Test / publishArtifact          := false,

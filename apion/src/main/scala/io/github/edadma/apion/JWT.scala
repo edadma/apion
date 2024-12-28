@@ -1,6 +1,6 @@
 package io.github.edadma.apion
 
-import io.github.edadma.nodejs.crypto
+import io.github.edadma.nodejs.*
 import zio.json.*
 
 import scala.concurrent.Future
@@ -44,8 +44,9 @@ object JWT:
     *   - Padding '=' is removed
     */
   private def base64UrlEncode(str: String): String =
-    js.Dynamic.global.btoa(str) // Convert to base64 using browser/Node.js btoa
-      .asInstanceOf[String]
+    bufferMod.Buffer
+      .from(str)
+      .toString("base64")
       .replace('+', '-') // Make URL safe
       .replace('/', '_') // Make URL safe
       .replace("=", "")  // Remove padding
@@ -89,15 +90,18 @@ object JWT:
           if header.alg != "HS256" then
             throw JWTError(s"Unsupported algorithm: ${header.alg}")
 
-          // Verify signature
-          val signature = base64UrlDecode(signatureB64)
-          val data      = s"$headerB64.$payloadB64"
+          val data = s"$headerB64.$payloadB64"
           val expectedSignature = crypto
             .createHmac("sha256", secret)
             .update(data)
             .digest("base64")
+            .replace('+', '-')
+            .replace('/', '_')
+            .replace("=", "")
 
-          if signature != expectedSignature then
+          // Verify signature
+          // Compare signatures directly in base64url format
+          if signatureB64 != expectedSignature then
             throw JWTError("Invalid signature")
 
           // Decode payload if signature is valid
@@ -135,6 +139,9 @@ object JWT:
       .createHmac("sha256", secret)
       .update(data)
       .digest("base64")
+      .replace('+', '-')
+      .replace('/', '_')
+      .replace("=", "")
 
     // Combine all parts
     s"$headerB64.$payloadB64.$signature"

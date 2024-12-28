@@ -15,6 +15,6 @@ trait Hmac extends js.Object:
   def update(data: String): Hmac       = js.native
   def digest(encoding: String): String = js.native
 
-@js.native
-trait Buffer extends js.Object:
-  def toString(encoding: String): String = js.native
+//@js.native
+//trait Buffer extends js.Object:
+//  def toString(encoding: String): String = js.native

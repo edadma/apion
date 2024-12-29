@@ -181,30 +181,38 @@ object Middlewares {
         request => {
           logger.debug(s"[FileServing] Handling request: ${request.url}")
 
-          val relativePath = request.context.get("*") match {
-            case Some(path) => stripSlashes(path.toString)
-            case None =>
-              logger.debug("[FileServing] No wildcard match found in context")
-              ""
-          }
+          // Extract full path after the static prefix
+          val prefix = s"/$normalizedPath/"
+          val relativePath = if request.url.startsWith(prefix) then
+            request.url.substring(prefix.length)
+          else
+            ""
 
-          logger.debug(s"[FileServing] Relative path: $relativePath")
+          logger.debug(s"[FileServing] Raw relative path: $relativePath")
 
-          if relativePath.contains("..") then
+          // Check for directory traversal in both original URL and relative path
+          if request.url.contains("..") || relativePath.contains("..") then
             logger.debug("[FileServing] Directory traversal attempt detected")
             Future.successful(Response(
               status = 403,
               body = "Forbidden: Directory traversal not allowed",
             ))
           else
-            val fullPath = s"$normalizedRoot/$relativePath"
+            val normalizedPath = stripSlashes(relativePath)
+            logger.debug(s"[FileServing] Normalized relative path: $normalizedPath")
+            val fullPath = s"$normalizedRoot/$normalizedPath"
             logger.debug(s"[FileServing] Full path: $fullPath")
 
             fs.stat(fullPath).toFuture
               .flatMap { stats =>
                 if stats.isDirectory() then
                   logger.debug(s"[FileServing] Serving index file for directory")
-                  serveFile(s"$fullPath/$index", allMimeTypes, fs)
+                  // Try serving index file from directory first, fall back to root index
+                  serveFile(s"$fullPath/$index", allMimeTypes, fs).recoverWith {
+                    case _: Exception =>
+                      logger.debug(s"[FileServing] Directory index not found, trying root index")
+                      serveFile(s"$normalizedRoot/$index", allMimeTypes, fs)
+                  }
                 else
                   logger.debug(s"[FileServing] Serving file directly")
                   serveFile(fullPath, allMimeTypes, fs)

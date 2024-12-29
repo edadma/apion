@@ -3,7 +3,7 @@ package io.github.edadma.apion
 import scala.concurrent.{Future, Promise}
 import scala.scalajs.js
 import zio.json.*
-import scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
+import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits.global
 
 object BodyParser:
   def json[A: JsonDecoder](): Middleware =

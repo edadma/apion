@@ -9,7 +9,6 @@ JWT.scala
 Middlewares.scala
 package.scala
 RealFS.scala
-Router.scala
 Server.scala
 
 # unit testing
@@ -19,8 +18,6 @@ BaseSpec.scala
 EndpointTests.scala
 JWTTests.scala
 MockFS.scala
-RouterTests.scala
-SubrouterTests.scala
 
 # Node.js facade library
 ./nodejs/src/main/scala/io/github/edadma/nodejs

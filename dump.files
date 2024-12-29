@@ -19,6 +19,7 @@ BaseSpec.scala
 EndpointTests.scala
 FileServingTests.scala
 JWTTests.scala
+MockFS.scala
 RouterTests.scala
 SubrouterTests.scala
 

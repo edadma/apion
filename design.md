@@ -321,6 +321,83 @@ accept: text/html, application/json
 
 This design ensures consistent header handling while maintaining compatibility with existing HTTP clients and servers.
 
+## Body Parser Design
+
+### Overview
+The body parser handles two main content types:
+- Application/JSON using zio-json
+- Multipart/form-data for file uploads
+
+### JSON Parsing
+Uses Node.js streams with zio-json:
+
+```scala
+def json[A: JsonDecoder](): Middleware = 
+  endpoint => request => {
+    // Stream chunks
+    // Accumulate body
+    // Parse with zio-json
+    // Add parsed body to request context
+  }
+```
+
+### File Upload Handling
+
+#### Design Goals
+- Memory efficient streaming
+- Progress tracking
+- File size limits
+- MIME type validation
+- Concurrent upload handling
+
+#### Implementation
+```scala
+def multipart(): Middleware =
+  endpoint => request => {
+    // Parse boundaries
+    // Stream file chunks
+    // Handle metadata
+    // Validate file types
+    // Store temporary files
+    // Add file info to context
+  }
+```
+
+#### File Processing Flow
+1. Detect multipart boundary
+2. Stream chunks to temp storage
+3. Track upload progress
+4. Validate completed files
+5. Clean up temp files
+6. Add file metadata to request
+
+#### Configuration Options
+- Max file size
+- Allowed MIME types
+- Temp directory
+- Concurrent upload limit
+- Cleanup timing
+
+### Usage Example
+```scala
+server
+  .use(BodyParser.json[User]())
+  .post("/users", createUser)
+  
+server  
+  .use(BodyParser.multipart())
+  .post("/upload", handleFileUpload)
+```
+
+### Error Handling
+- Invalid JSON
+- File too large
+- Invalid file type
+- Storage errors
+- Corrupt uploads
+
+The parser converts errors into appropriate ServerError types for consistent error handling.
+
 ## Implementation Notes
 - Single unified Handler type
 - Linear processing through handlers

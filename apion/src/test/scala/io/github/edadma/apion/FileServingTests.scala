@@ -20,9 +20,9 @@ class FileServingTests extends AsyncBaseSpec:
 
   "FileServing" - {
     "basic file serving" - {
-      "should serve static files with correct content type" in withDebugLogging(
+      "should serve static files with correct content type" in /*withDebugLogging(
         "should serve static files with correct content type",
-      ) {
+      )*/ {
         val router = Router()
 
         logger.debug("[Test] Setting up file serving")
@@ -46,7 +46,9 @@ class FileServingTests extends AsyncBaseSpec:
         }
       }
 
-      "should serve index.html for directory requests" in {
+      "should serve index.html for directory requests" in withDebugLogging(
+        "should serve index.html for directory requests",
+      ) {
         val router = Router()
 
         Middlewares.fileServing(

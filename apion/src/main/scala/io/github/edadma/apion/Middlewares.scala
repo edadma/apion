@@ -215,7 +215,7 @@ object Middlewares {
               options.dotFiles match {
                 case "allow" =>
                   val fullPath = s"$normalizedRoot/$normalizedRelPath"
-                  handleFileRequest(fullPath, fs, options, allMimeTypes, request)
+                  handleFileRequest(fullPath, fs, options, allMimeTypes, request, normalizedRoot)
                 case "deny" =>
                   Future.successful(Response(
                     status = 403,
@@ -226,9 +226,7 @@ object Middlewares {
               }
             else
               val fullPath = s"$normalizedRoot/$normalizedRelPath"
-              handleFileRequest(fullPath, fs, options, allMimeTypes, request)
-              logger.debug(s"[FileServing] Full path: $fullPath")
-              handleFileRequest(fullPath, fs, options, allMimeTypes, request)
+              handleFileRequest(fullPath, fs, options, allMimeTypes, request, normalizedRelPath)
         },
       )
     }
@@ -239,6 +237,7 @@ object Middlewares {
       options: FileServingOptions,
       allMimeTypes: Map[String, String],
       request: Request,
+      normalizedRoot: String, // Added parameter
   ): Future[Response] = {
     fs.stat(fullPath).toFuture.flatMap { stats =>
       // Handle conditional requests
@@ -265,7 +264,7 @@ object Middlewares {
           serveFile(s"$fullPath/${options.index}", allMimeTypes, fs, options).recoverWith {
             case _: Exception =>
               logger.debug(s"[FileServing] Directory index not found, trying root index")
-              serveFile(s"$fullPath/${options.index}", allMimeTypes, fs, options)
+              serveFile(s"$normalizedRoot/${options.index}", allMimeTypes, fs, options)
           }
         else
           serveFile(fullPath, allMimeTypes, fs, options)

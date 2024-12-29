@@ -6,13 +6,13 @@ import scala.concurrent.Future
 import zio.json.*
 
 object ExampleServer {
-  logger.setLogLevel(LogLevel.ALL)
+//  logger.setLogLevel(LogLevel.ALL)
 
   // JWT secret (in a real app, this would be in secure configuration)
   val JWT_SECRET = "your-secret-key-here"
 
   // Define data models
-  case class User(id: String, name: String, email: String, password: String)
+  case class User(id: String, name: String, email: String, password: String, roles: Set[String])
   case class Post(id: String, userId: String, title: String, content: String)
   case class LoginRequest(email: String, password: String)
   case class TokenResponse(token: String)
@@ -37,8 +37,8 @@ object ExampleServer {
 
   // Mock database with passwords (in a real app, passwords would be hashed)
   val users = Map(
-    "1" -> User("1", "John Doe", "john@example.com", "password123"),
-    "2" -> User("2", "Jane Smith", "jane@example.com", "password456"),
+    "1" -> User("1", "John Doe", "john@example.com", "password123", Set("user")),
+    "2" -> User("2", "Jane Smith", "jane@example.com", "password456", Set("user", "admin")),
   )
 
   val posts = Map(
@@ -56,7 +56,11 @@ object ExampleServer {
     val server = Server()
 
     // Add auth middleware with excluded paths
-    server.use(AuthMiddleware(requireAuth = true, excludePaths = Set("/login", "/health")))
+    server.use(AuthMiddleware(
+      requireAuth = true,
+      excludePaths = Set("/login", "/health"),
+      secretKey = JWT_SECRET,
+    ))
 
     // Health check endpoint (no auth required)
     server.get(
@@ -76,8 +80,13 @@ object ExampleServer {
 
           user match {
             case Some(u) => {
-              val payload = Auth(u.id, Set("user"))
-              val token   = JWT.sign(payload, JWT_SECRET)
+              // Create token payload with user details and expiration
+              val payload = AuthMiddleware.TokenPayload(
+                sub = u.id,
+                roles = u.roles,
+                exp = System.currentTimeMillis() / 1000 + 3600, // 1 hour expiration
+              )
+              val token = JWT.sign(payload, JWT_SECRET)
               Future.successful(Response.json(TokenResponse(token)))
             }
             case None => {
@@ -105,23 +114,23 @@ object ExampleServer {
     // Users subrouter
     val users = api.route("/users")
 
-    // Get all users
+    // Get all users (requires authentication)
     users.get(
       "/",
       req => {
         Future.successful(Response.json(
-          ExampleServer.users.values.map(u => u.copy(password = "")).toList, // Don't send passwords
+          ExampleServer.users.values.map(u => u.copy(password = "")).toList,
         ))
       },
     )
 
-    // Get user by ID
+    // Get user by ID (requires authentication)
     users.get(
       "/:id",
       req => {
         val userId = req.context("id").toString
         ExampleServer.users.get(userId) match {
-          case Some(user) => Future.successful(Response.json(user.copy(password = ""))) // Don't send password
+          case Some(user) => Future.successful(Response.json(user.copy(password = "")))
           case None => Future.successful(Response(
               status = 404,
               body = "User not found",
@@ -133,7 +142,7 @@ object ExampleServer {
     // Posts subrouter with nested user posts
     val userPosts = users.route("/:userId/posts")
 
-    // Get posts for a user
+    // Get posts for a user (requires authentication)
     userPosts.get(
       "/",
       req => {
@@ -143,7 +152,7 @@ object ExampleServer {
       },
     )
 
-    // Get specific post
+    // Get specific post (requires authentication)
     userPosts.get(
       "/:postId",
       req => {
@@ -166,13 +175,15 @@ object ExampleServer {
 
     // Start server
     server.listen(3000) {
-      println("Server running at http://localhost:3000")
-      println("\nTest with:")
-      println(
-        """curl -X POST -H "Content-Type: application/json" -d '{"email":"john@example.com","password":"password123"}' http://localhost:3000/login""",
+      logger.info("Server running at http://localhost:3000")
+      logger.info(
+        "Test with: " +
+          """curl -X POST -H "Content-Type: application/json" -d '{"email":"john@example.com","password":"password123"}' http://localhost:3000/login""",
       )
-      println("\nThen use the returned token in subsequent requests:")
-      println("""curl -H "Authorization: Bearer <token>" http://localhost:3000/api/users""")
+      logger.info(
+        "Then use the returned token in subsequent requests: " +
+          """curl -H "Authorization: Bearer <token>" http://localhost:3000/api/users""",
+      )
     }
   }
 }

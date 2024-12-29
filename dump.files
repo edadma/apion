@@ -11,15 +11,14 @@ Middlewares.scala
 package.scala
 Router.scala
 Server.scala
-StaticFiles.scala
 
 # unit testing
 ./apion/src/test/scala/io/github/edadma/apion
 AuthMiddlewareTests.scala
 BaseSpec.scala
 EndpointTests.scala
-FileServingTests.scala
 JWTTests.scala
+Middlewares.scala
 MockFS.scala
 RouterTests.scala
 SubrouterTests.scala

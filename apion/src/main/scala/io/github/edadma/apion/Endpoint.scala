@@ -114,9 +114,8 @@ object Response:
     import java.time.format.DateTimeFormatter
     import java.util.Locale
 
-    val dateFormatter = DateTimeFormatter
-      .ofPattern("EEE, dd MMM yyyy HH:mm:ss 'GMT'")
-      .withLocale(Locale.US)
+    val dateFormatter = DateTimeFormatter.RFC_1123_DATE_TIME
+      .withLocale(Locale.CANADA)
       .withZone(ZoneOffset.UTC)
 
     _defaultHeaders ++ Map(

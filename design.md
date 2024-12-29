@@ -21,13 +21,27 @@ A lightweight, Express-inspired API server framework for Scala.js, providing a f
 
 ### Handler Type
 ```scala
-type Handler = Request => Future[Option[Request | Response]]
+sealed trait ServerError extends Throwable
+case class ValidationError(msg: String) extends ServerError
+case class AuthError(msg: String) extends ServerError
+case class NotFoundError(msg: String) extends ServerError
+
+type ErrorHandler = ServerError => Response
+
+sealed trait Result
+case class Continue(request: Request) extends Result
+case class Complete(response: Response) extends Result
+case class Fail(error: ServerError) extends HandlerResult
+case object Skip extends Result
+
+type Handler = Request => Future[Result]
 ```
 
 Return values signify:
-- None: Try next route
-- Some(Request): Continue with modified request
-- Some(Response): End processing and send response
+- Skip: Try next route
+- Continue(Request): Continue with modified request
+- Complete(Response): End processing and send response
+- Fail(ServerError): propagate error
 
 ### Server Configuration
 Fully chainable API supporting:
@@ -167,16 +181,6 @@ val server = Server()
 
 ## Request Flow and Handler Results
 
-### Handler Return Values
-```scala
-type Handler = Request => Future[Option[Request | Response]]
-```
-
-Each handler can return:
-- `Some(newRequest)`: Continue chain with modified request state
-- `Some(response)`: End chain, return response
-- `None`: No match/action, try next route
-
 ### Request State Management
 - Router maintains mutable reference to current request state
 - Request objects themselves are immutable
@@ -252,6 +256,70 @@ val app = Router()
   .use(logging)       // Can modify request
   .use("/api", api)
 ```
+
+## Header Handling
+
+The framework provides consistent header handling across all requests and responses, ensuring compatibility with HTTP/1.1 specifications and common browser behaviors.
+
+### Design Goals
+- Case-insensitive header matching
+- Consistent internal representation
+- Preservation of original header casing in responses
+- Compliance with HTTP standards
+- Reliable handling of special cases
+
+### Implementation Details
+
+#### Header Normalization Rules
+- All header names stored internally in lowercase
+- Multiple headers with same name combined with comma delimiter
+- Leading and trailing whitespace removed from header values
+- Original header case preserved for outbound responses
+
+#### Internal Representation
+```scala
+case class Request(
+  headers: Map[String, String]  // All keys lowercase
+)
+```
+
+#### Header Processing Flow
+1. Inbound headers normalized on request creation
+2. All internal header operations use lowercase keys
+3. Original casing recorded for response headers
+4. Response headers follow original casing convention
+
+#### Special Cases
+- Content-Type headers preserved exactly
+- Set-Cookie headers handled as separate headers
+- Transfer-Encoding and Connection headers managed by server
+
+### Examples
+
+#### Header Normalization
+```scala
+// Original headers
+Authorization: Bearer token
+CONTENT-TYPE: application/json
+accept: text/plain
+
+// Normalized internal representation
+authorization: Bearer token
+content-type: application/json
+accept: text/plain
+```
+
+#### Multiple Header Handling
+```scala
+// Original headers
+Accept: text/html
+Accept: application/json
+
+// Normalized
+accept: text/html, application/json
+```
+
+This design ensures consistent header handling while maintaining compatibility with existing HTTP clients and servers.
 
 ## Implementation Notes
 - Single unified Handler type

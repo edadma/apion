@@ -17,6 +17,7 @@ Server.scala
 AuthMiddlewareTests.scala
 BaseSpec.scala
 EndpointTests.scala
+FileServingTests.scala
 JWTTests.scala
 RouterTests.scala
 SubrouterTests.scala
@@ -25,6 +26,7 @@ SubrouterTests.scala
 ./nodejs/src/main/scala/io/github/edadma/nodejs
 buffer.scala
 crypto.scala
+fs.scala
 http.scala
 
 # build/development files

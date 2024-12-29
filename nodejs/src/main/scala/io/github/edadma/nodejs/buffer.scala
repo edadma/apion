@@ -17,3 +17,16 @@ trait BufferObject extends js.Object:
 trait Buffer extends js.Object:
   def toString(encoding: String = "utf8"): String = js.native
   def byteLength: Int                             = js.native
+
+//@js.native
+//@JSGlobal
+//class Uint8Array(elements: Short*) extends js.Object {
+//  def this(length: Int) = this()
+//  def this(array: js.Iterable[Short]) = this()
+//  def this(typedArray: Uint8Array) = this()
+//  def this(buffer: ArrayBuffer, byteOffset: Int = 0, length: Int = js.native) = this()
+//}
+//
+//@js.native
+//@JSGlobal
+//class ArrayBuffer extends js.Object

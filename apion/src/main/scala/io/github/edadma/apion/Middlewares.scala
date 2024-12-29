@@ -1,9 +1,39 @@
 package io.github.edadma.apion
 
-import scala.concurrent.Future
+import io.github.edadma.nodejs.*
+import scala.concurrent.{Future, Promise}
+import scala.scalajs.js
 import scala.concurrent.ExecutionContext.Implicits.global
+import java.nio.file.{Path, Paths}
+import scala.util.{Success, Failure}
 
 object Middlewares:
+  /** Default MIME types for common file extensions */
+  private val defaultMimeTypes = Map(
+    "html"  -> "text/html",
+    "htm"   -> "text/html",
+    "css"   -> "text/css",
+    "js"    -> "application/javascript",
+    "json"  -> "application/json",
+    "txt"   -> "text/plain",
+    "png"   -> "image/png",
+    "jpg"   -> "image/jpeg",
+    "jpeg"  -> "image/jpeg",
+    "gif"   -> "image/gif",
+    "svg"   -> "image/svg+xml",
+    "ico"   -> "image/x-icon",
+    "pdf"   -> "application/pdf",
+    "zip"   -> "application/zip",
+    "woff"  -> "font/woff",
+    "woff2" -> "font/woff2",
+    "ttf"   -> "font/ttf",
+    "eot"   -> "application/vnd.ms-fontobject",
+    "mp4"   -> "video/mp4",
+    "webm"  -> "video/webm",
+    "mp3"   -> "audio/mpeg",
+    "wav"   -> "audio/wav",
+  )
+
   /** CORS (Cross-Origin Resource Sharing) Middleware
     *
     * @param allowOrigin
@@ -114,3 +144,116 @@ object Middlewares:
           response.copy(headers = headersWithContentType)
         }
       }
+
+  /** Create a file serving middleware
+    *
+    * @param path
+    *   URL path prefix for static files
+    * @param root
+    *   Root directory to serve files from
+    * @param index
+    *   Default file to serve for directories
+    * @param mimeTypes
+    *   Additional MIME type mappings
+    */
+  def fileServing(
+      path: String,
+      root: String,
+      index: String = "index.html",
+      mimeTypes: Map[String, String] = Map(),
+  ): Middleware =
+    val allMimeTypes   = defaultMimeTypes ++ mimeTypes
+    val normalizedPath = path.stripPrefix("/").stripSuffix("/")
+    val normalizedRoot = root.stripSuffix("/")
+
+    endpoint =>
+      request => {
+        if !request.url.startsWith(s"/$normalizedPath/") then
+          endpoint(request)
+        else
+          // Extract the file path from the URL
+          val relativePath = request.url.stripPrefix(s"/$normalizedPath/")
+
+          // Prevent directory traversal attacks
+          if relativePath.contains("..") then
+            Future.successful(Response(
+              status = 403,
+              body = "Forbidden: Directory traversal not allowed",
+            ))
+          else
+            val fullPath = s"$normalizedRoot/${relativePath}"
+
+            // Convert to JS Promise and handle in Future
+            val statPromise = Promise[js.Dynamic]()
+            fs.promises.stat(fullPath)
+              .`then`[Stats](
+                { (stats: Stats) =>
+                  statPromise.success(stats.asInstanceOf[js.Dynamic])
+                  stats
+                }: js.Function1[Stats, Stats],
+                { (error: Any) =>
+                  statPromise.failure(new Exception(error.toString))
+                  null.asInstanceOf[Stats]
+                }: js.Function1[Any, Stats],
+              )
+
+            statPromise.future
+              .flatMap { stats =>
+                if stats.isDirectory().asInstanceOf[Boolean] then
+                  // For directories, try to serve index file
+                  serveFile(s"$fullPath/$index", allMimeTypes)
+                else
+                  // For files, serve directly
+                  serveFile(fullPath, allMimeTypes)
+              }
+              .recover {
+                case e: Exception =>
+                  Response(
+                    status = 404,
+                    body = s"Not Found: ${e.getMessage}",
+                  )
+              }
+      }
+
+  /** Serve a single file with appropriate MIME type
+    *
+    * @param path
+    *   File path
+    * @param mimeTypes
+    *   MIME type mappings
+    */
+  private def serveFile(
+      path: String,
+      mimeTypes: Map[String, String],
+  ): Future[Response] =
+    val extension = path.split('.').lastOption.getOrElse("")
+    val mimeType  = mimeTypes.getOrElse(extension, "application/octet-stream")
+
+    val contentPromise = Promise[String]()
+
+    fs.promises
+      .readFile(
+        path,
+        js.Dynamic.literal(
+          encoding = "utf8",
+        ),
+      )
+      .`then`[String](
+        { (content: String | js.typedarray.Uint8Array) =>
+          val strContent = content.toString
+          contentPromise.success(strContent)
+          strContent
+        }: js.Function1[String | js.typedarray.Uint8Array, String],
+        { (error: Any) =>
+          contentPromise.failure(new Exception(error.toString))
+          null
+        }: js.Function1[Any, String],
+      )
+
+    contentPromise.future.map { content =>
+      Response(
+        status = 200,
+        headers = Map("Content-Type" -> mimeType),
+        body = content,
+      )
+    }

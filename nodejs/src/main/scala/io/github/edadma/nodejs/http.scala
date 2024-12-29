@@ -1,5 +1,6 @@
 package io.github.edadma.nodejs
 
+import scala.annotation.targetName
 import scala.scalajs.js
 import scala.scalajs.js.annotation.*
 
@@ -17,6 +18,8 @@ trait ServerRequest extends js.Object:
   val url: String                    = js.native
   val method: String                 = js.native
   val headers: js.Dictionary[String] = js.native
+
+  def on(event: String, listener: js.Any): this.type = js.native
 
 @js.native
 trait ServerResponse extends js.Object:

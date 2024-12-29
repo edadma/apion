@@ -24,13 +24,14 @@ class Router(
     logger.debug(s"Updated subrouters list: ${subrouters.map(_._1).mkString(", ")}", "Router")
     subrouter
 
-  def get(path: String, endpoint: Endpoint): Router =
-    routes = routes :+ Route("GET", path, endpoint)
-    logger.debug(s"Added GET route for path: $path", "Router")
+  def get(path: String, endpoint: Endpoint, middlewares: Middleware*): Router =
+    val finalEndpoint = middlewares.foldRight(endpoint)((mw, ep) => mw(ep))
+    routes = routes :+ Route("GET", path, finalEndpoint)
     this
 
-  def post(path: String, endpoint: Endpoint): Router =
-    routes = routes :+ Route("POST", path, endpoint)
+  def post(path: String, endpoint: Endpoint, middlewares: Middleware*): Router =
+    val finalEndpoint = middlewares.foldRight(endpoint)((mw, ep) => mw(ep))
+    routes = routes :+ Route("POST", path, finalEndpoint)
     this
 
   def put(path: String, endpoint: Endpoint): Router =

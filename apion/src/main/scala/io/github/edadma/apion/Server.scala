@@ -13,13 +13,15 @@ class Server:
   def listen(port: Int)(callback: => Unit): Unit =
     server.listen(port, () => callback)
 
-  def get(path: String, endpoint: Endpoint): Server =
-    router.get(path, endpoint)
+  def get(path: String, endpoint: Endpoint, middlewares: Middleware*): Server = {
+    router.get(path, endpoint, middlewares*)
     this
+  }
 
-  def post(path: String, endpoint: Endpoint): Server =
-    router.post(path, endpoint)
+  def post(path: String, endpoint: Endpoint, middlewares: Middleware*): Server = {
+    router.post(path, endpoint, middlewares*)
     this
+  }
 
   def put(path: String, endpoint: Endpoint): Server =
     router.put(path, endpoint)

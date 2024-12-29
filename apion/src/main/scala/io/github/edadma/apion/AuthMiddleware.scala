@@ -4,72 +4,71 @@ import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
 object AuthMiddleware:
-  /** Creates authentication middleware.
-    *
-    * Type breakdown:
-    *   - Middleware = Endpoint => Endpoint
-    *   - Endpoint = Request => Future[Response]
-    *
-    * So expanded: Middleware = (Request => Future[Response]) => (Request => Future[Response])
-    *
-    * @param requireAuth
-    *   If true, requests without valid auth will be rejected
-    * @return
-    *   A function that transforms endpoints by adding auth checking
-    */
-  def apply(requireAuth: Boolean = true): Middleware =
-    // This outer function takes an endpoint and returns a new endpoint
-    (endpoint: Endpoint) =>
-      // This is our new endpoint function that will replace the original
-      // It needs to have type Request => Future[Response] to be a valid Endpoint
-      (request: Request) => {
-        // Check for Authorization header and handle authentication
-        request.headers.get("Authorization") match
-          case Some(authHeader) if authHeader.startsWith("Bearer ") =>
-            val token = authHeader.substring(7)
+  def apply(requireAuth: Boolean = true, excludePaths: Set[String] = Set()): Middleware =
+    endpoint =>
+      request => {
+        logger.debug(s"[Auth] ======= Starting Auth Check =======")
+        logger.debug(s"[Auth] Request method: ${request.method}")
+        logger.debug(s"[Auth] Request URL: ${request.url}")
+        logger.debug(s"[Auth] Request headers: ${request.headers}")
+        logger.debug(s"[Auth] Excluded paths: $excludePaths")
 
-            // verifyToken returns Future[Option[Auth]]
-            // We use flatMap because we need to chain this with the endpoint call
-            verifyToken(token).flatMap {
-              case Some(auth) =>
-                // Auth successful - add auth info to request and continue to endpoint
-                // endpoint(request) returns Future[Response]
-                endpoint(request.copy(auth = Some(auth)))
+        // Check if path should bypass auth
+        val shouldExclude = excludePaths.exists { path =>
+          val matches = request.url == path || request.url.startsWith(path + "/")
+          logger.debug(s"[Auth] Checking path '$path' against '${request.url}': $matches")
+          matches
+        }
+        logger.debug(s"[Auth] Final exclusion decision: $shouldExclude")
 
-              case None if requireAuth =>
-                // Invalid token and auth required - return 401 without calling endpoint
-                Future.successful(Response(
-                  status = 401,
-                  body = "Unauthorized",
-                ))
+        if shouldExclude then
+          logger.debug(s"[Auth] Bypassing auth check for excluded path: ${request.url}")
+          endpoint(request)
+        else
+          logger.debug(s"[Auth] Requiring auth for path: ${request.url}")
+          // Check for Authorization header and handle authentication
+          request.headers.get("Authorization") match
+            case Some(authHeader) if authHeader.startsWith("Bearer ") =>
+              val token = authHeader.substring(7)
+              logger.debug(s"[Auth] Got bearer token: $token")
 
-              case None =>
-                // Invalid token but auth optional - continue to endpoint
-                endpoint(request)
-            }
+              verifyToken(token).flatMap {
+                case Some(auth) =>
+                  logger.debug(s"[Auth] Token verified for user: ${auth.user}")
+                  endpoint(request.copy(auth = Some(auth)))
 
-          case None if requireAuth =>
-            // No auth header and auth required - return 401 without calling endpoint
-            Future.successful(Response(
-              status = 401,
-              body = "Authorization header required",
-            ))
+                case None if requireAuth =>
+                  logger.debug("[Auth] Invalid token and auth required")
+                  Future.successful(Response(
+                    status = 401,
+                    body = "Unauthorized",
+                  ))
 
-          case None =>
-            // No auth header but auth optional - continue to endpoint
-            endpoint(request)
+                case None =>
+                  logger.debug("[Auth] Invalid token but auth optional")
+                  endpoint(request)
+              }
 
-          case Some(authHeader) =>
-            // Authorization header exists but isn't a Bearer token
-            // Fail immediately without calling the endpoint since we only support Bearer auth
-            Future.successful(Response(
-              status = 401,
-              body = "Authorization header must be Bearer token",
-            ))
+            case None if requireAuth =>
+              logger.debug("[Auth] No auth header and auth required")
+              Future.successful(Response(
+                status = 401,
+                body = "Authorization header required",
+              ))
+
+            case None =>
+              logger.debug("[Auth] No auth header but auth optional")
+              endpoint(request)
+
+            case Some(authHeader) =>
+              logger.debug(s"[Auth] Invalid auth header format: $authHeader")
+              Future.successful(Response(
+                status = 401,
+                body = "Authorization header must be Bearer token",
+              ))
       }
 
-  /** Simulated token verification. In a real app, this would verify JWT tokens, check a database, etc.
-    */
+  /** Simulated token verification. In a real app, this would verify JWT tokens, check a database, etc. */
   private def verifyToken(token: String): Future[Option[Auth]] =
     Future.successful(
       if token == "valid-token" then

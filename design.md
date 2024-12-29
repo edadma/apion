@@ -164,3 +164,99 @@ val server = Server()
 - Body parser plugins
 - Error handler customization
 - Response transformers
+
+## Request Flow and Handler Results
+
+### Handler Return Values
+```scala
+type Handler = Request => Future[Option[Request | Response]]
+```
+
+Each handler can return:
+- `Some(newRequest)`: Continue chain with modified request state
+- `Some(response)`: End chain, return response
+- `None`: No match/action, try next route
+
+### Request State Management
+- Router maintains mutable reference to current request state
+- Request objects themselves are immutable
+- Each handler receives latest request state
+- When handler returns Some(newRequest), router updates state
+- Subsequent handlers receive updated state
+
+## Pattern Matching System
+
+### Route Pattern Structure
+```scala
+sealed trait PathSegment
+case class StaticSegment(value: String) extends PathSegment    
+case class ParamSegment(name: String) extends PathSegment      
+case class WildcardSegment() extends PathSegment              
+```
+
+### Route Compilation
+- Split path into segments
+- Convert to pattern matching tree
+- Store param names for extraction
+- Compile once at router creation
+
+### Matching Process
+1. Split incoming path into segments
+2. Match against compiled patterns
+3. Extract parameters into Map
+4. Store in Request context
+5. None if no match found
+
+## Router Implementation
+
+### Core Router Interface
+```scala
+trait Router:
+  def use(path: String, router: Router): Router   // Mount subrouter
+  def use(handler: Handler): Router               // Add handler
+  def get(path: String, handler: Handler): Router // Add route handler
+  // other HTTP methods...
+```
+
+### Request Processing Example
+```scala
+// Initial request state
+var currentRequest = incomingRequest
+
+// Process handlers in order
+for 
+  handler <- handlers
+  result <- handler(currentRequest)
+yield result match
+  case Some(req: Request) => 
+    currentRequest = req  // Update state
+    continue           
+  case Some(res: Response) => 
+    return res        // End chain
+  case None =>
+    continue          // Try next handler
+```
+
+### Example Router Structure
+```scala
+val orders = Router()
+  .get("/:id", getOrder)
+  .post("/", createOrder)
+
+val api = Router() 
+  .use(auth)          // Can modify request
+  .get("/users", listUsers)
+  .use("/orders", orders)
+
+val app = Router()
+  .use(logging)       // Can modify request
+  .use("/api", api)
+```
+
+## Implementation Notes
+- Single unified Handler type
+- Linear processing through handlers
+- Clear request state management
+- Immutable Request objects
+- Mutable request state in router
+- Type-safe param extraction

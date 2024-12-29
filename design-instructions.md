@@ -3,6 +3,7 @@
 - no js dependencies other than Node.js
 - no coding until design has been worked out, except for small code snippets during design discussions
 - code from a previous version has been carried forward, only for reference, and can certainly be changed to accommodate the new design
+- the design supersedes only code
 - always use artifacts for code or text that's longer than twenty line.
 - always use markdown documents
 - only small code snippets if any. markdown bullet points are good for designs

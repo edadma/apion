@@ -237,38 +237,38 @@ object Middlewares {
       options: FileServingOptions,
       allMimeTypes: Map[String, String],
       request: Request,
-      normalizedRoot: String, // Added parameter
+      normalizedPath: String,
   ): Future[Response] = {
     fs.stat(fullPath).toFuture.flatMap { stats =>
-      // Handle conditional requests
       val ifNoneMatch = request.header("if-none-match")
       val ifModifiedSince = request.header("if-modified-since").flatMap { date =>
         try Some(new js.Date(date).getTime)
         catch case _: Exception => None
       }
 
-      // Generate ETag if enabled
       val etag = if options.etag then
         Some(s"""W/"${stats.size}-${stats.mtime.getTime}"""")
       else None
 
-      // Check if client cache is still valid
       if etag.exists(tag => ifNoneMatch.contains(tag)) ||
         ifModifiedSince.exists(_ >= stats.mtime.getTime)
       then
         Future.successful(Response(status = 304, body = ""))
+      else if stats.isDirectory() then
+        logger.debug(s"[FileServing] Serving index file for directory")
+        // Try directory index first
+        val dirIndexPath = s"$fullPath/${options.index}"
+        logger.debug(s"[FileServing] Trying directory index at: $dirIndexPath")
+
+        serveFile(dirIndexPath, allMimeTypes, fs, options).recoverWith {
+          case _: Exception =>
+            logger.debug(s"[FileServing] Directory index not found, trying root index")
+            val rootIndexPath = s"public/${options.index}" // Use root directory
+            logger.debug(s"[FileServing] Trying root index at: $rootIndexPath")
+            serveFile(rootIndexPath, allMimeTypes, fs, options)
+        }
       else
-        if stats.isDirectory() then
-          logger.debug(s"[FileServing] Serving index file for directory")
-          // Try serving index file from directory first, fall back to root index
-          serveFile(s"$fullPath/${options.index}", allMimeTypes, fs, options).recoverWith {
-            case _: Exception =>
-              logger.debug(s"[FileServing] Directory index not found, trying root index")
-              // Use full root path when falling back
-              serveFile(s"$normalizedRoot/${options.index}", allMimeTypes, fs, options)
-          }
-        else
-          serveFile(fullPath, allMimeTypes, fs, options)
+        serveFile(fullPath, allMimeTypes, fs, options)
     }.recover {
       case e: Exception =>
         logger.debug(s"[FileServing] Error: ${e.getMessage}")

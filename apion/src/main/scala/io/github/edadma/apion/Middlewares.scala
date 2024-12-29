@@ -264,6 +264,7 @@ object Middlewares {
           serveFile(s"$fullPath/${options.index}", allMimeTypes, fs, options).recoverWith {
             case _: Exception =>
               logger.debug(s"[FileServing] Directory index not found, trying root index")
+              // Use full root path when falling back
               serveFile(s"$normalizedRoot/${options.index}", allMimeTypes, fs, options)
           }
         else

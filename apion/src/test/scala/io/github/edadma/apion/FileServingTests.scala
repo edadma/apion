@@ -16,6 +16,11 @@ class FileServingTests extends AsyncBaseSpec:
     // Note: Intentionally not including public/subdir/index.html to test fallback
   )
 
+  logger.debug("MockFS Contents:")
+  testFiles.foreach { case (path, file) =>
+    logger.debug(s"Path: $path, IsDir: ${file.stats.isDirectory()}, Content: ${new String(file.content)}")
+  }
+
   val mockFs = new MockFS(testFiles)
 
   "FileServing" - {

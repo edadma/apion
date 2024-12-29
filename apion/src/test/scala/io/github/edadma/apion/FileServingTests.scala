@@ -31,7 +31,7 @@ class FileServingTests extends AsyncBaseSpec:
         val router = Router()
 
         logger.debug("[Test] Setting up file serving")
-        Middlewares.fileServing(
+        StaticFiles.fileServing(
           path = "/static",
           root = "public",
           fs = mockFs,
@@ -56,7 +56,7 @@ class FileServingTests extends AsyncBaseSpec:
       ) {
         val router = Router()
 
-        Middlewares.fileServing(
+        StaticFiles.fileServing(
           path = "/static",
           root = "public",
           fs = mockFs,
@@ -74,7 +74,7 @@ class FileServingTests extends AsyncBaseSpec:
       "should prevent directory traversal attacks" in {
         val router = Router()
 
-        Middlewares.fileServing(
+        StaticFiles.fileServing(
           path = "/static",
           root = "public",
           fs = mockFs,
@@ -95,7 +95,7 @@ class FileServingTests extends AsyncBaseSpec:
       "should handle missing files correctly" in {
         val router = Router()
 
-        Middlewares.fileServing(
+        StaticFiles.fileServing(
           path = "/static",
           root = "public",
           fs = mockFs,
@@ -114,7 +114,7 @@ class FileServingTests extends AsyncBaseSpec:
       "should respect custom MIME types" in {
         val router = Router()
 
-        Middlewares.fileServing(
+        StaticFiles.fileServing(
           path = "/static",
           root = "public",
           mimeTypes = Map(
@@ -135,10 +135,10 @@ class FileServingTests extends AsyncBaseSpec:
       "should use custom index file name" in {
         val router = Router()
 
-        Middlewares.fileServing(
+        StaticFiles.fileServing(
           path = "/static",
           root = "public",
-          options = Middlewares.FileServingOptions(index = "welcome.html"),
+          options = StaticFiles.FileServingOptions(index = "welcome.html"),
           fs = mockFs,
         )(router)
 

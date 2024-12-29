@@ -24,9 +24,9 @@ class AuthMiddlewareTests extends AsyncBaseSpec:
 
   "AuthMiddleware" - {
     "authentication flow" - {
-      "should allow authenticated requests to non-excluded paths" in withDebugLogging(
+      "should allow authenticated requests to non-excluded paths" in /*withDebugLogging(
         "should allow authenticated requests to non-excluded paths",
-      ) {
+      )*/ {
         val testEndpoint: Endpoint = req =>
           Future.successful(Response.text(s"Authenticated: ${req.auth.map(_.user).getOrElse("unknown")}"))
 

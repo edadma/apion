@@ -156,42 +156,59 @@ object Middlewares:
     * @param mimeTypes
     *   Additional MIME type mappings
     */
+
+  private def stripSlashes(str: String): String =
+    str.stripPrefix("/").stripSuffix("/")
+
   def fileServing(
       path: String,
       root: String,
       index: String = "index.html",
       mimeTypes: Map[String, String] = Map(),
-  ): Middleware =
-    val allMimeTypes   = defaultMimeTypes ++ mimeTypes
-    val normalizedPath = path.stripPrefix("/").stripSuffix("/")
-    val normalizedRoot = root.stripSuffix("/")
+  ): Router => Router =
+    router => {
+      val allMimeTypes   = defaultMimeTypes ++ mimeTypes
+      val normalizedPath = stripSlashes(path)
+      val normalizedRoot = stripSlashes(root)
 
-    endpoint =>
-      request => {
-        if !request.url.startsWith(s"/$normalizedPath/") then
-          endpoint(request)
-        else
-          // Extract the file path from the URL
-          val relativePath = request.url.stripPrefix(s"/$normalizedPath/")
+      logger.debug(s"[FileServing] Setting up file serving for path: /$normalizedPath")
+      logger.debug(s"[FileServing] Root directory: $normalizedRoot")
 
-          // Prevent directory traversal attacks
+      router.get(
+        s"/$normalizedPath/*",
+        request => {
+          logger.debug(s"[FileServing] Handling request: ${request.url}")
+
+          // Extract the file path from the wildcard parameter
+          val relativePath = request.context.get("*") match {
+            case Some(path) => stripSlashes(path.toString)
+            case None =>
+              logger.debug("[FileServing] No wildcard match found in context")
+              ""
+          }
+
+          logger.debug(s"[FileServing] Relative path: $relativePath")
+
           if relativePath.contains("..") then
+            logger.debug("[FileServing] Directory traversal attempt detected")
             Future.successful(Response(
               status = 403,
               body = "Forbidden: Directory traversal not allowed",
             ))
           else
-            val fullPath = s"$normalizedRoot/${relativePath}"
+            val fullPath = s"$normalizedRoot/$relativePath"
+            logger.debug(s"[FileServing] Full path: $fullPath")
 
-            // Convert to JS Promise and handle in Future
             val statPromise = Promise[js.Dynamic]()
             fs.promises.stat(fullPath)
               .`then`[Stats](
                 { (stats: Stats) =>
+                  logger.debug(s"[FileServing] Got stats for: $fullPath")
                   statPromise.success(stats.asInstanceOf[js.Dynamic])
                   stats
                 }: js.Function1[Stats, Stats],
                 { (error: Any) =>
+                  logger.debug(s"[FileServing] Stat error: $error")
                   statPromise.failure(new Exception(error.toString))
                   null.asInstanceOf[Stats]
                 }: js.Function1[Any, Stats],
@@ -200,34 +217,32 @@ object Middlewares:
             statPromise.future
               .flatMap { stats =>
                 if stats.isDirectory().asInstanceOf[Boolean] then
-                  // For directories, try to serve index file
+                  logger.debug(s"[FileServing] Serving index file for directory")
                   serveFile(s"$fullPath/$index", allMimeTypes)
                 else
-                  // For files, serve directly
+                  logger.debug(s"[FileServing] Serving file directly")
                   serveFile(fullPath, allMimeTypes)
               }
               .recover {
                 case e: Exception =>
+                  logger.debug(s"[FileServing] Error: ${e.getMessage}")
                   Response(
                     status = 404,
                     body = s"Not Found: ${e.getMessage}",
                   )
               }
-      }
+        },
+      )
+    }
 
-  /** Serve a single file with appropriate MIME type
-    *
-    * @param path
-    *   File path
-    * @param mimeTypes
-    *   MIME type mappings
-    */
   private def serveFile(
       path: String,
       mimeTypes: Map[String, String],
-  ): Future[Response] =
+  ): Future[Response] = {
+    logger.debug(s"[FileServing] Reading file: $path")
     val extension = path.split('.').lastOption.getOrElse("")
     val mimeType  = mimeTypes.getOrElse(extension, "application/octet-stream")
+    logger.debug(s"[FileServing] MIME type: $mimeType for extension: $extension")
 
     val contentPromise = Promise[String]()
 
@@ -240,11 +255,13 @@ object Middlewares:
       )
       .`then`[String](
         { (content: String | js.typedarray.Uint8Array) =>
+          logger.debug(s"[FileServing] File read successfully")
           val strContent = content.toString
           contentPromise.success(strContent)
           strContent
         }: js.Function1[String | js.typedarray.Uint8Array, String],
         { (error: Any) =>
+          logger.debug(s"[FileServing] File read error: $error")
           contentPromise.failure(new Exception(error.toString))
           null
         }: js.Function1[Any, String],
@@ -257,3 +274,4 @@ object Middlewares:
         body = content,
       )
     }
+  }

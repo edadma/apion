@@ -187,52 +187,83 @@ class Router(
     result
 
   private def matchPath(pattern: String, url: String): Boolean =
-    logger.debug(s"Matching pattern '$pattern' against URL '$url'", "Router")
+    logger.debug(s"[Router] Matching pattern '$pattern' against URL '$url'")
 
     // Split into segments and filter empty ones
     val patternParts = pattern.split("/").filter(_.nonEmpty)
     val urlParts     = url.split("/").filter(_.nonEmpty)
 
-    logger.debug(s"Pattern parts: ${patternParts.mkString(", ")}", "Router")
-    logger.debug(s"URL parts: ${urlParts.mkString(", ")}", "Router")
+    logger.debug(s"[Router] Pattern parts: ${patternParts.mkString(", ")}")
+    logger.debug(s"[Router] URL parts: ${urlParts.mkString(", ")}")
 
-    val matches = if patternParts.length != urlParts.length then
-      logger.debug("Path segments length mismatch", "Router")
-      false
+    if patternParts.lastOption.contains("*") then
+      // For wildcard patterns, ensure the non-wildcard parts match
+      val nonWildcardPattern = patternParts.init
+      val urlPrefix          = urlParts.take(nonWildcardPattern.length)
+
+      if urlParts.length >= nonWildcardPattern.length then
+        val matches = nonWildcardPattern.zip(urlPrefix).forall {
+          case (pattern, url) if pattern.startsWith(":") =>
+            logger.debug(s"[Router] Parameter match: $pattern = $url")
+            true
+          case (pattern, url) =>
+            logger.debug(s"[Router] Exact match attempt: $pattern = $url")
+            pattern == url
+        }
+        logger.debug(s"[Router] Wildcard path match result: $matches")
+        matches
+      else
+        logger.debug("[Router] URL too short for wildcard pattern")
+        false
     else
-      val result = patternParts.zip(urlParts).forall {
-        case (pattern, url) if pattern.startsWith(":") =>
-          logger.debug(s"Parameter match: $pattern = $url", "Router")
-          true
-        case (pattern, url) =>
-          logger.debug(s"Exact match attempt: $pattern = $url", "Router")
-          pattern == url
-      }
-      logger.debug(s"Path match result: $result", "Router")
-      result
-
-    matches
+      // For non-wildcard patterns, length must match exactly
+      val matches = if patternParts.length != urlParts.length then
+        logger.debug("[Router] Path segments length mismatch")
+        false
+      else
+        val result = patternParts.zip(urlParts).forall {
+          case (pattern, url) if pattern.startsWith(":") =>
+            logger.debug(s"[Router] Parameter match: $pattern = $url")
+            true
+          case (pattern, url) =>
+            logger.debug(s"[Router] Exact match attempt: $pattern = $url")
+            pattern == url
+        }
+        logger.debug(s"[Router] Path match result: $result")
+        result
+      matches
 
   private def extractPathParams(pattern: String, url: String): Map[String, String] =
-    logger.debug(s"Extracting params from URL '$url' using pattern '$pattern'", "Router")
+    logger.debug(s"[Router] Extracting params from URL '$url' using pattern '$pattern'")
     val patternParts = pattern.split("/").filter(_.nonEmpty)
     val urlParts     = url.split("/").filter(_.nonEmpty)
 
-    logger.debug(s"Pattern parts for params: ${patternParts.mkString(", ")}", "Router")
-    logger.debug(s"URL parts for params: ${urlParts.mkString(", ")}", "Router")
+    // Handle wildcard pattern
+    val (partsToMatch, remainingUrl) = if patternParts.lastOption.contains("*") then
+      val nonWildcardPattern = patternParts.init
+      val matchedUrlParts    = urlParts.take(nonWildcardPattern.length)
+      val remainingUrlParts  = urlParts.drop(nonWildcardPattern.length)
+      (nonWildcardPattern.zip(matchedUrlParts), Some(remainingUrlParts.mkString("/")))
+    else
+      (patternParts.zip(urlParts), None)
 
-    val params = patternParts.zip(urlParts).foldLeft(Map.empty[String, String]) {
+    val params = partsToMatch.foldLeft(Map.empty[String, String]) {
       case (params, (pattern, value)) if pattern.startsWith(":") =>
         val paramName = pattern.substring(1)
-        logger.debug(s"Found param: $paramName = $value", "Router")
+        logger.debug(s"[Router] Found param: $paramName = $value")
         params + (paramName -> value)
       case (params, (pattern, value)) =>
-        logger.debug(s"Skipping non-param part: $pattern = $value", "Router")
+        logger.debug(s"[Router] Skipping non-param part: $pattern = $value")
         params
     }
 
-    logger.debug(s"Final extracted parameters: $params", "Router")
-    params
+    // Add wildcard part if present
+    val finalParams = remainingUrl match
+      case Some(rest) => params + ("*" -> rest)
+      case None       => params
+
+    logger.debug(s"[Router] Final extracted parameters: $finalParams")
+    finalParams
 
   private def getAllMiddleware: List[Middleware] =
     logger.debug(s"Getting all middleware from router with basePath: $basePath", "Router")

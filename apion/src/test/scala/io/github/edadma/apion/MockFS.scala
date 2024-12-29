@@ -69,3 +69,12 @@ class MockFS(files: Map[String, MockFile]) extends FSInterface:
     files.get(path) match
       case Some(MockFile(_, stats)) => js.Promise.resolve(stats)
       case None                     => js.Promise.reject(new js.Error(s"File not found: $path"))
+
+/*
+  val files =
+    Map(".scalafmt.conf" -> mockFile("mock file content", false, "644"))
+
+  MockFS(files).readFile(".scalafmt.conf", ReadFileOptions(encoding = "utf8")).toFuture.map { data =>
+    println(data)
+  }
+ */

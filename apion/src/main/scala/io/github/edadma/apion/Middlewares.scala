@@ -7,7 +7,10 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import java.nio.file.{Path, Paths}
 import scala.util.{Success, Failure}
 
-object Middlewares:
+object Middlewares {
+  private def stripSlashes(str: String): String =
+    str.stripPrefix("/").stripSuffix("/")
+
   /** Default MIME types for common file extensions */
   private val defaultMimeTypes = Map(
     "html"  -> "text/html",
@@ -155,16 +158,15 @@ object Middlewares:
     *   Default file to serve for directories
     * @param mimeTypes
     *   Additional MIME type mappings
+    * @param fs
+    *   Optional filesystem interface (uses RealFS by default)
     */
-
-  private def stripSlashes(str: String): String =
-    str.stripPrefix("/").stripSuffix("/")
-
   def fileServing(
       path: String,
       root: String,
       index: String = "index.html",
       mimeTypes: Map[String, String] = Map(),
+      fs: FSInterface = RealFS,
   ): Router => Router =
     router => {
       val allMimeTypes   = defaultMimeTypes ++ mimeTypes
@@ -179,7 +181,6 @@ object Middlewares:
         request => {
           logger.debug(s"[FileServing] Handling request: ${request.url}")
 
-          // Extract the file path from the wildcard parameter
           val relativePath = request.context.get("*") match {
             case Some(path) => stripSlashes(path.toString)
             case None =>
@@ -199,29 +200,14 @@ object Middlewares:
             val fullPath = s"$normalizedRoot/$relativePath"
             logger.debug(s"[FileServing] Full path: $fullPath")
 
-            val statPromise = Promise[js.Dynamic]()
-            fs.promises.stat(fullPath)
-              .`then`[Stats](
-                { (stats: Stats) =>
-                  logger.debug(s"[FileServing] Got stats for: $fullPath")
-                  statPromise.success(stats.asInstanceOf[js.Dynamic])
-                  stats
-                }: js.Function1[Stats, Stats],
-                { (error: Any) =>
-                  logger.debug(s"[FileServing] Stat error: $error")
-                  statPromise.failure(new Exception(error.toString))
-                  null.asInstanceOf[Stats]
-                }: js.Function1[Any, Stats],
-              )
-
-            statPromise.future
+            fs.stat(fullPath).toFuture
               .flatMap { stats =>
-                if stats.isDirectory().asInstanceOf[Boolean] then
+                if stats.isDirectory() then
                   logger.debug(s"[FileServing] Serving index file for directory")
-                  serveFile(s"$fullPath/$index", allMimeTypes)
+                  serveFile(s"$fullPath/$index", allMimeTypes, fs)
                 else
                   logger.debug(s"[FileServing] Serving file directly")
-                  serveFile(fullPath, allMimeTypes)
+                  serveFile(fullPath, allMimeTypes, fs)
               }
               .recover {
                 case e: Exception =>
@@ -238,40 +224,20 @@ object Middlewares:
   private def serveFile(
       path: String,
       mimeTypes: Map[String, String],
+      fs: FSInterface,
   ): Future[Response] = {
     logger.debug(s"[FileServing] Reading file: $path")
     val extension = path.split('.').lastOption.getOrElse("")
     val mimeType  = mimeTypes.getOrElse(extension, "application/octet-stream")
     logger.debug(s"[FileServing] MIME type: $mimeType for extension: $extension")
 
-    val contentPromise = Promise[String]()
-
-    fs.promises
-      .readFile(
-        path,
-        js.Dynamic.literal(
-          encoding = "utf8",
-        ),
-      )
-      .`then`[String](
-        { (content: String | js.typedarray.Uint8Array) =>
-          logger.debug(s"[FileServing] File read successfully")
-          val strContent = content.toString
-          contentPromise.success(strContent)
-          strContent
-        }: js.Function1[String | js.typedarray.Uint8Array, String],
-        { (error: Any) =>
-          logger.debug(s"[FileServing] File read error: $error")
-          contentPromise.failure(new Exception(error.toString))
-          null
-        }: js.Function1[Any, String],
-      )
-
-    contentPromise.future.map { content =>
+    fs.readFile(path, ReadFileOptions()).toFuture.map { content =>
+      val strContent = content.toString
       Response(
         status = 200,
         headers = Map("Content-Type" -> mimeType),
-        body = content,
+        body = strContent,
       )
     }
   }
+}

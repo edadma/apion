@@ -168,7 +168,7 @@ class SubrouterTests extends AsyncBaseSpec:
         }
       }
 
-      "should handle path parameters at each level" in withDebugLogging("should handle path parameters at each level") {
+      "should handle path parameters at each level" in /*withDebugLogging("should handle path parameters at each level")*/ {
         val router      = Router()
         val usersRouter = router.route("/users/:userId")
         val postsRouter = usersRouter.route("/posts/:postId")

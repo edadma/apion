@@ -131,7 +131,7 @@ class FileServingTests extends AsyncBaseSpec:
         Middlewares.fileServing(
           path = "/static",
           root = "public",
-          index = "welcome.html",
+          options = Middlewares.FileServingOptions(index = "welcome.html"),
           fs = mockFs,
         )(router)
 

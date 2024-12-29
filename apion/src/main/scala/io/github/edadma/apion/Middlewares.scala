@@ -148,14 +148,23 @@ object Middlewares {
         }
       }
 
+  case class FileServingOptions(
+      dotFiles: String = "ignore", // "allow" | "deny" | "ignore"
+      etag: Boolean = true,
+      fallthrough: Boolean = true,
+      index: String = "index.html",
+      maxAge: Long = 0,
+      lastModified: Boolean = true,
+  )
+
   /** Create a file serving middleware
     *
     * @param path
     *   URL path prefix for static files
     * @param root
     *   Root directory to serve files from
-    * @param index
-    *   Default file to serve for directories
+    * @param options
+    *   Configuration options for file serving
     * @param mimeTypes
     *   Additional MIME type mappings
     * @param fs
@@ -164,7 +173,7 @@ object Middlewares {
   def fileServing(
       path: String,
       root: String,
-      index: String = "index.html",
+      options: FileServingOptions = FileServingOptions(),
       mimeTypes: Map[String, String] = Map(),
       fs: FSInterface = RealFS,
   ): Router => Router =
@@ -198,54 +207,108 @@ object Middlewares {
               body = "Forbidden: Directory traversal not allowed",
             ))
           else
-            val normalizedPath = stripSlashes(relativePath)
-            logger.debug(s"[FileServing] Normalized relative path: $normalizedPath")
-            val fullPath = s"$normalizedRoot/$normalizedPath"
-            logger.debug(s"[FileServing] Full path: $fullPath")
+            val normalizedRelPath = stripSlashes(relativePath)
+            logger.debug(s"[FileServing] Normalized relative path: $normalizedRelPath")
 
-            fs.stat(fullPath).toFuture
-              .flatMap { stats =>
-                if stats.isDirectory() then
-                  logger.debug(s"[FileServing] Serving index file for directory")
-                  // Try serving index file from directory first, fall back to root index
-                  serveFile(s"$fullPath/$index", allMimeTypes, fs).recoverWith {
-                    case _: Exception =>
-                      logger.debug(s"[FileServing] Directory index not found, trying root index")
-                      serveFile(s"$normalizedRoot/$index", allMimeTypes, fs)
-                  }
-                else
-                  logger.debug(s"[FileServing] Serving file directly")
-                  serveFile(fullPath, allMimeTypes, fs)
+            // Check dotfile handling
+            if normalizedRelPath.startsWith(".") then
+              options.dotFiles match {
+                case "allow" =>
+                  val fullPath = s"$normalizedRoot/$normalizedRelPath"
+                  handleFileRequest(fullPath, fs, options, allMimeTypes, request)
+                case "deny" =>
+                  Future.successful(Response(
+                    status = 403,
+                    body = "Forbidden: Access to dotfile denied",
+                  ))
+                case _ => // "ignore" - act like file doesn't exist
+                  Future.successful(Response(status = 404, body = "Not Found"))
               }
-              .recover {
-                case e: Exception =>
-                  logger.debug(s"[FileServing] Error: ${e.getMessage}")
-                  Response(
-                    status = 404,
-                    body = s"Not Found: ${e.getMessage}",
-                  )
-              }
+            else
+              val fullPath = s"$normalizedRoot/$normalizedRelPath"
+              handleFileRequest(fullPath, fs, options, allMimeTypes, request)
+              logger.debug(s"[FileServing] Full path: $fullPath")
+              handleFileRequest(fullPath, fs, options, allMimeTypes, request)
         },
       )
     }
+
+  private def handleFileRequest(
+      fullPath: String,
+      fs: FSInterface,
+      options: FileServingOptions,
+      allMimeTypes: Map[String, String],
+      request: Request,
+  ): Future[Response] = {
+    fs.stat(fullPath).toFuture.flatMap { stats =>
+      // Handle conditional requests
+      val ifNoneMatch = request.header("if-none-match")
+      val ifModifiedSince = request.header("if-modified-since").flatMap { date =>
+        try Some(new js.Date(date).getTime)
+        catch case _: Exception => None
+      }
+
+      // Generate ETag if enabled
+      val etag = if options.etag then
+        Some(s"""W/"${stats.size}-${stats.mtime.getTime}"""")
+      else None
+
+      // Check if client cache is still valid
+      if etag.exists(tag => ifNoneMatch.contains(tag)) ||
+        ifModifiedSince.exists(_ >= stats.mtime.getTime)
+      then
+        Future.successful(Response(status = 304, body = ""))
+      else
+        if stats.isDirectory() then
+          logger.debug(s"[FileServing] Serving index file for directory")
+          // Try serving index file from directory first, fall back to root index
+          serveFile(s"$fullPath/${options.index}", allMimeTypes, fs, options).recoverWith {
+            case _: Exception =>
+              logger.debug(s"[FileServing] Directory index not found, trying root index")
+              serveFile(s"$fullPath/${options.index}", allMimeTypes, fs, options)
+          }
+        else
+          serveFile(fullPath, allMimeTypes, fs, options)
+    }.recover {
+      case e: Exception =>
+        logger.debug(s"[FileServing] Error: ${e.getMessage}")
+        Response(status = 404, body = "Not Found")
+    }
+  }
 
   private def serveFile(
       path: String,
       mimeTypes: Map[String, String],
       fs: FSInterface,
+      options: FileServingOptions,
   ): Future[Response] = {
     logger.debug(s"[FileServing] Reading file: $path")
     val extension = path.split('.').lastOption.getOrElse("")
     val mimeType  = mimeTypes.getOrElse(extension, "application/octet-stream")
     logger.debug(s"[FileServing] MIME type: $mimeType for extension: $extension")
 
-    fs.readFile(path, ReadFileOptions()).toFuture.map { content =>
-      val strContent = content.toString
-      Response(
-        status = 200,
-        headers = Map("Content-Type" -> mimeType),
-        body = strContent,
-      )
+    fs.readFile(path, ReadFileOptions()).toFuture.flatMap { content =>
+      fs.stat(path).toFuture.map { stats =>
+        val headers = collection.mutable.Map[String, String](
+          "Content-Type" -> mimeType,
+        )
+
+        // Add caching headers if enabled
+        if options.lastModified then
+          headers("Last-Modified") = stats.mtime.toUTCString()
+
+        if options.etag then
+          headers("ETag") = s"""W/"${stats.size}-${stats.mtime.getTime}""""
+
+        if options.maxAge > 0 then
+          headers("Cache-Control") = s"public, max-age=${options.maxAge}"
+
+        Response(
+          status = 200,
+          headers = headers.toMap,
+          body = content.toString,
+        )
+      }
     }
   }
 }

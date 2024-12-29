@@ -18,7 +18,6 @@ AuthMiddlewareTests.scala
 BaseSpec.scala
 EndpointTests.scala
 JWTTests.scala
-Middlewares.scala
 MockFS.scala
 RouterTests.scala
 SubrouterTests.scala

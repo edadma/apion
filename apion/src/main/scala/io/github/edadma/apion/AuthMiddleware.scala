@@ -43,11 +43,7 @@ object AuthMiddleware:
         }
 
         // Check if path should bypass auth
-        val shouldExclude = excludePaths.exists { path =>
-          val matches = request.url == path || request.url.startsWith(path + "/")
-          logger.debug(s"[Auth] Checking exclusion for path '$path': $matches")
-          matches
-        }
+        val shouldExclude = excludePaths.exists(path => request.url.startsWith(path))
 
         // Early return if path is excluded
         if shouldExclude then

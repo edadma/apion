@@ -53,6 +53,21 @@ object ExampleServer {
   }
 
   def main(args: Array[String]): Unit = {
+    val staticRouter = StaticFiles.fileServing(
+      path = "",
+      root = "public",
+      options = StaticFiles.FileServingOptions(
+        dotFiles = "ignore",
+        etag = true,
+        maxAge = 86400,
+        lastModified = true,
+      ),
+      mimeTypes = Map(
+        "md"   -> "text/markdown",
+        "yaml" -> "application/yaml",
+      ),
+    )(Router())
+
     val server = Server()
       .use(Middlewares.securityHeaders())
       .use(Middlewares.cors())
@@ -60,11 +75,15 @@ object ExampleServer {
       // Add auth middleware with excluded paths
       .use(AuthMiddleware(
         requireAuth = true,
-        excludePaths = Set("/login", "/health"),
+        excludePaths = Set("/login", "/health", "/static"),
         secretKey = JWT_SECRET,
       ))
 
-      // Health check endpoint (no auth required)
+    // Add static file router
+    server.route("/static").get("/*", staticRouter.handle)
+
+    // Health check endpoint (no auth required)
+    server
       .get(
         "/health",
         req => {

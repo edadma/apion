@@ -7,12 +7,14 @@ BodyParser.scala
 Endpoint.scala
 ExampleServer.scala
 JWT.scala
+Middlewares.scala
 package.scala
 Router.scala
 Server.scala
 
 # unit testing
 ./apion/src/test/scala/io/github/edadma/apion
+AuthMiddlewareTests.scala
 BaseSpec.scala
 EndpointTests.scala
 JWTTests.scala

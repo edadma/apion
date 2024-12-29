@@ -9,6 +9,7 @@ JWT.scala
 Middlewares.scala
 package.scala
 RealFS.scala
+Router.scala
 Server.scala
 
 # unit testing

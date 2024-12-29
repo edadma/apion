@@ -11,6 +11,7 @@ Middlewares.scala
 package.scala
 Router.scala
 Server.scala
+StaticFiles.scala
 
 # unit testing
 ./apion/src/test/scala/io/github/edadma/apion

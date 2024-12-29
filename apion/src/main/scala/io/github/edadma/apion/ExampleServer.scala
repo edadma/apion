@@ -54,59 +54,61 @@ object ExampleServer {
 
   def main(args: Array[String]): Unit = {
     val server = Server()
+      .use(Middlewares.securityHeaders())
+      .use(Middlewares.cors())
 
-    // Add auth middleware with excluded paths
-    server.use(AuthMiddleware(
-      requireAuth = true,
-      excludePaths = Set("/login", "/health"),
-      secretKey = JWT_SECRET,
-    ))
+      // Add auth middleware with excluded paths
+      .use(AuthMiddleware(
+        requireAuth = true,
+        excludePaths = Set("/login", "/health"),
+        secretKey = JWT_SECRET,
+      ))
 
-    // Health check endpoint (no auth required)
-    server.get(
-      "/health",
-      req => {
-        Future.successful(Response.json(Map("status" -> "ok")))
-      },
-    )
+      // Health check endpoint (no auth required)
+      .get(
+        "/health",
+        req => {
+          Future.successful(Response.json(Map("status" -> "ok")))
+        },
+      )
 
-    // Login endpoint with body parser middleware
-    server.post(
-      "/login",
-      req => {
-        try {
-          val loginRequest = req.context("body").asInstanceOf[LoginRequest]
-          val user         = findUserByEmail(loginRequest.email).filter(_.password == loginRequest.password)
+      // Login endpoint with body parser middleware
+      .post(
+        "/login",
+        req => {
+          try {
+            val loginRequest = req.context("body").asInstanceOf[LoginRequest]
+            val user         = findUserByEmail(loginRequest.email).filter(_.password == loginRequest.password)
 
-          user match {
-            case Some(u) => {
-              // Create token payload with user details and expiration
-              val payload = AuthMiddleware.TokenPayload(
-                sub = u.id,
-                roles = u.roles,
-                exp = System.currentTimeMillis() / 1000 + 3600, // 1 hour expiration
-              )
-              val token = JWT.sign(payload, JWT_SECRET)
-              Future.successful(Response.json(TokenResponse(token)))
+            user match {
+              case Some(u) => {
+                // Create token payload with user details and expiration
+                val payload = AuthMiddleware.TokenPayload(
+                  sub = u.id,
+                  roles = u.roles,
+                  exp = System.currentTimeMillis() / 1000 + 3600, // 1 hour expiration
+                )
+                val token = JWT.sign(payload, JWT_SECRET)
+                Future.successful(Response.json(TokenResponse(token)))
+              }
+              case None => {
+                Future.successful(Response(
+                  status = 401,
+                  body = "Invalid email or password",
+                ))
+              }
             }
-            case None => {
+          } catch {
+            case e: Exception => {
               Future.successful(Response(
-                status = 401,
-                body = "Invalid email or password",
+                status = 400,
+                body = s"Invalid request format: ${e.getMessage}",
               ))
             }
           }
-        } catch {
-          case e: Exception => {
-            Future.successful(Response(
-              status = 400,
-              body = s"Invalid request format: ${e.getMessage}",
-            ))
-          }
-        }
-      },
-      BodyParser.json[LoginRequest](),
-    )
+        },
+        BodyParser.json[LoginRequest](),
+      )
 
     // API routes
     val api = server.route("/api")
@@ -114,64 +116,64 @@ object ExampleServer {
     // Users subrouter
     val users = api.route("/users")
 
-    // Get all users (requires authentication)
-    users.get(
-      "/",
-      req => {
-        Future.successful(Response.json(
-          ExampleServer.users.values.map(u => u.copy(password = "")).toList,
-        ))
-      },
-    )
+      // Get all users (requires authentication)
+      .get(
+        "/",
+        req => {
+          Future.successful(Response.json(
+            ExampleServer.users.values.map(u => u.copy(password = "")).toList,
+          ))
+        },
+      )
 
-    // Get user by ID (requires authentication)
-    users.get(
-      "/:id",
-      req => {
-        val userId = req.context("id").toString
-        ExampleServer.users.get(userId) match {
-          case Some(user) => Future.successful(Response.json(user.copy(password = "")))
-          case None => Future.successful(Response(
-              status = 404,
-              body = "User not found",
-            ))
-        }
-      },
-    )
+      // Get user by ID (requires authentication)
+      .get(
+        "/:id",
+        req => {
+          val userId = req.context("id").toString
+          ExampleServer.users.get(userId) match {
+            case Some(user) => Future.successful(Response.json(user.copy(password = "")))
+            case None => Future.successful(Response(
+                status = 404,
+                body = "User not found",
+              ))
+          }
+        },
+      )
 
     // Posts subrouter with nested user posts
     val userPosts = users.route("/:userId/posts")
 
-    // Get posts for a user (requires authentication)
-    userPosts.get(
-      "/",
-      req => {
-        val userId    = req.context("userId").toString
-        val userPosts = ExampleServer.posts.values.filter(_.userId == userId).toList
-        Future.successful(Response.json(userPosts))
-      },
-    )
+      // Get posts for a user (requires authentication)
+      .get(
+        "/",
+        req => {
+          val userId    = req.context("userId").toString
+          val userPosts = ExampleServer.posts.values.filter(_.userId == userId).toList
+          Future.successful(Response.json(userPosts))
+        },
+      )
 
-    // Get specific post (requires authentication)
-    userPosts.get(
-      "/:postId",
-      req => {
-        val userId = req.context("userId").toString
-        val postId = req.context("postId").toString
+      // Get specific post (requires authentication)
+      .get(
+        "/:postId",
+        req => {
+          val userId = req.context("userId").toString
+          val postId = req.context("postId").toString
 
-        ExampleServer.posts.get(postId) match {
-          case Some(post) if post.userId == userId => {
-            Future.successful(Response.json(post))
+          ExampleServer.posts.get(postId) match {
+            case Some(post) if post.userId == userId => {
+              Future.successful(Response.json(post))
+            }
+            case _ => {
+              Future.successful(Response(
+                status = 404,
+                body = "Post not found",
+              ))
+            }
           }
-          case _ => {
-            Future.successful(Response(
-              status = 404,
-              body = "Post not found",
-            ))
-          }
-        }
-      },
-    )
+        },
+      )
 
     // Start server
     server.listen(3000) {

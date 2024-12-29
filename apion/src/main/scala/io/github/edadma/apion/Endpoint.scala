@@ -11,7 +11,8 @@ case class Request(
     auth: Option[Auth] = None,
     context: Map[String, Any] = Map(),
     rawRequest: Option[ServerRequest] = None,
-)
+):
+  def header(h: String): Option[String] = headers.get(h.toLowerCase)
 
 case class Response(
     status: Int = 200,

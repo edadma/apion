@@ -39,7 +39,7 @@ class Server:
     val request = Request(
       method = req.method,
       url = req.url,
-      headers = req.headers.toMap,
+      headers = req.headers.map((k, v) => k.toLowerCase -> v).toMap,
       rawRequest = Some(req),
     )
 

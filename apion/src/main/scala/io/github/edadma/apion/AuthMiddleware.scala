@@ -1,5 +1,7 @@
 package io.github.edadma.apion
 
+import zio.json.*
+
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -27,9 +29,10 @@ object AuthMiddleware:
         else
           logger.debug(s"[Auth] Requiring auth for path: ${request.url}")
           // Check for Authorization header and handle authentication
-          request.headers.get("Authorization") match
+          request.header("Authorization") match
             case Some(authHeader) if authHeader.startsWith("Bearer ") =>
               val token = authHeader.substring(7)
+              println(("token", token))
               logger.debug(s"[Auth] Got bearer token: $token")
 
               verifyToken(token).flatMap {
@@ -68,19 +71,22 @@ object AuthMiddleware:
               ))
       }
 
-  /** Simulated token verification. In a real app, this would verify JWT tokens, check a database, etc. */
+  case class TokenPayload(
+      sub: String,
+      roles: Set[String],
+      exp: Long,
+  )
+
+  object TokenPayload:
+    given JsonEncoder[TokenPayload] = DeriveJsonEncoder.gen[TokenPayload]
+
+    given JsonDecoder[TokenPayload] = DeriveJsonDecoder.gen[TokenPayload]
+
+  // In AuthMiddleware
   private def verifyToken(token: String): Future[Option[Auth]] =
     Future.successful(
-      if token == "valid-token" then
-        Some(Auth("example-user", Set("user")))
-      else None,
+      JWT.verify[TokenPayload](token, "your-secret-key") match
+        case Right(payload) if payload.exp > System.currentTimeMillis() / 1000 =>
+          Some(Auth(payload.sub, payload.roles))
+        case _ => None,
     )
-
-/** Example usage:
-  *
-  * val securedEndpoint: Endpoint = request => Future.successful(Response.text("Secret data"))
-  *
-  * // Add auth checking to the endpoint val withAuth: Endpoint = AuthMiddleware(requireAuth = true)(securedEndpoint)
-  *
-  * // Now withAuth is a new endpoint that checks auth before running securedEndpoint
-  */

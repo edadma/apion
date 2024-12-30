@@ -21,6 +21,11 @@ JWTTests.scala
 MockFS.scala
 RouterTests.scala
 
+# server testing
+./apion/src/test/scala/io/github/edadma/apion
+main.scala
+DemoApp.scala
+
 # Node.js facade library
 ./nodejs/src/main/scala/io/github/edadma/nodejs
 buffer.scala

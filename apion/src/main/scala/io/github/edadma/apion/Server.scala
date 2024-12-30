@@ -11,8 +11,7 @@ class Server {
     handleRequest(req, res),
   )
 
-  def listen(port: Int)(callback: => Unit): Unit =
-    server.listen(port, () => callback)
+  def listen(port: Int)(callback: => Unit): Unit = server.listen(port, () => callback)
 
   // HTTP method handlers
   def get(path: String, handler: Handler): Server = {

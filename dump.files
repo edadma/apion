@@ -5,6 +5,7 @@
 AuthMiddleware.scala
 BodyParser.scala
 CommonMiddleware.scala
+CompressionMiddleware.scala
 Handler.scala
 JWT.scala
 LoggingMiddleware.scala

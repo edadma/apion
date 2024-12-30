@@ -2,7 +2,7 @@ package io.github.edadma.apion
 
 import io.github.edadma.nodejs.{http, ServerRequest, ServerResponse}
 import scala.scalajs.js
-import scala.concurrent.ExecutionContext.Implicits.global
+import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits.global
 
 class Server {
   private val router = new Router()

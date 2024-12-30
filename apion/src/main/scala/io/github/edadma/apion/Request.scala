@@ -15,7 +15,7 @@ case class Request(
     auth: Option[Auth] = None,
     rawRequest: ServerRequest,
     basePath: String = "", // Track the accumulated base path
-) {
+) extends RequestDSL {
   def header(h: String): Option[String] = headers.get(h.toLowerCase)
 }
 

@@ -1,14 +1,13 @@
 package io.github.edadma.apion
 
-import scala.concurrent.Future
-import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits.global
+import ResponseDSL._
 
 object DemoApp {
   def run(): Unit = {
     // Create a simple logging middleware
     val loggingMiddleware: Handler = request => {
       println(s"${request.method} ${request.path}")
-      Future.successful(Continue(request))
+      request.continue
     }
 
     // Create some routes for users
@@ -17,30 +16,30 @@ object DemoApp {
         "/:id",
         request => {
           val userId = request.params("id")
-          Future.successful(Complete(Response.json(Map("userId" -> userId, "name" -> s"User $userId"))))
+          Map("userId" -> userId, "name" -> s"User $userId").asJson
         },
       )
       .post(
         "/",
         request =>
-          Future.successful(Complete(Response.json(Map("message" -> "User created"), status = 201))),
+          Created(Map("message" -> "User created")),
       )
-  
+
     // Create and configure the main server
     val server = Server()
-      .use(loggingMiddleware) // Add logging middleware
+      .use(loggingMiddleware)
 
       // Basic routes
       .get(
         "/",
         request =>
-          Future.successful(Complete(Response.json(Map("message" -> "Welcome to the API!")))),
+          Map("message" -> "Welcome to the API!").asJson,
       )
       .get(
         "/hello/:name",
         request => {
           val name = request.params("name")
-          Future.successful(Complete(Response.json(Map("message" -> s"Hello, $name!"))))
+          Map("message" -> s"Hello, $name!").asJson
         },
       )
 
@@ -50,8 +49,7 @@ object DemoApp {
       // Add error demo route
       .get(
         "/error",
-        request =>
-          Future.successful(Fail(ValidationError("This is a demo error"))),
+        _.failValidation("This is a demo error"),
       )
 
     // Start the server

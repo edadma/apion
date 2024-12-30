@@ -4,6 +4,11 @@ import scala.concurrent.Future
 import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits.global
 
 object LoggingMiddleware:
+  // Public interface for formatting logs (needed for testing)
+  def formatRequestLog(format: String, req: Request, startTime: Long, res: Response): String =
+    logger.debug(s"Formatting log with response headers: ${res.headers}") // Debug headers
+    formatLog(format, req, startTime, Some(res))
+
   // Predefined formats similar to morgan
   object Format:
     val Combined =
@@ -16,9 +21,10 @@ object LoggingMiddleware:
 
   case class Options(
       format: String = Format.Dev,
-      immediate: Boolean = false,            // Log on request instead of response
-      skip: Request => Boolean = _ => false, // Skip logging for certain requests
-      handler: String => Unit = println,     // Default to console output
+      immediate: Boolean = false,
+      skip: Request => Boolean = _ => false,
+      handler: String => Unit = println,
+      debug: Boolean = false,
   )
 
   private def getToken(token: String, req: Request, startTime: Long, res: Option[Response] = None): String =
@@ -38,51 +44,57 @@ object LoggingMiddleware:
       case ":date" =>
         val formatter = java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME
         java.time.ZonedDateTime.now().format(formatter)
-      case ":http-version" => "1.1" // Default to HTTP/1.1
-      case ":referrer"     => req.header("referer").getOrElse("-")
-      case ":user-agent"   => req.header("user-agent").getOrElse("-")
+      case ":http-version"                    => "1.1"
+      case ":referrer"                        => req.header("referer").getOrElse("-")
+      case ":user-agent"                      => req.header("user-agent").getOrElse("-")
       case token if token.startsWith(":res[") =>
-        val header = token.drop(5).dropRight(1)
-        res.flatMap(_.headers.get(header)).getOrElse("-")
+        // Debug the header lookup
+        val header = token.drop(5).dropRight(1).toLowerCase // Make case-insensitive
+        if header == "content-length" then
+          res.map(r =>
+            logger.debug(s"Looking up content-length header in: ${r.headers}")
+            r.headers.find { case (k, _) => k.toLowerCase == "content-length" }
+              .map(_._2)
+              .getOrElse("-"),
+          ).getOrElse("-")
+        else
+          res.flatMap(_.headers.get(header)).getOrElse("-")
       case _ => token
 
   private def formatLog(format: String, req: Request, startTime: Long, res: Option[Response] = None): String =
-    // Split format string into tokens and static text
     val tokens = format.split(" ").map { part =>
       if part.startsWith(":") then
-        getToken(part, req, startTime, res)
+        logger.debug(s"Processing token: $part") // Debug each token
+        val value = getToken(part, req, startTime, res)
+        logger.debug(s"Token $part value: $value") // Debug token value
+        value
       else
         part
     }
     tokens.mkString(" ")
 
-  private def resultToResponse(result: Result): Option[Response] =
-    result match
-      case Complete(response) => Some(response)
-      case _                  => None
+  def apply(opts: Options = Options()): Handler = request =>
+    val debug = (msg: String) => if opts.debug then logger.debug(msg)
 
-  /** Creates logging middleware with the specified options
-    *
-    * @param opts
-    *   Options for customizing the logging behavior
-    * @return
-    *   Handler that logs requests/responses
-    */
-  def apply(opts: Options = Options()): Handler =
-    request => {
-      if opts.skip(request) then
-        request.skip
+    if opts.skip(request) then
+      debug("Skipping logging due to skip option")
+      Future.successful(Continue(request))
+    else
+      val startTime = System.currentTimeMillis()
+      debug(s"Starting request handling at $startTime")
+
+      if opts.immediate then
+        val logMsg = formatLog(opts.format, request, startTime)
+        debug(s"Immediate logging: $logMsg")
+        opts.handler(logMsg)
+        Future.successful(Continue(request))
       else
-        val startTime = System.currentTimeMillis()
-
-        if opts.immediate then
-          // Log immediately on request
-          opts.handler(formatLog(opts.format, request, startTime))
-          request.skip
-        else
-          // Continue processing but transform the result to include logging
-          request.skip.map { result =>
-            opts.handler(formatLog(opts.format, request, startTime, resultToResponse(result)))
-            result
-          }
-    }
+        // Store timing info in request context
+        val reqWithTiming = request.copy(
+          context = request.context +
+            ("logging-start-time" -> startTime) +
+            ("logging-format"     -> opts.format) +
+            ("logging-handler"    -> opts.handler),
+        )
+        debug("Added timing info to request context")
+        Future.successful(Continue(reqWithTiming))

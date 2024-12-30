@@ -37,3 +37,24 @@ private def base64UrlDecode(str: String): String =
       )
       .toString("utf8")
   }.getOrElse(throw JWT.JWTError("Invalid base64url encoding"))
+
+private def decodeURIComponent(s: String): String = {
+  def hexToChar(hex: String): Char =
+    Integer.parseInt(hex, 16).toChar
+
+  val result = new StringBuilder
+  var i      = 0
+  while (i < s.length) {
+    if (s(i) == '%' && i + 2 < s.length) {
+      result.append(hexToChar(s.substring(i + 1, i + 3)))
+      i += 3
+    } else if (s(i) == '+') {
+      result.append(' ')
+      i += 1
+    } else {
+      result.append(s(i))
+      i += 1
+    }
+  }
+  result.toString
+}

@@ -19,15 +19,13 @@ class IntegrationTests extends AsyncBaseSpec with BeforeAndAfterAll {
       .get("/test", _ => "test response".asText)
 
     // Start server and keep reference to http.Server
-    httpServer = server.listen(port) {
-      println(s"Test server running on port $port")
-    }
+    httpServer = server.listen(port) {}
   }
 
   override def afterAll(): Unit = {
     // Cleanup: close the server
     if (httpServer != null) {
-      httpServer.close(() => println("Test server closed"))
+      httpServer.close(() => ())
     }
   }
 

@@ -2,19 +2,19 @@ package io.github.edadma.apion
 
 import scala.annotation.tailrec
 
-sealed trait RouteSegment
-case class StaticSegment(value: String) extends RouteSegment
-case class ParamSegment(name: String)   extends RouteSegment
-case class WildcardSegment()            extends RouteSegment
+private sealed trait RouteSegment
+private case class StaticSegment(value: String) extends RouteSegment
+private case class ParamSegment(name: String)   extends RouteSegment
+private case class WildcardSegment()            extends RouteSegment
 
-case class Route(
+private case class Route(
     method: String,
     segments: List[RouteSegment],
     handler: Endpoint,
 )
 
 object Router:
-  def parsePath(path: String): List[RouteSegment] =
+  private def parsePath(path: String): List[RouteSegment] =
     if path.isEmpty || path == "/" then Nil
     else
       path.split("/").filter(_.nonEmpty).map {
@@ -23,7 +23,7 @@ object Router:
         case seg                        => StaticSegment(seg)
       }.toList
 
-class Router:
+private class Router extends Handler:
   private val routes = scala.collection.mutable.ListBuffer[Route]()
 
   private def addRoute(method: String, path: String, handler: Endpoint): Router =

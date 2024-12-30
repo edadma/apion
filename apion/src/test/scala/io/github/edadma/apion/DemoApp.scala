@@ -1,60 +1,58 @@
 package io.github.edadma.apion
 
-import ResponseDSL._
+import io.github.edadma.apion._
+import io.github.edadma.apion.ResponseDSL._
+import zio.json._
+import scala.concurrent.Future
+import scala.scalajs.js
+
+case class UserData(name: String, email: String) derives JsonEncoder, JsonDecoder
+
+case class ApiResponse(message: String, user: UserData) derives JsonEncoder
+case class ErrorResponse(error: String) derives JsonEncoder
 
 object DemoApp {
   def run(): Unit = {
-    // Create a simple logging middleware
-    val loggingMiddleware: Handler = request => {
-      println(s"${request.method} ${request.path}")
+    // Create handlers
+    val greetingHandler: Handler =
+      _ => "Hello, World!".asText
+
+    val echoNameHandler: Handler =
+      request => {
+        val name = request.params.getOrElse("name", "stranger")
+        s"Hello, $name!".asText
+      }
+
+    // Handler that uses the parsed body
+    val createUserHandler: Handler =
+      request => {
+        request.context.get("body") match {
+          case Some(userData: UserData) =>
+            ApiResponse(
+              message = "User created successfully",
+              user = userData,
+            ).asJson(201)
+
+          case _ =>
+            ErrorResponse("Invalid request body").asJson(400)
+        }
+      }
+
+    // Create and start server with chained configuration
+    Server()
+      .use(requestLogger)
+      .get("/", greetingHandler)
+      .get("/greet/:name", echoNameHandler)
+      .use("/api", BodyParser.json[UserData]())
+      .post("/api/users", createUserHandler)
+      .listen(3000)
+
+    println("Server running at http://localhost:3000")
+  }
+
+  private def requestLogger: Handler =
+    request => {
+      println(s"${request.method} ${request.url}")
       request.continue
     }
-
-    // Create some routes for users
-    val usersRouter = new Router()
-      .get(
-        "/:id",
-        request => {
-          val userId = request.params("id")
-          Map("userId" -> userId, "name" -> s"User $userId").asJson
-        },
-      )
-      .post(
-        "/",
-        request =>
-          Created(Map("message" -> "User created")),
-      )
-
-    // Create and configure the main server
-    val server = Server()
-      .use(loggingMiddleware)
-
-      // Basic routes
-      .get(
-        "/",
-        request =>
-          Map("message" -> "Welcome to the API!").asJson,
-      )
-      .get(
-        "/hello/:name",
-        request => {
-          val name = request.params("name")
-          Map("message" -> s"Hello, $name!").asJson
-        },
-      )
-
-      // Mount the users router
-      .use("/api/users", usersRouter)
-
-      // Add error demo route
-      .get(
-        "/error",
-        _.failValidation("This is a demo error"),
-      )
-
-    // Start the server
-    server.listen(3000) {
-      println("Server running at http://localhost:3000")
-    }
-  }
 }

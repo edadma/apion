@@ -1,57 +1,124 @@
-//package io.github.edadma.apion
-//
-//import scala.concurrent.{Future, Promise}
-//import scala.scalajs.js
-//import zio.json.*
-//import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits.global
-//
-//object BodyParser:
-//  def json[A: JsonDecoder](): Middleware =
-//    endpoint =>
-//      request =>
-//        request.rawRequest match
-//          case Some(raw) =>
-//            val promise = Promise[Request]()
-//            var body    = ""
-//
-//            raw.on(
-//              "data",
-//              (chunk: js.Any) => {
-//                body += chunk.toString
-//              },
-//            )
-//
-//            raw.on(
-//              "end",
-//              () => {
-//                body.fromJson[A] match
-//                  case Right(value) =>
-//                    promise.success(request.copy(
-//                      context = request.context + ("body" -> value),
-//                    ))
-//                  case Left(error) =>
-//                    promise.failure(new RuntimeException(s"JSON parse error: $error"))
-//              },
-//            )
-//
-//            raw.on(
-//              "error",
-//              (error: js.Error) => {
-//                promise.failure(new RuntimeException(s"Body read error: ${error.message}"))
-//              },
-//            )
-//
-//            // Chain the promise with the endpoint
-//            promise.future.flatMap(endpoint)
-//              .recover { case e: Exception =>
-//                Response(
-//                  status = 400,
-//                  body = e.getMessage,
-//                )
-//              }
-//
-//          case None =>
-//            Future.successful(Response(
-//              status = 500,
-//              body = "Internal Server Error: No raw request available",
-//            ))
+package io.github.edadma.apion
+
+import scala.concurrent.{Future, Promise}
+import scala.scalajs.js
+import zio.json.*
+import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits.global
+
+object BodyParser:
+  /** Creates middleware for parsing JSON request bodies
+    * @tparam A
+    *   The expected type of the parsed JSON body
+    * @return
+    *   Middleware that parses JSON bodies and adds them to request context
+    */
+  def json[A: JsonDecoder](): Handler =
+    request => {
+      val promise = Promise[Result]()
+      var body    = ""
+
+      request.rawRequest.on(
+        "data",
+        (chunk: js.Any) => {
+          body += chunk.toString
+        },
+      )
+
+      request.rawRequest.on(
+        "end",
+        () => {
+          body.fromJson[A] match
+            case Right(value) =>
+              promise.success(Continue(
+                request.copy(context = request.context + ("body" -> value)),
+              ))
+            case Left(error) =>
+              promise.success(Fail(ValidationError(s"JSON parse error: $error")))
+        },
+      )
+
+      request.rawRequest.on(
+        "error",
+        (error: js.Error) => {
+          promise.success(Fail(ValidationError(s"Request body read error: ${error.message}")))
+        },
+      )
+
+      promise.future
+    }
+
+  /** Creates middleware for parsing URL-encoded form data
+    * @return
+    *   Middleware that parses form data and adds it to request context
+    */
+  def urlencoded(): Handler =
+    request => {
+      val promise = Promise[Result]()
+      var body    = ""
+
+      request.rawRequest.on(
+        "data",
+        (chunk: js.Any) => {
+          body += chunk.toString
+        },
+      )
+
+      request.rawRequest.on(
+        "end",
+        () => {
+          try {
+            val params = body.split("&").map { param =>
+              param.split("=", 2) match {
+                case Array(key, value) =>
+                  (decodeURIComponent(key), decodeURIComponent(value))
+                case Array(key) =>
+                  (decodeURIComponent(key), "")
+              }
+            }.toMap
+
+            promise.success(Continue(
+              request.copy(context = request.context + ("form" -> params)),
+            ))
+          } catch {
+            case e: Exception =>
+              promise.success(Fail(ValidationError(s"Form data parse error: ${e.getMessage}")))
+          }
+        },
+      )
+
+      request.rawRequest.on(
+        "error",
+        (error: js.Error) => {
+          promise.success(Fail(ValidationError(s"Request body read error: ${error.message}")))
+        },
+      )
+
+      promise.future
+    }
+
+  /** Decodes URL-encoded components
+    * @param s
+    *   The URL-encoded string
+    * @return
+    *   The decoded string
+    */
+  private def decodeURIComponent(s: String): String = {
+    def hexToChar(hex: String): Char =
+      Integer.parseInt(hex, 16).toChar
+
+    val result = new StringBuilder
+    var i      = 0
+    while (i < s.length) {
+      if (s(i) == '%' && i + 2 < s.length) {
+        result.append(hexToChar(s.substring(i + 1, i + 3)))
+        i += 3
+      } else if (s(i) == '+') {
+        result.append(' ')
+        i += 1
+      } else {
+        result.append(s(i))
+        i += 1
+      }
+    }
+    result.toString
+  }

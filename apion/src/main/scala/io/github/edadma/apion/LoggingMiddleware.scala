@@ -26,10 +26,8 @@ object LoggingMiddleware:
       case ":url"    => req.url
       case ":status" => res.map(_.status.toString).getOrElse("-")
       case ":response-time" =>
-        if res.isDefined then
-          val endTime = System.currentTimeMillis()
-          (endTime - startTime).toString
-        else "-"
+        val endTime = System.currentTimeMillis()
+        (endTime - startTime).toString
       case ":remote-addr" =>
         req.header("x-forwarded-for")
           .orElse(req.header("x-client-ip"))
@@ -76,44 +74,19 @@ object LoggingMiddleware:
           logger.info(formatLog(opts.format, request, startTime))
           request.skip
         else
-          // Return middleware that logs after response
-          Future.successful(Continue(
-            request.copy(
-              context = request.context +
-                ("logging-start-time" -> startTime) +
-                ("logging-format"     -> opts.format),
-            ),
-          ))
-    }
-
-  /** Final handler that logs response information Should be added after other middleware
-    */
-  def finalHandler(): Handler =
-    request => {
-      // Get stored timing information
-      val startTime = request.context.get("logging-start-time").map(_.asInstanceOf[Long])
-      val format    = request.context.get("logging-format").map(_.asInstanceOf[String])
-
-      (startTime, format) match
-        case (Some(start), Some(fmt)) =>
-          // Get response from context
-          request.context.get("response") match
-            case Some(response: Response) =>
-              logger.info(formatLog(fmt, request, start, Some(response)))
+          // Continue processing but transform the result to include logging
+          request.skip.flatMap {
+            case Complete(response) =>
+              logger.info(formatLog(opts.format, request, startTime, Some(response)))
+              Future.successful(Complete(response))
+            case Skip =>
+              logger.info(formatLog(opts.format, request, startTime))
               Future.successful(Skip)
-            case _ =>
-              logger.info(formatLog(fmt, request, start))
-              Future.successful(Skip)
-        case _ =>
-          Future.successful(Skip)
+            case Continue(req) =>
+              logger.info(formatLog(opts.format, request, startTime))
+              Future.successful(Continue(req))
+            case Fail(error) =>
+              logger.info(formatLog(opts.format, request, startTime))
+              Future.successful(Fail(error))
+          }
     }
-
-/* Example usage:
-server
-  .use(LoggingMiddleware(LoggingMiddleware.Options(
-    format = LoggingMiddleware.Format.Dev,
-    immediate = false,
-    skip = req => req.url.startsWith("/health")
-  )))
-  .use(LoggingMiddleware.finalHandler())
- */

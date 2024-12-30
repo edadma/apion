@@ -25,7 +25,7 @@ object DemoApp {
         request =>
           Future.successful(Complete(Response.json(Map("message" -> "User created"), status = 201))),
       )
-
+  
     // Create and configure the main server
     val server = Server()
       .use(loggingMiddleware) // Add logging middleware

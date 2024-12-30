@@ -113,4 +113,12 @@ object LoggingMiddleware:
             ("logging-handler"    -> opts.handler),
         )
         debug("Added timing info to request context")
-        Future.successful(Continue(reqWithTiming))
+
+        val loggingFinalizer: Finalizer = (req, res) => {
+          val logMsg = formatRequestLog(opts.format, req, startTime, res)
+          debug(s"Finalizer logging: $logMsg")
+          opts.handler(logMsg)
+          Future.successful(res)
+        }
+
+        Future.successful(Continue(reqWithTiming.addFinalizer(loggingFinalizer)))

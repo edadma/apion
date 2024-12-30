@@ -74,15 +74,20 @@ private class Router extends Handler:
               case None =>
                 processNext(rest, req, remainingPath)
 
-          case Endpoint(method, segments, handler, prefix) if method == req.method =>
-            matchSegments(segments, remainingPath, Map()) match
-              case Some((params, Nil)) =>
-                handler(req.copy(
-                  params = req.params ++ params,
-                  basePath = req.basePath + prefix,
-                ))
-              case _ =>
-                processNext(rest, req, remainingPath)
+          case Endpoint(method, segments, handler, prefix) =>
+            if (method != req.method) {
+              processNext(rest, req, remainingPath)
+            } else {
+              matchSegments(segments, remainingPath, Map()) match {
+                case Some((params, Nil)) =>
+                  handler(req.copy(
+                    params = req.params ++ params,
+                    basePath = req.basePath + prefix,
+                  ))
+                case _ =>
+                  processNext(rest, req, remainingPath)
+              }
+            }
 
           case Route(segments, handler, prefix) =>
             matchSegments(segments, remainingPath, Map()) match

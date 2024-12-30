@@ -4,9 +4,9 @@
 ./apion/src/main/scala/io/github/edadma/apion
 AuthMiddleware.scala
 BodyParser.scala
+CommonMiddleware.scala
 Handler.scala
 JWT.scala
-Middlewares.scala
 package.scala
 RealFS.scala
 Request.scala

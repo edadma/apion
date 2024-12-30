@@ -6,10 +6,10 @@ import org.scalatest.BeforeAndAfterAll
 import scala.concurrent.Future
 import scala.scalajs.js
 import scala.scalajs.js.JSConverters._
-import io.github.edadma.nodejs.{http, Server => NodeServer}
+import io.github.edadma.nodejs.{http, Server => NodeServer, fetch, Response}
 import scala.compiletime.uninitialized
 
-class IntegrationTests extends AsyncFreeSpec with Matchers with BeforeAndAfterAll {
+class IntegrationTests extends AsyncBaseSpec with BeforeAndAfterAll {
   var server: Server         = uninitialized
   var httpServer: NodeServer = uninitialized
   val port                   = 3001 // Use different port than main server
@@ -34,14 +34,10 @@ class IntegrationTests extends AsyncFreeSpec with Matchers with BeforeAndAfterAl
   "Server" - {
     "should handle basic GET request" in {
       // Make request to test endpoint
-      js.Dynamic.global.fetch(s"http://localhost:$port/test")
+      fetch(s"http://localhost:$port/test")
         .toFuture
-        .flatMap { (response: js.Dynamic) =>
-          response.text().toFuture
-        }
-        .map { (text: String) =>
-          text shouldBe "test response"
-        }
+        .flatMap(response => response.text().toFuture)
+        .map(text => text shouldBe "test response")
     }
   }
 }

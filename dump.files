@@ -40,8 +40,10 @@ StaticDemo.scala
 ./nodejs/src/main/scala/io/github/edadma/nodejs
 buffer.scala
 crypto.scala
+fetch.scala
 fs.scala
 http.scala
+zlib.scala
 
 # build/development files
 ./

@@ -4,7 +4,6 @@ import scala.concurrent.Future
 import scala.scalajs.js
 import io.github.edadma.nodejs.ServerRequest
 import org.scalatest.compatible.Assertion
-import concurrent.ExecutionContext.Implicits.global
 
 class LoggingMiddlewareTests extends AsyncBaseSpec:
   def mockServerRequest(

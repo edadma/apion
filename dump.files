@@ -7,6 +7,7 @@ BodyParser.scala
 CommonMiddleware.scala
 Handler.scala
 JWT.scala
+LoggingMiddleware.scala
 package.scala
 RealFS.scala
 Request.scala
@@ -16,12 +17,14 @@ ResponseDSL.scala
 ResultOps.scala
 Router.scala
 Server.scala
+StaticMiddleware.scala
 
 # unit testing
 ./apion/src/test/scala/io/github/edadma/apion
 AuthMiddlewareTests.scala
 BaseSpec.scala
 JWTTests.scala
+LoggingMiddlewareTests.scala
 MockFS.scala
 RouterTests.scala
 
@@ -29,6 +32,7 @@ RouterTests.scala
 ./apion/src/test/scala/io/github/edadma/apion
 main.scala
 DemoApp.scala
+StaticDemo.scala
 
 # Node.js facade library
 ./nodejs/src/main/scala/io/github/edadma/nodejs

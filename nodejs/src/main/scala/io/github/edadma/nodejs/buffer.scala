@@ -1,4 +1,3 @@
-// File: nodejs/src/main/scala/io/github/edadma/nodejs/buffer.scala
 package io.github.edadma.nodejs
 
 import scala.scalajs.js

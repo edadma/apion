@@ -17,9 +17,9 @@ Server.scala
 ./apion/src/test/scala/io/github/edadma/apion
 AuthMiddlewareTests.scala
 BaseSpec.scala
-EndpointTests.scala
 JWTTests.scala
 MockFS.scala
+RouterTests.scala
 
 # Node.js facade library
 ./nodejs/src/main/scala/io/github/edadma/nodejs

@@ -62,12 +62,10 @@ trait JSEventually extends PatienceConfiguration {
   }
 }
 
-// Base class for async DOM tests
 class AsyncBaseSpec extends AsyncFreeSpec with BaseSpec with JSEventually {
 
-  // Use JS execution context for all async operations
-  import scala.scalajs.concurrent.JSExecutionContext
-  implicit override def executionContext: ExecutionContext = JSExecutionContext.queue
+  import org.scalajs.macrotaskexecutor.MacrotaskExecutor
+  implicit override def executionContext: ExecutionContext = MacrotaskExecutor
 
   // Provide reasonable default patience config
   implicit override val patienceConfig: PatienceConfig = PatienceConfig(

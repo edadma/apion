@@ -29,8 +29,16 @@ object BodyParser:
         () => {
           body.fromJson[A] match
             case Right(value) =>
+              // Add body parser finalizer to log parsed data
+              val bodyParserFinalizer: Finalizer = (req, res) =>
+                Future.successful(res.copy(
+                  headers = res.headers + ("X-Body-Parsed" -> "true"),
+                ))
+
               promise.success(Continue(
-                request.copy(context = request.context + ("body" -> value)),
+                request
+                  .copy(context = request.context + ("body" -> value))
+                  .addFinalizer(bodyParserFinalizer),
               ))
             case Left(error) =>
               promise.success(Fail(ValidationError(s"JSON parse error: $error")))

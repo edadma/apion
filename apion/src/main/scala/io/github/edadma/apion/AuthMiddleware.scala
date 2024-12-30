@@ -30,54 +30,53 @@ object AuthMiddleware:
       requireAuth: Boolean = true,
       excludePaths: Set[String] = Set(),
       secretKey: String,
-  ): Handler =
-    request => {
-      // Check if path should bypass auth
-      val shouldExclude = excludePaths.exists(path => request.url.startsWith(path))
+  ): Handler = request =>
+    // Check if path should bypass auth
+    val shouldExclude = excludePaths.exists(path => request.url.startsWith(path))
 
-      if shouldExclude then
-        // Skip auth for excluded paths
-        request.skip
-      else
-        def handleAuthFailure(requireAuth: Boolean, message: String): Future[Result] =
-          if requireAuth then
-            ErrorResponse("Unauthorized", message)
-              .asJson(401)
-              .withHeader("WWW-Authenticate", """Bearer realm="api"""")
-          else
-            Future.successful(Skip)
+    if shouldExclude then
+      request.skip
+    else
+      def handleAuthFailure(requireAuth: Boolean, message: String): Future[Result] =
+        if requireAuth then
+          ErrorResponse("Unauthorized", message)
+            .asJson(401)
+            .withHeader("WWW-Authenticate", """Bearer realm="api"""")
+        else
+          Future.successful(Skip)
 
-        // Extract and validate Authorization header
-        request.header("authorization") match
-          case Some(header) if header.toLowerCase.startsWith("bearer ") =>
-            val token = header.substring(7)
+      // Extract and validate Authorization header
+      request.header("authorization") match
+        case Some(header) if header.toLowerCase.startsWith("bearer ") =>
+          val token = header.substring(7)
 
-            // Verify JWT token
-            Try(JWT.verify[TokenPayload](token, secretKey)) match
-              case Success(Right(payload)) =>
-                // Check token expiration
-                if payload.exp > System.currentTimeMillis() / 1000 then
-                  // Token valid - add auth info to request and continue
-                  Future.successful(Continue(
-                    request.copy(auth = Some(Auth(payload.sub, payload.roles))),
+          // Verify JWT token
+          Try(JWT.verify[TokenPayload](token, secretKey)) match
+            case Success(Right(payload)) =>
+              // Check token expiration
+              if payload.exp > System.currentTimeMillis() / 1000 then
+                // Token valid - add auth info to request and continue
+                val authFinalizer: Finalizer = (req, res) =>
+                  Future.successful(res.copy(
+                    headers = res.headers + ("X-Authenticated-User" -> payload.sub),
                   ))
-                else
-                  // Token expired
-                  handleAuthFailure(requireAuth, "Token expired")
 
-              case Success(Left(error)) =>
-                // Invalid token
-                handleAuthFailure(requireAuth, s"Invalid token: ${error.getMessage}")
+                Future.successful(Continue(
+                  request
+                    .copy(auth = Some(Auth(payload.sub, payload.roles)))
+                    .addFinalizer(authFinalizer),
+                ))
+              else
+                handleAuthFailure(requireAuth, "Token expired")
 
-              case Failure(error) =>
-                // Token verification failed
-                handleAuthFailure(requireAuth, s"Token verification failed: ${error.getMessage}")
+            case Success(Left(error)) =>
+              handleAuthFailure(requireAuth, s"Invalid token: ${error.getMessage}")
 
-          case Some(_) =>
-            // Malformed Authorization header
-            handleAuthFailure(requireAuth, "Invalid Authorization header format")
+            case Failure(error) =>
+              handleAuthFailure(requireAuth, s"Token verification failed: ${error.getMessage}")
 
-          case None =>
-            // No Authorization header
-            handleAuthFailure(requireAuth, "Missing Authorization header")
-    }
+        case Some(_) =>
+          handleAuthFailure(requireAuth, "Invalid Authorization header format")
+
+        case None =>
+          handleAuthFailure(requireAuth, "Missing Authorization header")

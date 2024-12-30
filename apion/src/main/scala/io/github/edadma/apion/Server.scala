@@ -1,6 +1,7 @@
 package io.github.edadma.apion
 
-import io.github.edadma.nodejs.{http, ServerRequest, ServerResponse}
+import io.github.edadma.nodejs.{http, ServerRequest, ServerResponse, Server => NodeServer}
+
 import scala.scalajs.js
 import scala.concurrent.Future
 import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits.global
@@ -11,7 +12,10 @@ class Server {
     handleRequest(req, res),
   )
 
-  def listen(port: Int)(callback: => Unit): Unit = server.listen(port, () => callback)
+  def listen(port: Int)(callback: => Unit): NodeServer = {
+    server.listen(port, () => callback)
+    server
+  }
 
   // HTTP method handlers
   def get(path: String, handler: Handler): Server = {

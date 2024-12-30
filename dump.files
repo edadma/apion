@@ -24,6 +24,7 @@ StaticMiddleware.scala
 ./apion/src/test/scala/io/github/edadma/apion
 AuthMiddlewareTests.scala
 BaseSpec.scala
+IntegrationTests.scala
 JWTTests.scala
 LoggingMiddlewareTests.scala
 MockFS.scala

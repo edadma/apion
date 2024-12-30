@@ -120,7 +120,7 @@ class LoggingMiddlewareTests extends AsyncBaseSpec:
     }
 
     "format tokens" - {
-      "should handle all predefined formats" in {
+      "should handle all predefined formats" in withDebugLogging("should handle all predefined formats") {
         var capturedLogs               = List[String]()
         val logHandler: String => Unit = msg => capturedLogs = msg :: capturedLogs
 

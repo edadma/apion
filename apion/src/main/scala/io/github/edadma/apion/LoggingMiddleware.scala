@@ -44,12 +44,11 @@ object LoggingMiddleware:
       case ":date" =>
         val formatter = java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME
         java.time.ZonedDateTime.now().format(formatter)
-      case ":http-version"                    => "1.1"
-      case ":referrer"                        => req.header("referer").getOrElse("-")
-      case ":user-agent"                      => req.header("user-agent").getOrElse("-")
+      case ":http-version" => "1.1"
+      case ":referrer"     => req.header("referer").getOrElse("-")
+      case ":user-agent"   => req.header("user-agent").getOrElse("-")
       case token if token.startsWith(":res[") =>
-        // Debug the header lookup
-        val header = token.drop(5).dropRight(1).toLowerCase // Make case-insensitive
+        val header = token.drop(5).dropRight(1).toLowerCase
         if header == "content-length" then
           res.map(r =>
             logger.debug(s"Looking up content-length header in: ${r.headers}")
@@ -62,16 +61,33 @@ object LoggingMiddleware:
       case _ => token
 
   private def formatLog(format: String, req: Request, startTime: Long, res: Option[Response] = None): String =
-    val tokens = format.split(" ").map { part =>
-      if part.startsWith(":") then
-        logger.debug(s"Processing token: $part") // Debug each token
-        val value = getToken(part, req, startTime, res)
-        logger.debug(s"Token $part value: $value") // Debug token value
-        value
+    // Split by quotes first to handle quoted sections properly
+    val segments = format.split("\"")
+    val formattedSegments = segments.zipWithIndex.map { case (segment, index) =>
+      if index % 2 == 0 then
+        // Regular (unquoted) segment
+        segment.split(" ").map { part =>
+          if part.startsWith(":") then
+            logger.debug(s"Processing token: $part")
+            val value = getToken(part, req, startTime, res)
+            logger.debug(s"Token $part value: $value")
+            value
+          else
+            part
+        }.mkString(" ")
       else
-        part
+        // Quoted segment - process tokens but maintain quotes
+        "\"" + segment.split(" ").map { part =>
+          if part.startsWith(":") then
+            logger.debug(s"Processing token: $part")
+            val value = getToken(part, req, startTime, res)
+            logger.debug(s"Token $part value: $value")
+            value
+          else
+            part
+        }.mkString(" ") + "\""
     }
-    tokens.mkString(" ")
+    formattedSegments.mkString("")
 
   def apply(opts: Options = Options()): Handler = request =>
     val debug = (msg: String) => if opts.debug then logger.debug(msg)

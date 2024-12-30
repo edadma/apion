@@ -45,7 +45,7 @@ object DemoApp {
       .get("/greet/:name", echoNameHandler)
       .use("/api", BodyParser.json[UserData]())
       .post("/api/users", createUserHandler)
-      .listen(3000)(println("Server running at http://localhost:3000"))
+      .listen(3000) { println("Server running at http://localhost:3000") }
   }
 
   private def requestLogger: Handler =

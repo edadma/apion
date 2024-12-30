@@ -30,15 +30,33 @@ class RouterTests extends AsyncBaseSpec {
         }
       }
 
-      "should handle POST requests" in {
+      "should skip non-matching POST request" in {
         val router       = new Router()
         val testResponse = Response(201, Map(), "created")
 
-        router.post("/test", request => Future.successful(Complete(testResponse)))
-        val request = Request.fromServerRequest(mockServerRequest("POST", "/test"))
+        router.post("/users", request => Future.successful(Complete(testResponse)))
+
+        val request = Request.fromServerRequest(mockServerRequest("POST", "/notusers"))
 
         router(request).map { result =>
-          result shouldBe Complete(testResponse)
+          result shouldBe Skip
+        }
+      }
+
+      "should handle a POST request" in {
+        val router       = new Router()
+        val testResponse = Response(201, Map(), "created")
+
+        router.post("/users", request => Future.successful(Complete(testResponse)))
+
+        val request = Request.fromServerRequest(mockServerRequest("POST", "/users"))
+
+        router(request).map {
+          case Complete(response) =>
+            response.status shouldBe 201
+            response.body shouldBe "created"
+          case _ =>
+            fail("Expected Complete response")
         }
       }
 

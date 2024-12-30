@@ -2,7 +2,11 @@ package io.github.edadma.apion
 
 import io.github.edadma.nodejs.ServerRequest
 
+import scala.concurrent.Future
+
 case class Auth(user: String, roles: Set[String])
+
+type Finalizer = (Request, Response) => Future[Response]
 
 case class Request(
     method: String,
@@ -15,8 +19,11 @@ case class Request(
     auth: Option[Auth] = None,
     rawRequest: ServerRequest,
     basePath: String = "", // Track the accumulated base path
+    finalizers: List[Finalizer] = Nil,
 ) extends RequestDSL {
   def header(h: String): Option[String] = headers.get(h.toLowerCase)
+
+  def addFinalizer(f: Finalizer): Request = copy(finalizers = f :: finalizers)
 }
 
 object Request {

@@ -2,6 +2,7 @@ package io.github.edadma.apion
 
 import io.github.edadma.nodejs.{http, ServerRequest, ServerResponse}
 import scala.scalajs.js
+import scala.concurrent.Future
 import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits.global
 
 class Server {
@@ -62,13 +63,18 @@ class Server {
     // Process the request through our router
     router(request).map {
       case Complete(response) =>
-        // Write response headers
-        res.writeHead(
-          response.status,
-          js.Dictionary(response.headers.toSeq*),
-        )
-        // Write body and end response
-        res.end(response.body)
+        request.finalizers.foldLeft(Future.successful(response)) {
+          case (respFuture, finalizer) =>
+            respFuture.flatMap(resp => finalizer(request, resp))
+        }.map { finalResponse =>
+          // Write response headers
+          res.writeHead(
+            finalResponse.status,
+            js.Dictionary(finalResponse.headers.toSeq*),
+          )
+          // Write body and end response
+          res.end(finalResponse.body)
+        }
 
       case Skip =>
         // Handle 404 Not Found

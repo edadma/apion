@@ -1,7 +1,6 @@
 package io.github.edadma.apion
 
 import io.github.edadma.apion._
-import io.github.edadma.apion.ResponseDSL._
 import zio.json._
 import scala.concurrent.Future
 import scala.scalajs.js

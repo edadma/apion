@@ -4,8 +4,6 @@ import zio.json.*
 import scala.concurrent.Future
 import scala.util.{Try, Success, Failure}
 import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits.global
-import ResponseDSL._
-import ResultOps._
 
 object AuthMiddleware:
   // Token payload structure

@@ -1,6 +1,9 @@
 package io.github.edadma.apion
 
 import scala.annotation.tailrec
+import scala.concurrent.Future
+
+import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits.global
 
 private sealed trait RouteSegment
 private case class StaticSegment(value: String) extends RouteSegment
@@ -10,7 +13,7 @@ private case class WildcardSegment()            extends RouteSegment
 private case class Route(
     method: String,
     segments: List[RouteSegment],
-    handler: Endpoint,
+    handler: Handler,
 )
 
 object Router:
@@ -26,17 +29,19 @@ object Router:
 private class Router extends Handler:
   private val routes = scala.collection.mutable.ListBuffer[Route]()
 
-  private def addRoute(method: String, path: String, handler: Endpoint): Router =
+  def apply(r: Request): Future[Result] = Future(Skip)
+
+  private def addRoute(method: String, path: String, handler: Handler): Router =
     routes += Route(method, Router.parsePath(path), handler)
     this
 
-  def get(path: String, handler: Endpoint): Router    = addRoute("GET", path, handler)
-  def post(path: String, handler: Endpoint): Router   = addRoute("POST", path, handler)
-  def put(path: String, handler: Endpoint): Router    = addRoute("PUT", path, handler)
-  def delete(path: String, handler: Endpoint): Router = addRoute("DELETE", path, handler)
-  def patch(path: String, handler: Endpoint): Router  = addRoute("PATCH", path, handler)
+  def get(path: String, handler: Handler): Router    = addRoute("GET", path, handler)
+  def post(path: String, handler: Handler): Router   = addRoute("POST", path, handler)
+  def put(path: String, handler: Handler): Router    = addRoute("PUT", path, handler)
+  def delete(path: String, handler: Handler): Router = addRoute("DELETE", path, handler)
+  def patch(path: String, handler: Handler): Router  = addRoute("PATCH", path, handler)
 
-  private[apion] def matchRoute(method: String, path: String): Option[(Endpoint, Map[String, String], List[String])] =
+  private[apion] def matchRoute(method: String, path: String): Option[(Handler, Map[String, String], List[String])] =
     val segments = path.split("/").filter(_.nonEmpty).toList
 
     @tailrec

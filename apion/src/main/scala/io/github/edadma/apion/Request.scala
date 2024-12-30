@@ -7,7 +7,6 @@ case class Request(
     method: String,
     url: String,
     headers: Map[String, String],
-    auth: Option[Auth] = None,
     context: Map[String, Any] = Map(),
     rawRequest: Option[ServerRequest] = None,
 ):

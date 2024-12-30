@@ -1,58 +1,123 @@
-//package io.github.edadma.apion
-//
-//import io.github.edadma.nodejs.{http, ServerRequest, ServerResponse}
-//import scala.scalajs.js
-//import scala.concurrent.ExecutionContext.Implicits.global
-//
-//class Server:
-//  private val router = Router()
-//  private val server = http.createServer((req: ServerRequest, res: ServerResponse) =>
-//    handleRequest(req, res),
-//  )
-//
-//  def listen(port: Int)(callback: => Unit): Unit =
-//    server.listen(port, () => callback)
-//
-//  def get(path: String, endpoint: Endpoint, middlewares: Middleware*): Server = {
-//    router.get(path, endpoint, middlewares*)
-//    this
-//  }
-//
-//  def post(path: String, endpoint: Endpoint, middlewares: Middleware*): Server = {
-//    router.post(path, endpoint, middlewares*)
-//    this
-//  }
-//
-//  def put(path: String, endpoint: Endpoint): Server =
-//    router.put(path, endpoint)
-//    this
-//
-//  def use(middleware: Middleware): Server =
-//    router.use(middleware)
-//    this
-//
-//  def route(prefix: String): Router =
-//    router.route(prefix)
-//
-//  private def handleRequest(req: ServerRequest, res: ServerResponse): Unit =
-//    // Convert Node.js request to our Request type
-//    val request = Request(
-//      method = req.method,
-//      url = req.url,
-//      headers = req.headers.map((k, v) => k.toLowerCase -> v).toMap,
-//      rawRequest = Some(req),
-//    )
-//
-//    // Handle the request through our router
-//    router.handle(request).foreach { response =>
-//      // Write response headers
-//      res.writeHead(
-//        response.status,
-//        js.Dictionary(response.headers.toSeq.map(p => (p._1, p._2))*),
-//      )
-//      // Write body and end response
-//      res.end(response.body)
-//    }
-//
-//object Server:
-//  def apply(): Server = new Server()
+package io.github.edadma.apion
+
+import io.github.edadma.nodejs.{http, ServerRequest, ServerResponse}
+import scala.scalajs.js
+import scala.concurrent.ExecutionContext.Implicits.global
+
+class Server {
+  private val router = new Router()
+  private val server = http.createServer((req: ServerRequest, res: ServerResponse) =>
+    handleRequest(req, res),
+  )
+
+  def listen(port: Int)(callback: => Unit): Unit =
+    server.listen(port, () => callback)
+
+  // HTTP method handlers
+  def get(path: String, handler: Handler): Server = {
+    router.get(path, handler)
+    this
+  }
+
+  def post(path: String, handler: Handler): Server = {
+    router.post(path, handler)
+    this
+  }
+
+  def put(path: String, handler: Handler): Server = {
+    router.put(path, handler)
+    this
+  }
+
+  def delete(path: String, handler: Handler): Server = {
+    router.delete(path, handler)
+    this
+  }
+
+  def patch(path: String, handler: Handler): Server = {
+    router.patch(path, handler)
+    this
+  }
+
+  // Middleware and routing
+  def use(handler: Handler): Server = {
+    router.use(handler)
+    this
+  }
+
+  def use(path: String, handler: Handler): Server = {
+    router.use(path, handler)
+    this
+  }
+
+  def use(path: String, router: Router): Server = {
+    this.router.use(path, router)
+    this
+  }
+
+  private def handleRequest(req: ServerRequest, res: ServerResponse): Unit = {
+    // Convert Node.js request to our Request type
+    val request = Request.fromServerRequest(req)
+
+    // Process the request through our router
+    router(request).map {
+      case Complete(response) =>
+        // Write response headers
+        res.writeHead(
+          response.status,
+          js.Dictionary(response.headers.toSeq*),
+        )
+        // Write body and end response
+        res.end(response.body)
+
+      case Skip =>
+        // Handle 404 Not Found
+        res.writeHead(
+          404,
+          js.Dictionary(
+            "Content-Type" -> "application/json",
+          ),
+        )
+        res.end("""{"error": "Not Found"}""")
+
+      case Continue(request) =>
+        // Handle unexpected Continue result at top level
+        res.writeHead(
+          500,
+          js.Dictionary(
+            "Content-Type" -> "application/json",
+          ),
+        )
+        res.end("""{"error": "Internal Server Error - Unexpected Continue"}""")
+
+      case Fail(error) =>
+        // Handle errors
+        val (status, message) = error match {
+          case ValidationError(msg) => (400, msg)
+          case AuthError(msg)       => (401, msg)
+          case NotFoundError(msg)   => (404, msg)
+        }
+
+        res.writeHead(
+          status,
+          js.Dictionary(
+            "Content-Type" -> "application/json",
+          ),
+        )
+        res.end(s"""{"error": "$message"}""")
+    }.recover {
+      case e: Exception =>
+        // Handle uncaught exceptions
+        logger.error(s"Uncaught error processing request: ${e.getMessage}")
+        e.printStackTrace()
+
+        res.writeHead(
+          500,
+          js.Dictionary(
+            "Content-Type" -> "application/json",
+          ),
+        )
+        res.end("""{"error": "Internal Server Error"}""")
+    }
+  }
+}

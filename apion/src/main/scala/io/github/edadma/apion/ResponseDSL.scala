@@ -7,14 +7,14 @@ import zio.json.*
 object ResponseDSL {
   // Extension methods for any value that has a JsonEncoder
   implicit class JsonResponseOps[A: JsonEncoder](val data: A) {
-    def asJson: Future[Result]              = Future.successful(Complete(Response.json(data)))
-    def asJson(status: Int): Future[Result] = Future.successful(Complete(Response.json(data, status)))
+    def asJson: Future[Complete]              = Future.successful(Complete(Response.json(data)))
+    def asJson(status: Int): Future[Complete] = Future.successful(Complete(Response.json(data, status)))
   }
 
   // Extension method for strings
   implicit class StringResponseOps(val text: String) {
-    def asText: Future[Result]              = Future.successful(Complete(Response.text(text)))
-    def asText(status: Int): Future[Result] = Future.successful(Complete(Response.text(text, status)))
+    def asText: Future[Complete]              = Future.successful(Complete(Response.text(text)))
+    def asText(status: Int): Future[Complete] = Future.successful(Complete(Response.text(text, status)))
   }
 
   // Direct response methods

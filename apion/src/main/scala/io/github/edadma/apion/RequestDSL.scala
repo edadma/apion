@@ -6,8 +6,7 @@ import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits.global
 trait RequestDSL {
   self: Request =>
 
-  def continue: Future[Result] = Future.successful(Continue(this))
-  def skip: Future[Result]     = Future.successful(Skip)
+  def skip: Future[Result] = Future.successful(Skip)
 
   def fail(error: ServerError): Future[Result]    = Future.successful(Fail(error))
   def failValidation(msg: String): Future[Result] = Future.successful(Fail(ValidationError(msg)))

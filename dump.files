@@ -13,6 +13,7 @@ Request.scala
 RequestDSL.scala
 Response.scala
 ResponseDSL.scala
+ResultOps.scala
 Router.scala
 Server.scala
 

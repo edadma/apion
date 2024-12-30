@@ -5,6 +5,7 @@ import scala.concurrent.Future
 import scala.util.{Try, Success, Failure}
 import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits.global
 import ResponseDSL._
+import ResultOps._
 
 object AuthMiddleware:
   // Token payload structure
@@ -40,6 +41,14 @@ object AuthMiddleware:
         // Skip auth for excluded paths
         request.skip
       else
+        def handleAuthFailure(requireAuth: Boolean, message: String): Future[Result] =
+          if requireAuth then
+            ErrorResponse("Unauthorized", message)
+              .asJson(401)
+              .withHeader("WWW-Authenticate", """Bearer realm="api"""")
+          else
+            Future.successful(Skip)
+
         // Extract and validate Authorization header
         request.header("authorization") match
           case Some(header) if header.toLowerCase.startsWith("bearer ") =>
@@ -74,16 +83,3 @@ object AuthMiddleware:
             // No Authorization header
             handleAuthFailure(requireAuth, "Missing Authorization header")
     }
-
-  def handleAuthFailure(requireAuth: Boolean, message: String): Future[Result] =
-    if requireAuth then
-      ErrorResponse("Unauthorized", message)
-        .asJson(401)
-        .map {
-          case Complete(r) =>
-            Complete(r.copy(
-              headers = r.headers + ("WWW-Authenticate" -> """Bearer realm="api""""),
-            ))
-        }
-    else
-      Future.successful(Skip)

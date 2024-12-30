@@ -16,8 +16,9 @@ object LoggingMiddleware:
 
   case class Options(
       format: String = Format.Dev,
-      immediate: Boolean = false,           // Log on request instead of response
+      immediate: Boolean = false,            // Log on request instead of response
       skip: Request => Boolean = _ => false, // Skip logging for certain requests
+      handler: String => Unit = println,     // Default to console output
   )
 
   private def getToken(token: String, req: Request, startTime: Long, res: Option[Response] = None): String =
@@ -55,6 +56,11 @@ object LoggingMiddleware:
     }
     tokens.mkString(" ")
 
+  private def resultToResponse(result: Result): Option[Response] =
+    result match
+      case Complete(response) => Some(response)
+      case _                  => None
+
   /** Creates logging middleware with the specified options
     *
     * @param opts
@@ -71,22 +77,12 @@ object LoggingMiddleware:
 
         if opts.immediate then
           // Log immediately on request
-          logger.info(formatLog(opts.format, request, startTime))
+          opts.handler(formatLog(opts.format, request, startTime))
           request.skip
         else
           // Continue processing but transform the result to include logging
-          request.skip.flatMap {
-            case Complete(response) =>
-              logger.info(formatLog(opts.format, request, startTime, Some(response)))
-              Future.successful(Complete(response))
-            case Skip =>
-              logger.info(formatLog(opts.format, request, startTime))
-              Future.successful(Skip)
-            case Continue(req) =>
-              logger.info(formatLog(opts.format, request, startTime))
-              Future.successful(Continue(req))
-            case Fail(error) =>
-              logger.info(formatLog(opts.format, request, startTime))
-              Future.successful(Fail(error))
+          request.skip.map { result =>
+            opts.handler(formatLog(opts.format, request, startTime, resultToResponse(result)))
+            result
           }
     }

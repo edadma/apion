@@ -57,7 +57,9 @@ private class Router extends Handler:
                   case Some((pathParams, Nil)) => handler(req.copy(params = pathParams))
                   case _                       => processNext(rest, req)
               case Route(segments, handler) =>
-                handler(req)
+                matchSegments(segments, pathSegments, Map()) match
+                  case Some((pathParams, remaining)) => handler(req.copy(params = pathParams))
+                  case _                             => processNext(rest, req)
               case Middleware(handler) => handler(req)
 
           result.flatMap {

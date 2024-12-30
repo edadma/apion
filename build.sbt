@@ -31,14 +31,14 @@ lazy val apion = project
       "dev.zio"          %%% "zio-json"                    % "0.7.3",
       "org.scala-js"     %%% "scala-js-macrotask-executor" % "1.1.1",
     ),
-    jsEnv                           := new org.scalajs.jsenv.nodejs.NodeJSEnv(),
-    scalaJSUseMainModuleInitializer := true,
-//    Test / scalaJSUseMainModuleInitializer := true,
-//    Test / scalaJSUseTestModuleInitializer := false,
-    Test / scalaJSUseMainModuleInitializer := false,
-    Test / scalaJSUseTestModuleInitializer := true,
-    publishMavenStyle                      := true,
-    Test / publishArtifact                 := false,
+    jsEnv                                  := new org.scalajs.jsenv.nodejs.NodeJSEnv(),
+    scalaJSUseMainModuleInitializer        := true,
+    Test / scalaJSUseMainModuleInitializer := true,
+    Test / scalaJSUseTestModuleInitializer := false,
+//    Test / scalaJSUseMainModuleInitializer := false,
+//    Test / scalaJSUseTestModuleInitializer := true,
+    publishMavenStyle      := true,
+    Test / publishArtifact := false,
   )
 
 lazy val nodejs = project

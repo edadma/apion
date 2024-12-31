@@ -30,7 +30,7 @@ Initial release of Apion, a lightweight HTTP/1.1 API server framework for Scala.
 Add missing basic features and more integration testing.
 
 ### Added
-- add security and CORS integration tests
+- add security and CORS middleware integration tests
 
 ### Fixed
 - fix handling of request finalizers

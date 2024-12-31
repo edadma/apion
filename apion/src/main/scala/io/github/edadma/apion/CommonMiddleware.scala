@@ -46,20 +46,3 @@ object CommonMiddleware:
       Future.successful(Continue(
         request.addFinalizer(corsFinalizer),
       ))
-
-/** Security headers middleware with finalizer support */
-def securityHeaders(): Handler = request =>
-  val securityHeadersFinalizer: Finalizer = (req, res) =>
-    Future.successful(res.copy(
-      headers = res.headers ++ Map(
-        "X-Content-Type-Options"    -> "nosniff",
-        "X-Frame-Options"           -> "DENY",
-        "X-XSS-Protection"          -> "1; mode=block",
-        "Referrer-Policy"           -> "no-referrer",
-        "Strict-Transport-Security" -> "max-age=31536000; includeSubDomains",
-      ),
-    ))
-
-  Future.successful(Continue(
-    request.addFinalizer(securityHeadersFinalizer),
-  ))

@@ -58,3 +58,25 @@ private def decodeURIComponent(s: String): String = {
   }
   result.toString
 }
+
+private def encodeURIComponent(s: String): String = {
+  def shouldEncode(c: Char): Boolean = {
+    val allowedChars = ('a' to 'z') ++ ('A' to 'Z') ++ ('0' to '9') ++ Set('-', '_', '.', '!', '~', '*', '\'', '(', ')')
+    !allowedChars.contains(c)
+  }
+
+  val sb = new StringBuilder
+  for (c <- s) {
+    if (shouldEncode(c)) {
+      val bytes = c.toString.getBytes("UTF-8")
+      for (b <- bytes) {
+        sb.append('%')
+        sb.append(Character.forDigit((b >> 4) & 0xf, 16).toUpper)
+        sb.append(Character.forDigit(b & 0xf, 16).toUpper)
+      }
+    } else {
+      sb.append(c)
+    }
+  }
+  sb.toString
+}

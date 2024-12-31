@@ -26,7 +26,9 @@ class RouterTests extends AsyncBaseSpec {
         val request = Request.fromServerRequest(mockServerRequest("GET", "/test"))
 
         router(request).map { result =>
-          result shouldBe Complete(testResponse)
+          result should matchPattern {
+            case InternalComplete(_, `testResponse`) =>
+          }
         }
       }
 
@@ -52,7 +54,7 @@ class RouterTests extends AsyncBaseSpec {
         val request = Request.fromServerRequest(mockServerRequest("POST", "/users"))
 
         router(request).map {
-          case Complete(response) =>
+          case InternalComplete(_, response) =>
             response.status shouldBe 201
             response.body shouldBe "created"
           case _ =>
@@ -68,7 +70,9 @@ class RouterTests extends AsyncBaseSpec {
         val request = Request.fromServerRequest(mockServerRequest("PUT", "/test"))
 
         router(request).map { result =>
-          result shouldBe Complete(testResponse)
+          result should matchPattern {
+            case InternalComplete(_, `testResponse`) =>
+          }
         }
       }
 
@@ -80,7 +84,9 @@ class RouterTests extends AsyncBaseSpec {
         val request = Request.fromServerRequest(mockServerRequest("DELETE", "/test"))
 
         router(request).map { result =>
-          result shouldBe Complete(testResponse)
+          result should matchPattern {
+            case InternalComplete(_, `testResponse`) =>
+          }
         }
       }
 
@@ -92,7 +98,9 @@ class RouterTests extends AsyncBaseSpec {
         val request = Request.fromServerRequest(mockServerRequest("PATCH", "/test"))
 
         router(request).map { result =>
-          result shouldBe Complete(testResponse)
+          result should matchPattern {
+            case InternalComplete(_, `testResponse`) =>
+          }
         }
       }
 
@@ -122,7 +130,7 @@ class RouterTests extends AsyncBaseSpec {
         val request = Request.fromServerRequest(mockServerRequest("GET", "/users/123"))
 
         router(request).map {
-          case Complete(response) =>
+          case InternalComplete(_, response) =>
             response.body shouldBe "123"
           case _ =>
             fail("Expected Complete with path parameter")
@@ -143,7 +151,7 @@ class RouterTests extends AsyncBaseSpec {
         val request = Request.fromServerRequest(mockServerRequest("GET", "/users/123/posts/456"))
 
         router(request).map {
-          case Complete(response) =>
+          case InternalComplete(_, response) =>
             response.body shouldBe "123-456"
           case _ =>
             fail("Expected Complete with multiple parameters")
@@ -162,7 +170,7 @@ class RouterTests extends AsyncBaseSpec {
         val request = Request.fromServerRequest(mockServerRequest("GET", "/api/users/123/profile"))
 
         router(request).map {
-          case Complete(response) =>
+          case InternalComplete(_, response) =>
             response.body shouldBe "123"
           case _ =>
             fail("Expected Complete with parameter")
@@ -201,7 +209,7 @@ class RouterTests extends AsyncBaseSpec {
         val request = Request.fromServerRequest(mockServerRequest("GET", "/api/test"))
 
         router(request).map {
-          case Complete(response) =>
+          case InternalComplete(_, response) =>
             response.body shouldBe "subroute"
           case _ =>
             fail("Expected Complete from subrouter")
@@ -222,7 +230,7 @@ class RouterTests extends AsyncBaseSpec {
         val request = Request.fromServerRequest(mockServerRequest("GET", "/users/123"))
 
         router(request).map {
-          case Complete(response) =>
+          case InternalComplete(_, response) =>
             response.body shouldBe "123"
           case _ =>
             fail("Expected Complete from subrouter with params")
@@ -246,7 +254,7 @@ class RouterTests extends AsyncBaseSpec {
         val request = Request.fromServerRequest(mockServerRequest("GET", "/api/users/profile"))
 
         router(request).map {
-          case Complete(response) =>
+          case InternalComplete(_, response) =>
             response.body shouldBe "/api/users"
           case _ =>
             fail("Expected Complete with accumulated base path")
@@ -273,7 +281,7 @@ class RouterTests extends AsyncBaseSpec {
         val request = Request.fromServerRequest(mockServerRequest("GET", "/test"))
 
         router(request).map {
-          case Complete(response) =>
+          case InternalComplete(_, response) =>
             response.body shouldBe "middleware"
           case _ =>
             fail("Expected Complete with middleware modification")
@@ -300,7 +308,7 @@ class RouterTests extends AsyncBaseSpec {
         val request = Request.fromServerRequest(mockServerRequest("GET", "/protected/resource"))
 
         router(request).map {
-          case Complete(response) =>
+          case InternalComplete(_, response) =>
             response.body shouldBe "true"
           case _ =>
             fail("Expected Complete with path middleware")
@@ -323,7 +331,7 @@ class RouterTests extends AsyncBaseSpec {
         val request = Request.fromServerRequest(mockServerRequest("GET", "/test"))
 
         router(request).map {
-          case Complete(response) =>
+          case InternalComplete(_, response) =>
             response.status shouldBe 403
             response.body shouldBe "blocked"
           case _ =>

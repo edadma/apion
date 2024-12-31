@@ -66,7 +66,9 @@ object SecurityMiddleware:
   )
 
   def apply(options: Options = Options()): Handler = request =>
+    logger.debug("SecurityMiddleware executing")
     val securityHeadersFinalizer: Finalizer = (req, res) => {
+      logger.debug("Security finalizer executing")
       var headers = res.headers
 
       // Content-Security-Policy
@@ -76,6 +78,7 @@ object SecurityMiddleware:
             if value.isEmpty then key else s"$key $value"
           }
           .mkString("; ")
+        logger.debug(s"Adding CSP header: $csp")
         headers = headers.add("Content-Security-Policy", csp)
 
       // Cross-Origin-Embedder-Policy
@@ -134,10 +137,13 @@ object SecurityMiddleware:
       if options.xssFilter then
         headers = headers.add("X-XSS-Protection", options.xssFilterMode)
 
+      logger.debug(s"Final headers: ${headers.toMap}")
       Future.successful(res.copy(headers = headers))
     }
 
-    Future.successful(Continue(request.addFinalizer(securityHeadersFinalizer)))
+    val updatedRequest = request.addFinalizer(securityHeadersFinalizer)
+    logger.debug(s"Request has ${updatedRequest.finalizers.length} finalizers")
+    Future.successful(Continue(updatedRequest))
 
   /** Creates middleware with only essential security headers enabled */
   def essential(): Handler =

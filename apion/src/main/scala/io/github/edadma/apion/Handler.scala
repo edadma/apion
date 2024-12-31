@@ -10,9 +10,10 @@ case class NotFoundError(msg: String)   extends ServerError
 type ErrorHandler = ServerError => Response
 
 sealed trait Result
-case class Continue(request: Request)   extends Result
-case class Complete(response: Response) extends Result
-case class Fail(error: ServerError)     extends Result
-case object Skip                        extends Result
+case class Continue(request: Request)                                            extends Result
+case class Complete(response: Response)                                          extends Result
+case class Fail(error: ServerError)                                              extends Result
+case object Skip                                                                 extends Result
+private[apion] case class InternalComplete(request: Request, response: Response) extends Result
 
 type Handler = Request => Future[Result]

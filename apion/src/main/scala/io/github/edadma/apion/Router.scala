@@ -58,9 +58,13 @@ private class Router extends Handler:
     processNext(routes, request, request.path.split("/").filter(_.nonEmpty).toList)
 
   private def processNext(ps: List[Process], req: Request, remainingPath: List[String]): Future[Result] =
+    logger.debug(s"Processing next handler, path: /${remainingPath.mkString("/")}")
     ps match
-      case Nil => Future.successful(Skip)
+      case Nil =>
+        logger.debug("No more handlers")
+        Future.successful(Skip)
       case p :: rest =>
+        logger.debug(s"Processing handler of type: ${p.getClass.getSimpleName}")
         val result: Future[Result] = p match
           case SubRouter(path, router, prefix) =>
             matchSegments(Router.parsePath(path), remainingPath, Map()) match
@@ -75,6 +79,7 @@ private class Router extends Handler:
                 processNext(rest, req, remainingPath)
 
           case Endpoint(method, segments, handler, prefix) =>
+            logger.debug(s"Checking endpoint: $method /${segments.mkString("/")}")
             if (method != req.method) {
               processNext(rest, req, remainingPath)
             } else {
@@ -101,12 +106,17 @@ private class Router extends Handler:
                 processNext(rest, req, remainingPath)
 
           case Middleware(handler, prefix) =>
-            handler(req.copy(basePath = req.basePath + prefix))
+            logger.debug(s"Executing middleware with prefix: $prefix")
+            handler(req.copy(basePath = req.basePath + prefix)).map { result =>
+              logger.debug(s"Middleware result: $result")
+              result
+            }
 
         result.flatMap {
-          case Continue(newReq) => processNext(rest, newReq, remainingPath)
-          case Skip             => processNext(rest, req, remainingPath)
-          case result           => Future.successful(result)
+          case Continue(newReq)   => processNext(rest, newReq, remainingPath)
+          case Skip               => processNext(rest, req, remainingPath)
+          case Complete(response) => Future.successful(InternalComplete(req, response))
+          case result             => Future.successful(result)
         }
 
   @tailrec

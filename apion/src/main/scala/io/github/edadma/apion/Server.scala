@@ -66,11 +66,20 @@ class Server {
     // Process the request through our router
     router(request).map {
       case Complete(response) =>
-        request.finalizers.foldLeft(Future.successful(response)) {
+      case InternalComplete(finalReq, response) =>
+        logger.debug(s"Processing ${finalReq.finalizers.length} finalizers")
+        finalReq.finalizers.foldLeft(Future.successful(response)) {
           case (respFuture, finalizer) =>
-            respFuture.flatMap(resp => finalizer(request, resp))
+            respFuture.flatMap { resp =>
+              logger.debug("Executing finalizer")
+              finalizer(finalReq, resp).map { finalResp =>
+                logger.debug(s"Finalizer complete, headers: ${finalResp.headers.toMap}")
+                finalResp
+              }
+            }
         }.map { finalResponse =>
           // Write response headers
+          logger.debug(s"Writing response headers: ${finalResponse.headers.toMap}")
           res.writeHead(
             finalResponse.status,
             js.Dictionary(finalResponse.headers.toMap.toSeq*),

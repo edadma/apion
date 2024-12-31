@@ -1,0 +1,29 @@
+remote_theme: just-the-docs/just-the-docs
+title: Apion
+description: A minimalist UI framework inspired by component-based design, built with Scala.js
+
+# Logo settings
+logo: "/assets/images/apion.png"
+favicon_ico: "/assets/images/favicon.ico"
+
+# Enable search
+search_enabled: true
+
+# Enable dark/light mode
+color_scheme: dark  # Default theme
+enable_theme_switcher: true
+
+# Navigation structure
+nav:
+  - Tutorials: "/tutorials"
+  - Guides: "/guides"
+  - API: "/api"
+  - Releases: "/releases"
+
+# Additional configuration for Just-the-Docs
+aux_links:
+  "Apion on GitHub":
+    - "https://github.com/edadma/apion"
+
+# Footer content
+footer_content: "Copyright &copy; 2024 edadma. Distributed under an ISC license."

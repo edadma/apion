@@ -47,7 +47,7 @@ object StaticMiddleware:
       if options.redirect && !urlPath.endsWith("/") then
         // Redirect to add trailing slash
         Future.successful(
-          Complete(Response(301, Map("Location" -> s"$urlPath/"), "")),
+          Complete(Response(301, ResponseHeaders(Map("Location" -> s"$urlPath/")), "")),
         )
       else if options.index then
         // Try to serve index.html
@@ -94,11 +94,11 @@ object StaticMiddleware:
         // Read and send file
         fs.readFile(path).toFuture
           .map { content =>
-            val headers = Map(
+            val headers = ResponseHeaders(Map(
               "Content-Type"   -> mimeType,
               "Content-Length" -> stats.size.toString,
               "Cache-Control"  -> s"max-age=${options.maxAge}",
-            ) ++ etag.map("ETag" -> _)
+            ) ++ etag.map("ETag" -> _))
 
             Complete(Response(200, headers, content.toString))
           }

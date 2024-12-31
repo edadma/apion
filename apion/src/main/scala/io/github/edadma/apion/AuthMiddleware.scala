@@ -58,7 +58,7 @@ object AuthMiddleware:
                 // Token valid - add auth info to request and continue
                 val authFinalizer: Finalizer = (req, res) =>
                   Future.successful(res.copy(
-                    headers = res.headers + ("X-Authenticated-User" -> payload.sub),
+                    headers = res.headers.add("X-Authenticated-User", payload.sub),
                   ))
 
                 Future.successful(Continue(

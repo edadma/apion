@@ -73,7 +73,7 @@ class Server {
           // Write response headers
           res.writeHead(
             finalResponse.status,
-            js.Dictionary(finalResponse.headers.toSeq*),
+            js.Dictionary(finalResponse.headers.toMap.toSeq*),
           )
           // Write body and end response
           res.end(finalResponse.body)

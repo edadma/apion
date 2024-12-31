@@ -4,8 +4,8 @@
 ./apion/src/main/scala/io/github/edadma/apion
 AuthMiddleware.scala
 BodyParser.scala
-CommonMiddleware.scala
 CompressionMiddleware.scala
+CorsMiddleware.scala
 Handler.scala
 JWT.scala
 LoggingMiddleware.scala
@@ -15,8 +15,10 @@ Request.scala
 RequestDSL.scala
 Response.scala
 ResponseDSL.scala
+ResponseHeaders.scala
 ResultOps.scala
 Router.scala
+SecurityMiddleware.scala
 Server.scala
 StaticMiddleware.scala
 
@@ -29,6 +31,7 @@ JWTTests.scala
 LoggingMiddlewareTests.scala
 MockFS.scala
 RouterTests.scala
+SecurityAndCorsTests.scala
 
 # server testing
 ./apion/src/test/scala/io/github/edadma/apion
@@ -56,3 +59,8 @@ plugins.sbt
 # docs
 ./
 README.md
+./docs
+_config.yml
+index.md
+./docs/releases
+0.0.1.md

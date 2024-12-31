@@ -25,11 +25,16 @@ Initial release of Apion, a lightweight HTTP/1.1 API server framework for Scala.
 
 [0.0.1]: https://github.com/edadma/apion/releases/tag/v0.0.1
 
-## [0.0.2] - 202
+## [Unreleased]
 
-Add missing basic features.
+Add missing basic features and more integration testing.
 
 ### Added
+- add security and CORS integration tests
 
+### Fixed
+- fix handling of request finalizers
 
-[0.0.2]: https://github.com/edadma/apion/releases/tag/v0.0.2
+### Changed
+- improve security middleware
+- improve CORS middleware

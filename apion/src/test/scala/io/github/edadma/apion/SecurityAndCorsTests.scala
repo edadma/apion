@@ -62,13 +62,12 @@ class SecurityAndCorsTests extends AsyncBaseSpec with BeforeAndAfterAll {
   }
 
   "SecurityMiddleware" - {
-    "should set basic security headers" in withDebugLogging("security-headers") {
+    "should set basic security headers" in /*withDebugLogging("security-headers")*/ {
       fetch(s"http://localhost:$port/secure")
         .toFuture
         .map { response =>
           val headers = response.headers
 
-          println(headers)
           // Log response headers for debugging
           logger.debug(s"CSP header present: ${headers.has("content-security-policy")}")
           val headerChecks = List(

@@ -13,8 +13,6 @@ lazy val commonSettings = Seq(
   ),
   scalaJSLinkerConfig ~= { _.withModuleKind(ModuleKind.CommonJSModule) },
   scalaJSLinkerConfig ~= { _.withSourceMap(false) },
-  githubOwner      := "edadma",
-  githubRepository := "apion",
 )
 
 lazy val apion = project
@@ -27,7 +25,7 @@ lazy val apion = project
     libraryDependencies ++= Seq(
       "org.scalatest"    %%% "scalatest"                   % "3.2.19" % "test",
       "com.lihaoyi"      %%% "pprint"                      % "0.9.0"  % "test",
-      "io.github.edadma" %%% "logger"                      % "0.0.5",
+      "io.github.edadma" %%% "logger"                      % "0.0.6",
       "dev.zio"          %%% "zio-json"                    % "0.7.3",
       "org.scala-js"     %%% "scala-js-macrotask-executor" % "1.1.1",
     ),

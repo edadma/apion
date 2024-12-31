@@ -111,13 +111,13 @@ object CorsMiddleware:
         // Return preflight response
         Future.successful(Complete(Response(
           status = options.preflightSuccessStatus,
-          headers = corsHeaders,
+          headers = ResponseHeaders(corsHeaders),
           body = "",
         )))
       else
         // Add CORS headers to actual response via finalizer
         val corsFinalizer: Finalizer = (req, res) =>
-          Future.successful(res.copy(headers = res.headers ++ corsHeaders))
+          Future.successful(res.copy(headers = res.headers.addAll(corsHeaders)))
 
         Future.successful(Continue(request.addFinalizer(corsFinalizer)))
   }

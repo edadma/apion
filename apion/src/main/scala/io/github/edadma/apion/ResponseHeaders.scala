@@ -78,3 +78,5 @@ object ResponseHeaders:
 
   def apply(headers: Map[String, String]): ResponseHeaders =
     empty.addAll(headers)
+
+  def apply(header: String, value: String): ResponseHeaders = ResponseHeaders(Map(header -> value))

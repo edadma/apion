@@ -32,7 +32,7 @@ object BodyParser:
               // Add body parser finalizer to log parsed data
               val bodyParserFinalizer: Finalizer = (req, res) =>
                 Future.successful(res.copy(
-                  headers = res.headers + ("X-Body-Parsed" -> "true"),
+                  headers = res.headers.add("X-Body-Parsed", "true"),
                 ))
 
               promise.success(Continue(

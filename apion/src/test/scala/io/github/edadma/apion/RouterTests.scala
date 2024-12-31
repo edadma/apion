@@ -20,7 +20,7 @@ class RouterTests extends AsyncBaseSpec {
     "HTTP Methods" - {
       "should handle GET requests" in {
         val router       = new Router()
-        val testResponse = Response(200, Map(), "get response")
+        val testResponse = Response(200, ResponseHeaders.empty, "get response")
 
         router.get("/test", request => Future.successful(Complete(testResponse)))
         val request = Request.fromServerRequest(mockServerRequest("GET", "/test"))
@@ -32,7 +32,7 @@ class RouterTests extends AsyncBaseSpec {
 
       "should skip non-matching POST request" in {
         val router       = new Router()
-        val testResponse = Response(201, Map(), "created")
+        val testResponse = Response(201, ResponseHeaders.empty, "created")
 
         router.post("/users", request => Future.successful(Complete(testResponse)))
 
@@ -45,7 +45,7 @@ class RouterTests extends AsyncBaseSpec {
 
       "should handle a POST request" in {
         val router       = new Router()
-        val testResponse = Response(201, Map(), "created")
+        val testResponse = Response(201, ResponseHeaders.empty, "created")
 
         router.post("/users", request => Future.successful(Complete(testResponse)))
 
@@ -62,7 +62,7 @@ class RouterTests extends AsyncBaseSpec {
 
       "should handle PUT requests" in {
         val router       = new Router()
-        val testResponse = Response(200, Map(), "updated")
+        val testResponse = Response(200, ResponseHeaders.empty, "updated")
 
         router.put("/test", request => Future.successful(Complete(testResponse)))
         val request = Request.fromServerRequest(mockServerRequest("PUT", "/test"))
@@ -74,7 +74,7 @@ class RouterTests extends AsyncBaseSpec {
 
       "should handle DELETE requests" in {
         val router       = new Router()
-        val testResponse = Response(204, Map(), "")
+        val testResponse = Response(204, ResponseHeaders.empty, "")
 
         router.delete("/test", request => Future.successful(Complete(testResponse)))
         val request = Request.fromServerRequest(mockServerRequest("DELETE", "/test"))
@@ -86,7 +86,7 @@ class RouterTests extends AsyncBaseSpec {
 
       "should handle PATCH requests" in {
         val router       = new Router()
-        val testResponse = Response(200, Map(), "patched")
+        val testResponse = Response(200, ResponseHeaders.empty, "patched")
 
         router.patch("/test", request => Future.successful(Complete(testResponse)))
         val request = Request.fromServerRequest(mockServerRequest("PATCH", "/test"))
@@ -98,7 +98,7 @@ class RouterTests extends AsyncBaseSpec {
 
       "should Skip when method doesn't match" in {
         val router       = new Router()
-        val testResponse = Response(200, Map(), "test")
+        val testResponse = Response(200, ResponseHeaders.empty, "test")
 
         router.get("/test", request => Future.successful(Complete(testResponse)))
         val request = Request.fromServerRequest(mockServerRequest("POST", "/test"))
@@ -116,7 +116,7 @@ class RouterTests extends AsyncBaseSpec {
         router.get(
           "/users/:id",
           request =>
-            Future.successful(Complete(Response(200, Map(), request.params("id")))),
+            Future.successful(Complete(Response(200, ResponseHeaders.empty, request.params("id")))),
         )
 
         val request = Request.fromServerRequest(mockServerRequest("GET", "/users/123"))
@@ -136,7 +136,7 @@ class RouterTests extends AsyncBaseSpec {
           "/users/:userId/posts/:postId",
           request => {
             val result = s"${request.params("userId")}-${request.params("postId")}"
-            Future.successful(Complete(Response(200, Map(), result)))
+            Future.successful(Complete(Response(200, ResponseHeaders.empty, result)))
           },
         )
 
@@ -156,7 +156,7 @@ class RouterTests extends AsyncBaseSpec {
         router.get(
           "/api/users/:id/profile",
           request =>
-            Future.successful(Complete(Response(200, Map(), request.params("id")))),
+            Future.successful(Complete(Response(200, ResponseHeaders.empty, request.params("id")))),
         )
 
         val request = Request.fromServerRequest(mockServerRequest("GET", "/api/users/123/profile"))
@@ -175,7 +175,7 @@ class RouterTests extends AsyncBaseSpec {
         router.get(
           "/users/:id",
           request =>
-            Future.successful(Complete(Response(200, Map(), request.params("id")))),
+            Future.successful(Complete(Response(200, ResponseHeaders.empty, request.params("id")))),
         )
 
         val request = Request.fromServerRequest(mockServerRequest("GET", "/posts/123"))
@@ -194,7 +194,7 @@ class RouterTests extends AsyncBaseSpec {
         subrouter.get(
           "/test",
           request =>
-            Future.successful(Complete(Response(200, Map(), "subroute"))),
+            Future.successful(Complete(Response(200, ResponseHeaders.empty, "subroute"))),
         )
 
         router.use("/api", subrouter)
@@ -215,7 +215,7 @@ class RouterTests extends AsyncBaseSpec {
         subrouter.get(
           "/:id",
           request =>
-            Future.successful(Complete(Response(200, Map(), request.params("id")))),
+            Future.successful(Complete(Response(200, ResponseHeaders.empty, request.params("id")))),
         )
 
         router.use("/users", subrouter)
@@ -237,7 +237,7 @@ class RouterTests extends AsyncBaseSpec {
         usersRouter.get(
           "/profile",
           request =>
-            Future.successful(Complete(Response(200, Map(), request.basePath))),
+            Future.successful(Complete(Response(200, ResponseHeaders.empty, request.basePath))),
         )
 
         apiRouter.use("/users", usersRouter)
@@ -267,7 +267,7 @@ class RouterTests extends AsyncBaseSpec {
         router.get(
           "/test",
           request =>
-            Future.successful(Complete(Response(200, Map(), request.headers("X-Test")))),
+            Future.successful(Complete(Response(200, ResponseHeaders.empty, request.headers("X-Test")))),
         )
 
         val request = Request.fromServerRequest(mockServerRequest("GET", "/test"))
@@ -294,7 +294,7 @@ class RouterTests extends AsyncBaseSpec {
         router.get(
           "/protected/resource",
           request =>
-            Future.successful(Complete(Response(200, Map(), request.headers("X-Auth")))),
+            Future.successful(Complete(Response(200, ResponseHeaders.empty, request.headers("X-Auth")))),
         )
 
         val request = Request.fromServerRequest(mockServerRequest("GET", "/protected/resource"))
@@ -311,13 +311,13 @@ class RouterTests extends AsyncBaseSpec {
         val router = new Router()
 
         router.use(request =>
-          Future.successful(Complete(Response(403, Map(), "blocked"))),
+          Future.successful(Complete(Response(403, ResponseHeaders.empty, "blocked"))),
         )
 
         router.get(
           "/test",
           request =>
-            Future.successful(Complete(Response(200, Map(), "should not reach"))),
+            Future.successful(Complete(Response(200, ResponseHeaders.empty, "should not reach"))),
         )
 
         val request = Request.fromServerRequest(mockServerRequest("GET", "/test"))

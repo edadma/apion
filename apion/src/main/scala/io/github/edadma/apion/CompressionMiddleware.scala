@@ -115,11 +115,11 @@ object CompressionMiddleware:
             // Compress the response body
             compress(res.body, encoding, options).map { compressed =>
               res.copy(
-                headers = res.headers ++ Map(
+                headers = res.headers.addAll(Map(
                   "Content-Encoding" -> encoding,
                   "Content-Length"   -> compressed.byteLength.toString,
                   "Vary"             -> "Accept-Encoding",
-                ),
+                )),
                 body = compressed.toString("binary"),
               )
             }.recover { case e =>

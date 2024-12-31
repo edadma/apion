@@ -76,71 +76,70 @@ object SecurityMiddleware:
             if value.isEmpty then key else s"$key $value"
           }
           .mkString("; ")
-        headers += "Content-Security-Policy" -> csp
+        headers = headers.add("Content-Security-Policy", csp)
 
       // Cross-Origin-Embedder-Policy
       if options.crossOriginEmbedderPolicy then
-        headers += "Cross-Origin-Embedder-Policy" -> "require-corp"
+        headers = headers.add("Cross-Origin-Embedder-Policy", "require-corp")
 
       // Cross-Origin-Opener-Policy
       if options.crossOriginOpenerPolicy then
-        headers += "Cross-Origin-Opener-Policy" -> "same-origin"
+        headers = headers.add("Cross-Origin-Opener-Policy", "same-origin")
 
       // Cross-Origin-Resource-Policy
       if options.crossOriginResourcePolicy then
-        headers += "Cross-Origin-Resource-Policy" -> "same-origin"
+        headers = headers.add("Cross-Origin-Resource-Policy", "same-origin")
 
       // X-DNS-Prefetch-Control
       if options.dnsPrefetchControl then
-        headers += "X-DNS-Prefetch-Control" -> "off"
+        headers = headers.add("X-DNS-Prefetch-Control", "off")
 
       // Expect-CT
       if options.expectCt then
         val expectCt = s"max-age=${options.expectCtMaxAge}" +
           (if options.expectCtEnforce then ", enforce" else "")
-        headers += "Expect-CT" -> expectCt
+        headers = headers.add("Expect-CT", expectCt)
 
       // X-Frame-Options
       if options.frameguard then
-        headers += "X-Frame-Options" -> options.frameguardAction
+        headers = headers.add("X-Frame-Options", options.frameguardAction)
 
       // Strict-Transport-Security
       if options.hsts then
         val hsts = s"max-age=${options.hstsMaxAge}" +
           (if options.hstsIncludeSubDomains then "; includeSubDomains" else "") +
           (if options.hstsPreload then "; preload" else "")
-        headers += "Strict-Transport-Security" -> hsts
+        headers = headers.add("Strict-Transport-Security", hsts)
 
       // X-Download-Options
       if options.ieNoOpen then
-        headers += "X-Download-Options" -> "noopen"
+        headers = headers.add("X-Download-Options", "noopen")
 
       // X-Content-Type-Options
       if options.noSniff then
-        headers += "X-Content-Type-Options" -> "nosniff"
+        headers = headers.add("X-Content-Type-Options", "nosniff")
 
       // Origin-Agent-Cluster
       if options.originAgentCluster then
-        headers += "Origin-Agent-Cluster" -> "?1"
+        headers = headers.add("Origin-Agent-Cluster", "?1")
 
       // X-Permitted-Cross-Domain-Policies
-      headers += "X-Permitted-Cross-Domain-Policies" -> options.permittedCrossDomainPolicies
+      headers = headers.add("X-Permitted-Cross-Domain-Policies", options.permittedCrossDomainPolicies)
 
       // Referrer-Policy
       if options.referrerPolicy then
-        headers += "Referrer-Policy" -> options.referrerPolicyDirective
+        headers = headers.add("Referrer-Policy", options.referrerPolicyDirective)
 
       // X-XSS-Protection
       if options.xssFilter then
-        headers += "X-XSS-Protection" -> options.xssFilterMode
+        headers = headers.add("X-XSS-Protection", options.xssFilterMode)
 
       Future.successful(res.copy(headers = headers))
     }
 
     Future.successful(Continue(request.addFinalizer(securityHeadersFinalizer)))
 
-  /** Creates middleware with only essential security headers enabled
-    */
+  /** Creates middleware with only essential security headers enabled */
   def essential(): Handler =
     apply(Options(
       contentSecurityPolicy = true,
@@ -159,8 +158,7 @@ object SecurityMiddleware:
       originAgentCluster = false,
     ))
 
-  /** Creates middleware configured for API servers
-    */
+  /** Creates middleware configured for API servers */
   def api(): Handler =
     apply(Options(
       // Disable browser-specific protections

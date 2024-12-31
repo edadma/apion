@@ -52,9 +52,7 @@ object LoggingMiddleware:
         if header == "content-length" then
           res.map(r =>
             logger.debug(s"Looking up content-length header in: ${r.headers}")
-            r.headers.find { case (k, _) => k.toLowerCase == "content-length" }
-              .map(_._2)
-              .getOrElse("-"),
+            r.headers.get("content-length").getOrElse("-"),
           ).getOrElse("-")
         else
           res.flatMap(_.headers.get(header)).getOrElse("-")

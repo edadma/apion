@@ -8,7 +8,7 @@ import scala.scalajs.js.typedarray.Uint8Array
 @JSImport("crypto", JSImport.Namespace)
 object crypto extends js.Object:
   def createHmac(algorithm: String, key: String | Uint8Array): Hmac = js.native
-  def randomBytes(size: Int): CryptoBuffer                          = js.native
+  def randomBytes(size: Int): Uint8Array                            = js.native
 
 @js.native
 trait Hmac extends js.Object:

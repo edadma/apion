@@ -22,6 +22,7 @@ Add missing basic features and more integration testing.
 - improve security middleware
 - improve CORS middleware
 - improve authentication middleware
+- improve Node.js facade
 
 ## [0.0.1] - 2024-12-30
 

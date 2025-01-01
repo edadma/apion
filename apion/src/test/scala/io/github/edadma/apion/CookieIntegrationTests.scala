@@ -161,14 +161,16 @@ class CookieIntegrationTests extends AsyncBaseSpec with BeforeAndAfterAll {
           .toFuture
           .map { response =>
             // Get all Set-Cookie headers
-            val setCookies = response.headers
-              .get("Set-Cookie")
-              .split(",")
-              .map(_.trim)
-              .toSet
+            val headers = response.headers
+            val allSetCookieHeaders = List(
+              headers.get("Set-Cookie"),
+              Option(headers.get("set-cookie")), // Try lowercase version too
+            ).flatten.toSet
 
-            setCookies should contain("cookie1=value1")
-            setCookies should contain("cookie2=value2")
+            allSetCookieHeaders should contain allOf (
+              "cookie1=value1",
+              "cookie2=value2",
+            )
           }
       }
     }

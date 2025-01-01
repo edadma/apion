@@ -70,7 +70,8 @@ object StaticMiddleware:
         options.dotfiles match
           case "ignore" => Future.successful(Skip)
           case "deny"   => Future.successful(Complete(Response(403, body = "Forbidden")))
-          case _        => sendFile(path, stats)
+          case "allow"  => sendFile(path, stats)
+          case _        => Future.successful(Skip)
       else
         sendFile(path, stats)
 
@@ -103,8 +104,10 @@ object StaticMiddleware:
             Complete(Response(200, headers, content.toString))
           }
 
+    logger.debug(s"static middleware url: ${request.url}, $options")
+    logger.debug(s"static middleware path: ${request.path}")
     // Main handler logic
-    val rawPath     = request.url.split('?')(0)
+    val rawPath     = request.path
     val decodedPath = decodeURIComponent(rawPath)
 
     // Prevent directory traversal
@@ -113,6 +116,7 @@ object StaticMiddleware:
     else
       // Construct full file path
       val fullPath = s"$root/$decodedPath".replaceAll("/+", "/")
+      logger.debug(s"fullPath: $fullPath")
 
       // Check if path exists and is file/directory
       fs.stat(fullPath).toFuture.transformWith {
@@ -126,6 +130,7 @@ object StaticMiddleware:
           Future.successful(Skip)
 
         case Failure(_) =>
+          logger.debug(s"not found: $fullPath")
           Future.successful(Complete(Response(404, body = "Not Found")))
       }
   }

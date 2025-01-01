@@ -13,12 +13,12 @@ class StaticMiddlewareIntegrationTests extends AsyncBaseSpec with BeforeAndAfter
   val port                   = 3005 // Different port for static file tests
 
   // Comprehensive mock filesystem
-  val mockFiles = Map(
-    "project/public/index.html"      -> mockFile("<html><body>Welcome</body></html>", false, "644"),
-    "project/public/styles.css"      -> mockFile("body { color: black; }", false, "644"),
-    "project/public/.hidden.css"     -> mockFile("hidden styles", false, "644"),
-    "project/private/.secret.txt"    -> mockFile("confidential", false, "600"),
-    "project/restricted/config.json" -> mockFile("{\"key\":\"value\"}", false, "600"),
+  private val mockFiles = Map(
+    "project/public/index.html"       -> mockFile("<html><body>Welcome</body></html>", false, "644"),
+    "project/public/styles.css"       -> mockFile("body { color: black; }", false, "644"),
+    "project/public/.hidden.css"      -> mockFile("hidden styles", false, "644"),
+    "project/private/.secret.txt"     -> mockFile("confidential", false, "600"),
+    "project/restricted/.config.json" -> mockFile("{\"key\":\"value\"}", false, "600"),
   )
 
   val mockFs = new MockFS(mockFiles)
@@ -88,7 +88,7 @@ class StaticMiddlewareIntegrationTests extends AsyncBaseSpec with BeforeAndAfter
         }
     }
 
-    "should deny dot files when configured" in {
+    "should deny dot files when configured" in withDebugLogging("should deny dot files when configured") {
       fetch(s"http://localhost:$port/private/.secret.txt")
         .toFuture
         .map { response =>

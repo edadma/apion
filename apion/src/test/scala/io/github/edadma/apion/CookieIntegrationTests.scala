@@ -156,22 +156,19 @@ class CookieIntegrationTests extends AsyncBaseSpec with BeforeAndAfterAll {
           }
       }
 
-      "should set multiple cookies" in {
+      "should set multiple cookies" in withDebugLogging("should set multiple cookies") {
         fetch(s"http://localhost:$port/set-multiple-cookies")
           .toFuture
           .map { response =>
-            // Get all Set-Cookie headers
-            val headers                                                = response.headers
-            val setCookieValues: js.UndefOr[String | js.Array[String]] = headers.get("Set-Cookie")
+            // Get all Set-Cookie headers using getAll
+            val headers       = response.headers
+            val cookieHeaders = headers.get("Set-Cookie")
 
-            val cookieHeaders = setCookieValues.toOption.map {
-              case s: String           => js.Array(s)
-              case a: js.Array[String] => a
-            }.getOrElse(js.Array())
-
-            cookieHeaders.length shouldBe 2
-            cookieHeaders.toSet should contain("cookie1=value1")
-            cookieHeaders.toSet should contain("cookie2=value2")
+            // Debug logging
+            logger.debug(s"Cookie headers: ${cookieHeaders.mkString(", ")}")
+            cookieHeaders.split(",").length shouldBe 2
+            cookieHeaders should include("cookie1=value1")
+            cookieHeaders should include("cookie2=value2")
           }
       }
     }

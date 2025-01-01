@@ -1,10 +1,12 @@
 package io.github.edadma.apion
 
-import io.github.edadma.nodejs.{http, ServerRequest, ServerResponse, Server => NodeServer}
+import io.github.edadma.nodejs.{ServerRequest, ServerResponse, http, Server as NodeServer}
 
 import scala.scalajs.js
 import scala.concurrent.Future
 import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits.global
+
+import scala.language.postfixOps
 
 class Server {
   private val router = new Router()
@@ -78,17 +80,21 @@ class Server {
               }
             }
         }.map { finalResponse =>
+          logger.debug(finalResponse.headers.toMap.flatMap { case (key, values) =>
+            values.map(value => key -> value)
+          }.toSeq)
           // Write response headers
           logger.debug(s"Writing response headers: ${finalResponse.headers.toMap}")
-          res.writeHead(
-            finalResponse.status,
-            js.Dictionary(
-              finalResponse.headers.toMap.flatMap { case (key, values) =>
-                values.map(value => key -> value)
-              }.toSeq*,
-            ),
-          )
-          // Write body and end response
+          // Convert headers to dictionary, preserving multiple values for Set-Cookie
+          val headerDict = js.Dictionary[String | js.Array[String]]()
+          finalResponse.headers.toMap.foreach { case (key, values) =>
+            if (key.toLowerCase == "set-cookie" && values.length > 1) {
+              headerDict(key) = js.Array(values*)
+            } else {
+              headerDict(key) = values.head
+            }
+          }
+          res.writeHead(finalResponse.status, headerDict) // Write body and end response
           res.end(finalResponse.body)
         }
 

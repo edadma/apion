@@ -62,7 +62,7 @@ class SecurityAndCorsTests extends AsyncBaseSpec with BeforeAndAfterAll {
   }
 
   "SecurityMiddleware" - {
-    "should set basic security headers" in /*withDebugLogging("security-headers")*/ {
+    "should set basic security headers" in {
       fetch(s"http://localhost:$port/secure")
         .toFuture
         .map { response =>
@@ -96,7 +96,7 @@ class SecurityAndCorsTests extends AsyncBaseSpec with BeforeAndAfterAll {
       fetch(s"http://localhost:$port/secure")
         .toFuture
         .map { response =>
-          val csp = Option(response.headers.get("Content-Security-Policy")).getOrElse("")
+          val csp = response.headers.get("Content-Security-Policy")
 
           csp should (
             include("default-src 'self'") and
@@ -124,12 +124,14 @@ class SecurityAndCorsTests extends AsyncBaseSpec with BeforeAndAfterAll {
           response.status shouldBe 204
 
           val headers = response.headers
-          Option(headers.get("Access-Control-Allow-Origin")).getOrElse("") shouldBe "http://allowed-origin.com"
 
-          val allowMethods = Option(headers.get("Access-Control-Allow-Methods")).getOrElse("")
+          val allowOrigin = headers.get("Access-Control-Allow-Origin")
+          allowOrigin shouldBe "http://allowed-origin.com"
+
+          val allowMethods = headers.get("Access-Control-Allow-Methods")
           allowMethods should (include("GET") and include("POST"))
 
-          val allowHeaders = Option(headers.get("Access-Control-Allow-Headers")).getOrElse("")
+          val allowHeaders = headers.get("Access-Control-Allow-Headers")
           allowHeaders should include("Content-Type")
 
           headers.has("Vary") shouldBe true
@@ -163,13 +165,15 @@ class SecurityAndCorsTests extends AsyncBaseSpec with BeforeAndAfterAll {
       fetch(s"http://localhost:$port/cors", options)
         .toFuture
         .map { response =>
-          val headers = response.headers
-          Option(headers.get("Access-Control-Allow-Origin")).getOrElse("") shouldBe "http://allowed-origin.com"
+          val headers     = response.headers
+          val allowOrigin = headers.get("Access-Control-Allow-Origin")
+          allowOrigin shouldBe "http://allowed-origin.com"
 
-          val exposeHeaders = Option(headers.get("Access-Control-Expose-Headers")).getOrElse("")
+          val exposeHeaders = headers.get("Access-Control-Expose-Headers")
           exposeHeaders should include("X-Test-Header")
 
-          Option(headers.get("Access-Control-Allow-Credentials")).getOrElse("") shouldBe "true"
+          val allowCredentials = headers.get("Access-Control-Allow-Credentials")
+          allowCredentials shouldBe "true"
         }
     }
   }

@@ -193,10 +193,12 @@ class AuthIntegrationTests extends AsyncBaseSpec with BeforeAndAfterAll {
 
         fetch(s"http://localhost:$port/secure/data", options)
           .toFuture
-          .map { response =>
+          .flatMap { response =>
             response.status shouldBe 401
             // Verify error is about invalid claims
-            response.text().toFuture.map(_.toLowerCase should include("claims"))
+            response.text().toFuture.map { text =>
+              text.toLowerCase should include("claims")
+            }
           }
       }
 
@@ -212,9 +214,11 @@ class AuthIntegrationTests extends AsyncBaseSpec with BeforeAndAfterAll {
 
         fetch(s"http://localhost:$port/secure/data", options)
           .toFuture
-          .map { response =>
+          .flatMap { response =>
             response.status shouldBe 401
-            response.text().toFuture.map(_.toLowerCase should include("claims"))
+            response.text().toFuture.map { text =>
+              text.toLowerCase should include("claims")
+            }
           }
       }
 

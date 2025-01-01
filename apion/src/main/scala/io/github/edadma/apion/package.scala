@@ -13,7 +13,7 @@ val logger = LoggerFactory.newLogger
   *   - '/' becomes '_'
   *   - Padding '=' is removed
   */
-private def base64UrlEncode(str: String): String =
+def base64UrlEncode(str: String): String =
   bufferMod.Buffer
     .from(str)
     .toString("base64")
@@ -26,7 +26,7 @@ private def base64UrlEncode(str: String): String =
   *   - '_' becomes '/'
   *   - Adds back padding if needed
   */
-private def base64UrlDecode(str: String): String =
+def base64UrlDecode(str: String): String =
   Try {
     bufferMod.Buffer
       .from(
@@ -38,7 +38,7 @@ private def base64UrlDecode(str: String): String =
       .toString("utf8")
   }.getOrElse(throw JWT.JWTError("Invalid base64url encoding"))
 
-private def decodeURIComponent(s: String): String = {
+def decodeURIComponent(s: String): String = {
   def hexToChar(hex: String): Char =
     Integer.parseInt(hex, 16).toChar
 
@@ -59,7 +59,7 @@ private def decodeURIComponent(s: String): String = {
   result.toString
 }
 
-private def encodeURIComponent(s: String): String = {
+def encodeURIComponent(s: String): String = {
   def shouldEncode(c: Char): Boolean = {
     val allowedChars = ('a' to 'z') ++ ('A' to 'Z') ++ ('0' to '9') ++ Set('-', '_', '.', '!', '~', '*', '\'', '(', ')')
     !allowedChars.contains(c)
@@ -80,3 +80,10 @@ private def encodeURIComponent(s: String): String = {
   }
   sb.toString
 }
+
+def generateUUID(): String =
+  val bytes = crypto.randomBytes(16)
+  bytes(6) = (bytes(6) & 0x0f) | 0x40 // Version 4
+  bytes(8) = (bytes(8) & 0x3f) | 0x80 // Variant
+  val hex = bytes.toString("hex")
+  s"${hex.substring(0, 8)}-${hex.substring(8, 12)}-${hex.substring(12, 16)}-${hex.substring(16, 20)}-${hex.substring(20)}"

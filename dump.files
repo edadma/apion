@@ -41,6 +41,7 @@ AuthIntegrationTests.scala
 BasicIntegrationTests.scala
 CookieIntegrationTests.scala
 SecurityAndCorsIntegrationTests.scala
+StaticMiddlewareIntegrationTests.scala
 
 # server testing
 ./apion/src/test/scala/io/github/edadma/apion

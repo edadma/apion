@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+Add missing basic features and more integration testing.
+
+### Added
+- add security and CORS middleware integration tests
+- add cookie middleware
+- add support for multi-valued response headers
+
+### Fixed
+- fix handling of request finalizers
+- fix handling of headers for case-insensitivity
+
+### Changed
+- improve security middleware
+- improve CORS middleware
+- improve authentication middleware
+
 ## [0.0.1] - 2024-12-30
 
 Initial release of Apion, a lightweight HTTP/1.1 API server framework for Scala.js.
@@ -24,20 +42,3 @@ Initial release of Apion, a lightweight HTTP/1.1 API server framework for Scala.
 - Testing utilities for unit and integration tests
 
 [0.0.1]: https://github.com/edadma/apion/releases/tag/v0.0.1
-
-## [Unreleased]
-
-Add missing basic features and more integration testing.
-
-### Added
-- add security and CORS middleware integration tests
-- add cookie middleware
-- add support for multi-valued response headers
-
-### Fixed
-- fix handling of request finalizers
-- fix handling of headers for case-insensitivity
-
-### Changed
-- improve security middleware
-- improve CORS middleware

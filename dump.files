@@ -62,6 +62,7 @@ plugins.sbt
 # docs
 ./
 README.md
+CHANGELOG.md
 ./docs
 _config.yml
 index.md

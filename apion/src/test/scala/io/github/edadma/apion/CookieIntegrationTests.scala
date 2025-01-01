@@ -2,18 +2,26 @@ package io.github.edadma.apion
 
 import scala.concurrent.Future
 import scala.scalajs.js
-import io.github.edadma.nodejs.{fetch, Server => NodeServer, FetchOptions}
+import io.github.edadma.nodejs.{FetchOptions, fetch, Server as NodeServer}
 import org.scalatest.BeforeAndAfterAll
+import zio.json.*
+
 import scala.compiletime.uninitialized
 
 class CookieIntegrationTests extends AsyncBaseSpec with BeforeAndAfterAll {
   var server: Server         = uninitialized
   var httpServer: NodeServer = uninitialized
   val port                   = 3003 // Different port than other tests
+  val secretKey              = "test-secret-key-1234"
+
+  case class TestData(value: String, number: Int) derives JsonEncoder, JsonDecoder
 
   override def beforeAll(): Unit = {
     server = Server()
-      .use(CookieMiddleware())
+      .use(CookieMiddleware(CookieMiddleware.Options(
+        secret = Some(secretKey),
+        parseJSON = true,
+      )))
       // Echo cookie value back
       .get(
         "/echo-cookie",
@@ -69,6 +77,50 @@ class CookieIntegrationTests extends AsyncBaseSpec with BeforeAndAfterAll {
               .withCookie("cookie1", "value1")
               .withCookie("cookie2", "value2"),
           )),
+      )
+      // Echo signed cookie value
+      .get(
+        "/echo-signed-cookie",
+        request => {
+          request.getSignedCookie("signed-cookie") match {
+            case Some(value) => value.asText
+            case None        => "no signed cookie".asText
+          }
+        },
+      )
+      // Set signed cookie
+      .get(
+        "/set-signed-cookie",
+        request => {
+          request.signCookie("signed-cookie", "secret-value") match {
+            case Some(cookie) =>
+              Future.successful(Complete(
+                Response.text("signed cookie set").withCookie(cookie),
+              ))
+            case None => "signing failed".asText(500)
+          }
+        },
+      )
+      // Echo JSON cookie
+      .get(
+        "/echo-json-cookie",
+        request => {
+          request.getJsonCookie[TestData]("json-cookie") match {
+            case Some(data) => data.asJson
+            case None       => "no json cookie".asText
+          }
+        },
+      )
+      // Set JSON cookie
+      .get(
+        "/set-json-cookie",
+        _ => {
+          val data = TestData("test", 123)
+          Future.successful(Complete(
+            Response.text("json cookie set")
+              .withCookie("json-cookie", data.toJson),
+          ))
+        },
       )
 
     httpServer = server.listen(port) {}

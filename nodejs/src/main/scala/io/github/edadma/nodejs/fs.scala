@@ -2,7 +2,6 @@ package io.github.edadma.nodejs
 
 import scala.scalajs.js
 import scala.scalajs.js.annotation.*
-import scala.scalajs.js.typedarray.Uint8Array
 
 @js.native
 @JSImport("fs", JSImport.Namespace)
@@ -11,9 +10,9 @@ object fs extends js.Object:
 
 @js.native
 trait FSPromises extends js.Object:
-  def readFile(path: String): js.Promise[Uint8Array] = js.native
+  def readFile(path: String): js.Promise[Buffer] = js.native
 
-  def readFile(path: String, options: ReadFileOptions): js.Promise[String | Uint8Array] = js.native
+  def readFile(path: String, options: ReadFileOptions): js.Promise[String | Buffer] = js.native
 
   def stat(path: String): js.Promise[Stats] = js.native
 

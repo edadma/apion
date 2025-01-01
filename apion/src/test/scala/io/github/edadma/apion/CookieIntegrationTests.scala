@@ -13,6 +13,7 @@ class CookieIntegrationTests extends AsyncBaseSpec with BeforeAndAfterAll {
 
   override def beforeAll(): Unit = {
     server = Server()
+      .use(CookieMiddleware())
       // Echo cookie value back
       .get(
         "/echo-cookie",

@@ -5,6 +5,7 @@
 AuthMiddleware.scala
 BodyParser.scala
 Cookie.scala
+CookieMiddleware.scala
 CompressionMiddleware.scala
 CorsMiddleware.scala
 Handler.scala

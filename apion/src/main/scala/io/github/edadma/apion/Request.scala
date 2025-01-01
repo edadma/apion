@@ -30,7 +30,6 @@ object Request {
   def fromServerRequest(req: ServerRequest): Request = {
     val (path, query) = parseUrl(req.url)
     val headers       = req.headers.map { case (k, v) => k.toLowerCase -> v }.toMap
-    val cookies       = headers.get("cookie").map(Cookie.parse).getOrElse(Map.empty)
 
     Request(
       method = req.method,
@@ -39,7 +38,6 @@ object Request {
       headers = headers,
       query = parseQueryString(query),
       rawRequest = req,
-      cookies = cookies,
     )
   }
 

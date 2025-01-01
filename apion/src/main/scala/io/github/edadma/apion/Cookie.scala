@@ -31,20 +31,5 @@ case class Cookie(
 }
 
 object Cookie {
-  private val dateFormat = DateTimeFormatter.RFC_1123_DATE_TIME.withZone(ZoneOffset.UTC)
-
-  def parse(cookieHeader: String): Map[String, String] = {
-    cookieHeader
-      .split(";")
-      .map(_.trim)
-      .map { cookie =>
-        cookie.split("=", 2) match {
-          case Array(name, value) =>
-            decodeURIComponent(name.trim) -> decodeURIComponent(value.trim.stripPrefix("\"").stripSuffix("\""))
-          case Array(name) =>
-            decodeURIComponent(name.trim) -> ""
-        }
-      }
-      .toMap
-  }
+  private[apion] val dateFormat = DateTimeFormatter.RFC_1123_DATE_TIME.withZone(ZoneOffset.UTC)
 }

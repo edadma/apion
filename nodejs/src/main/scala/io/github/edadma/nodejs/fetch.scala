@@ -24,8 +24,9 @@ object fetch extends js.Object:
 
 @js.native
 trait Headers extends js.Object:
-  def get(name: String): String  = js.native
-  def has(name: String): Boolean = js.native
+  def get(name: String): js.UndefOr[String | js.Array[String]] = js.native
+  def has(name: String): Boolean                               = js.native
+  def getAll(name: String): js.Array[String]                   = js.native
 
 object FetchOptions:
   def apply(

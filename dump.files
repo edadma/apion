@@ -4,6 +4,7 @@
 ./apion/src/main/scala/io/github/edadma/apion
 AuthMiddleware.scala
 BodyParser.scala
+Cookie.scala
 CompressionMiddleware.scala
 CorsMiddleware.scala
 Handler.scala
@@ -26,6 +27,7 @@ StaticMiddleware.scala
 ./apion/src/test/scala/io/github/edadma/apion
 AuthMiddlewareTests.scala
 BaseSpec.scala
+CookieIntegrationTests.scala
 IntegrationTests.scala
 JWTTests.scala
 LoggingMiddlewareTests.scala

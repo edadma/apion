@@ -166,7 +166,9 @@ class AuthIntegrationTests extends AsyncBaseSpec with BeforeAndAfterAll {
     }
 
     "enhanced token features" - {
-      "should include refresh header when token is near expiration" in {
+      "should include refresh header when token is near expiration" in withDebugLogging(
+        "should include refresh header when token is near expiration",
+      ) {
         // Create token that's close to refresh threshold
         val nearExpiryConfig = config.copy(
           maxTokenLifetime = config.tokenRefreshThreshold + 60, // Just over the refresh threshold

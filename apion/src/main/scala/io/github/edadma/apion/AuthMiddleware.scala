@@ -138,6 +138,11 @@ object AuthMiddleware:
                   val now                 = System.currentTimeMillis() / 1000
                   val timeUntilExpiration = payload.exp - now
 
+                  logger.debug(s"Current time: $now")
+                  logger.debug(s"Token expiration: ${payload.exp}")
+                  logger.debug(s"Time until expiration: $timeUntilExpiration")
+                  logger.debug(s"Refresh threshold: ${config.tokenRefreshThreshold}")
+
                   // Validate additional claims
                   val claimsValid =
                     payload.iss == config.issuer &&
@@ -148,9 +153,13 @@ object AuthMiddleware:
                     // Prepare authentication finalizer with token refresh hint
                     val authFinalizer: Finalizer = (req, res) =>
                       val refreshHeaderOpt =
-                        if timeUntilExpiration < config.tokenRefreshThreshold then
+                        if timeUntilExpiration <= config.tokenRefreshThreshold then
+                          logger.debug("Adding refresh header")
                           Some(("X-Token-Refresh", "true"))
-                        else None
+                        else {
+                          logger.debug("Not adding refresh header")
+                          None
+                        }
 
                       Future.successful(
                         refreshHeaderOpt.fold(res)(header =>

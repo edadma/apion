@@ -4,6 +4,8 @@ import scala.concurrent.Future
 import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits.global
 import zio.json.*
 
+import java.time.Instant
+
 // Extension methods for any value that has a JsonEncoder
 implicit class JsonResponseOps[A: JsonEncoder](val data: A) {
   def asJson: Future[Complete]              = Future.successful(Complete(Response.json(data)))
@@ -32,4 +34,34 @@ val ServerError: Future[Complete] =
 def Created[A: JsonEncoder](data: A, location: Option[String] = None): Future[Result] = {
   val headers = location.map(l => Seq("Location" -> l)).getOrElse(Nil)
   Future.successful(Complete(Response.json(data, 201, headers)))
+}
+
+extension (response: Response) {
+  def withCookie(cookie: Cookie): Response = {
+    // Add as a new Set-Cookie header, don't combine with existing ones
+    response.copy(headers = response.headers.add("Set-Cookie", cookie.toHeaderValue))
+  }
+
+  def withCookie(
+      name: String,
+      value: String,
+      domain: Option[String] = None,
+      path: Option[String] = None,
+      maxAge: Option[Int] = None,
+      expires: Option[Instant] = None,
+      secure: Boolean = false,
+      httpOnly: Boolean = false,
+      sameSite: Option[String] = None,
+  ): Response = {
+    withCookie(Cookie(name, value, domain, path, maxAge, expires, secure, httpOnly, sameSite))
+  }
+
+  def clearCookie(name: String, path: String = "/"): Response = {
+    withCookie(Cookie(
+      name = name,
+      value = "",
+      path = Some(path),
+      expires = Some(Instant.EPOCH),
+    ))
+  }
 }

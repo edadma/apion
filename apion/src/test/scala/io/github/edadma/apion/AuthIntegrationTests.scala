@@ -55,6 +55,19 @@ class AuthIntegrationTests extends AsyncBaseSpec with BeforeAndAfterAll {
           }
         },
       )
+      .post(
+        "/secure/data",
+        request => {
+          request.context.get("auth") match {
+            case Some(auth: Auth) =>
+              SecureData(s"Secret data for ${auth.user}").asJson
+            case Some(_) =>
+              "Invalid auth context type".asText(500)
+            case None =>
+              "No auth context found".asText(500)
+          }
+        },
+      )
       // Admin only endpoint
       .get(
         "/secure/admin",

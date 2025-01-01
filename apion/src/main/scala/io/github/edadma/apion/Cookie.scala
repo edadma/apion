@@ -2,6 +2,9 @@ package io.github.edadma.apion
 
 import scala.concurrent.Future
 import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits.global
+
+import java.time.format.DateTimeFormatter
+import java.time.{Instant, ZoneOffset}
 import scala.scalajs.js
 
 case class Cookie(
@@ -10,10 +13,10 @@ case class Cookie(
     domain: Option[String] = None,
     path: Option[String] = None,
     maxAge: Option[Int] = None,
-    expires: Option[js.Date] = None,
+    expires: Option[Instant] = None,
     secure: Boolean = false,
     httpOnly: Boolean = true,
-    sameSite: Option[String] = Some("Lax"), // Lax, Strict, or None
+    sameSite: Option[String] = Some("Lax"),
 )
 
 object CookieMiddleware {
@@ -81,7 +84,7 @@ object CookieMiddleware {
     cookie.domain.foreach(d => builder.append(s"; Domain=$d"))
     cookie.path.orElse(Some(options.path)).foreach(p => builder.append(s"; Path=$p"))
     cookie.maxAge.orElse(options.maxAge).foreach(age => builder.append(s"; Max-Age=$age"))
-    cookie.expires.foreach(exp => builder.append(s"; Expires=${exp.toUTCString()}"))
+    cookie.expires.foreach(exp => builder.append(s"; Expires=${exp.toString}"))
 
     if (cookie.secure || options.secure) builder.append("; Secure")
     if (cookie.httpOnly || options.httpOnly) builder.append("; HttpOnly")
@@ -117,28 +120,35 @@ object CookieMiddleware {
 }
 
 // Extension methods for cookie operations
-extension (request: Request) {
-  def cookies: Map[String, String] =
-    request.context.get("cookies").map(_.asInstanceOf[Map[String, String]]).getOrElse(Map.empty)
+extension (response: Response) {
+  def withCookie(cookie: Cookie): Response =
+    response.copy(headers =
+      response.headers.add(
+        "Set-Cookie",
+        formatCookieHeader(cookie),
+      ),
+    )
 
-  def cookie(name: String): Option[String] = cookies.get(name)
-
-  def setCookie(cookie: Cookie): Request = {
-    val newCookies = request.context.get("newCookies")
-      .collect {
-        case cookies: List[_] if cookies.forall(_.isInstanceOf[Cookie]) =>
-          cookie :: cookies.collect { case c: Cookie => c }
-      }
-      .getOrElse(List(cookie))
-    request.copy(context = request.context + ("newCookies" -> newCookies))
-  }
-
-  def clearCookie(name: String, path: String = "/"): Request = {
-    setCookie(Cookie(
+  def clearCookie(name: String, path: String = "/"): Response =
+    withCookie(Cookie(
       name = name,
       value = "",
       path = Some(path),
-      expires = Some(new js.Date(0.0)),
+      expires = Some(Instant.EPOCH),
     ))
+
+  private def formatCookieHeader(cookie: Cookie): String = {
+    val builder = new StringBuilder()
+    builder.append(s"${encodeURIComponent(cookie.name)}=${encodeURIComponent(cookie.value)}")
+    cookie.domain.foreach(d => builder.append(s"; Domain=$d"))
+    cookie.path.foreach(p => builder.append(s"; Path=$p"))
+    cookie.maxAge.foreach(age => builder.append(s"; Max-Age=$age"))
+    cookie.expires.foreach(exp =>
+      builder.append(s"; Expires=${exp.atZone(ZoneOffset.UTC).format(DateTimeFormatter.RFC_1123_DATE_TIME)}"),
+    )
+    if (cookie.secure) builder.append("; Secure")
+    if (cookie.httpOnly) builder.append("; HttpOnly")
+    cookie.sameSite.foreach(ss => builder.append(s"; SameSite=$ss"))
+    builder.toString
   }
 }

@@ -1,12 +1,11 @@
 package io.github.edadma.apion
 
-import scala.concurrent.Future
 import scala.scalajs.js
 import io.github.edadma.nodejs.{fetch, Server => NodeServer, FetchOptions}
 import org.scalatest.BeforeAndAfterAll
 import scala.compiletime.uninitialized
 
-class SecurityAndCorsTests extends AsyncBaseSpec with BeforeAndAfterAll {
+class SecurityAndCorsIntegrationTests extends AsyncBaseSpec with BeforeAndAfterAll {
   var server: Server         = uninitialized
   var httpServer: NodeServer = uninitialized
   val port                   = 3002 // Different port than other tests

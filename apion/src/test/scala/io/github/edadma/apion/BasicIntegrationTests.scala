@@ -1,15 +1,11 @@
 package io.github.edadma.apion
 
-import org.scalatest.freespec.AsyncFreeSpec
-import org.scalatest.matchers.should.Matchers
 import org.scalatest.BeforeAndAfterAll
-import scala.concurrent.Future
 import scala.scalajs.js
-import scala.scalajs.js.JSConverters._
-import io.github.edadma.nodejs.{http, Server => NodeServer, fetch, Response}
+import io.github.edadma.nodejs.{Server => NodeServer, fetch}
 import scala.compiletime.uninitialized
 
-class IntegrationTests extends AsyncBaseSpec with BeforeAndAfterAll {
+class BasicIntegrationTests extends AsyncBaseSpec with BeforeAndAfterAll {
   var server: Server         = uninitialized
   var httpServer: NodeServer = uninitialized
   val port                   = 3001 // Use different port than main server

@@ -24,17 +24,23 @@ SecurityMiddleware.scala
 Server.scala
 StaticMiddleware.scala
 
+# testing support
+./apion/src/test/scala/io/github/edadma/apion
+BaseSpec.scala
+
 # unit testing
 ./apion/src/test/scala/io/github/edadma/apion
-AuthIntegrationTests.scala
-BaseSpec.scala
-CookieIntegrationTests.scala
-IntegrationTests.scala
 JWTTests.scala
 LoggingMiddlewareTests.scala
 MockFS.scala
 RouterTests.scala
-SecurityAndCorsTests.scala
+
+# integration testing
+./apion/src/test/scala/io/github/edadma/apion
+AuthIntegrationTests.scala
+BasicIntegrationTests.scala
+CookieIntegrationTests.scala
+SecurityAndCorsIntegrationTests.scala
 
 # server testing
 ./apion/src/test/scala/io/github/edadma/apion

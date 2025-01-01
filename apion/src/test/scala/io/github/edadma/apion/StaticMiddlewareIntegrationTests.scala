@@ -19,6 +19,14 @@ class StaticMiddlewareIntegrationTests extends AsyncBaseSpec with BeforeAndAfter
     "project/public/.hidden.css"      -> mockFile("hidden styles", false, "644"),
     "project/private/.secret.txt"     -> mockFile("confidential", false, "600"),
     "project/restricted/.config.json" -> mockFile("{\"key\":\"value\"}", false, "600"),
+    //
+    "project/index.html"           -> mockFile("<html><body>Welcome</body></html>", false, "644"),
+    "project/styles.css"           -> mockFile("body { color: black; }", false, "644"),
+    "project/script.js"            -> mockFile("console.log('Hello');", false, "644"),
+    "project/images/logo.png"      -> mockFile("binary-image-data", false, "644"),
+    "project/private/secret.txt"   -> mockFile("confidential", false, "600"),
+    "project/documents/report.txt" -> mockFile("Annual Report", false, "644"),
+    "project/nested/deep/file.txt" -> mockFile("Deep nested content", false, "644"),
   )
 
   val mockFs = new MockFS(mockFiles)
@@ -88,7 +96,7 @@ class StaticMiddlewareIntegrationTests extends AsyncBaseSpec with BeforeAndAfter
         }
     }
 
-    "should deny dot files when configured" in withDebugLogging("should deny dot files when configured") {
+    "should deny dot files when configured" in /*withDebugLogging("should deny dot files when configured")*/ {
       fetch(s"http://localhost:$port/private/.secret.txt")
         .toFuture
         .map { response =>
@@ -103,6 +111,18 @@ class StaticMiddlewareIntegrationTests extends AsyncBaseSpec with BeforeAndAfter
           response.status shouldBe 200
         }
     }
+
+    "should serve static files" - {
+      "serve HTML file" in withDebugLogging("serve HTML file") {
+        fetch(s"http://localhost:$port/public/index.html")
+          .toFuture
+          .flatMap(response => response.text().toFuture)
+          .map { body =>
+            body should include("Welcome")
+          }
+      }
+    }
+
   }
 }
 
@@ -147,15 +167,6 @@ class StaticMiddlewareIntegrationTests extends AsyncBaseSpec with BeforeAndAfter
 //  }
 //
 //  "StaticMiddleware" - {
-//    "should serve static files" - {
-//      "serve HTML file" in {
-//        fetch(s"http://localhost:$port/index.html")
-//          .toFuture
-//          .flatMap(response => response.text().toFuture)
-//          .map { body =>
-//            body should include("Welcome")
-//          }
-//      }
 //
 //      "serve CSS file" in {
 //        fetch(s"http://localhost:$port/styles.css")

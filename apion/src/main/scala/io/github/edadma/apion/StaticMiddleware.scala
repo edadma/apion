@@ -101,6 +101,7 @@ object StaticMiddleware:
               "Cache-Control"  -> s"max-age=${options.maxAge}",
             ) ++ etag.map("ETag" -> _))
 
+            logger.debug(s"sendFile: $content")
             Complete(Response(200, headers, content.toString))
           }
 

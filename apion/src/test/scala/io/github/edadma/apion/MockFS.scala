@@ -42,6 +42,7 @@ class MockFS(files: Map[String, MockFile]) extends FSInterface:
         options.encoding.toOption match
           case Some("utf8") =>
             val decoder = new java.lang.String(content, "UTF-8")
+            logger.debug(s"mock readFile: $decoder")
             js.Promise.resolve(decoder)
           case _ =>
             js.Promise.resolve(new Uint8Array(js.Array[Short](content.map(b => (b & 0xff).toShort)*)))

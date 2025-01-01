@@ -20,8 +20,11 @@ case class Request(
     rawRequest: ServerRequest,
     basePath: String = "", // Track the accumulated base path
     finalizers: List[Finalizer] = Nil,
+    cookies: Map[String, String] = Map(),
 ) extends RequestDSL {
   def header(h: String): Option[String] = headers.get(h.toLowerCase)
+
+  def cookie(name: String): Option[String] = cookies.get(name)
 
   def addFinalizer(f: Finalizer): Request = copy(finalizers = f :: finalizers)
 }
@@ -29,13 +32,17 @@ case class Request(
 object Request {
   def fromServerRequest(req: ServerRequest): Request = {
     val (path, query) = parseUrl(req.url)
+    val headers       = req.headers.map { case (k, v) => k.toLowerCase -> v }.toMap
+    val cookies       = headers.get("cookie").map(Cookie.parse).getOrElse(Map.empty)
+
     Request(
       method = req.method,
       url = req.url,
       path = path,
-      headers = req.headers.map { case (k, v) => k.toLowerCase -> v }.toMap,
+      headers = headers,
       query = parseQueryString(query),
       rawRequest = req,
+      cookies = cookies,
     )
   }
 

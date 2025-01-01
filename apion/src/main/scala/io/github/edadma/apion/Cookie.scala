@@ -39,8 +39,10 @@ object Cookie {
       .map(_.trim)
       .map { cookie =>
         cookie.split("=", 2) match {
-          case Array(name, value) => name.trim -> value.trim.stripPrefix("\"").stripSuffix("\"")
-          case Array(name)        => name.trim -> ""
+          case Array(name, value) =>
+            decodeURIComponent(name.trim) -> decodeURIComponent(value.trim.stripPrefix("\"").stripSuffix("\""))
+          case Array(name) =>
+            decodeURIComponent(name.trim) -> ""
         }
       }
       .toMap

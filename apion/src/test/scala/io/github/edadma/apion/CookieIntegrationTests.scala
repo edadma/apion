@@ -18,8 +18,8 @@ class CookieIntegrationTests extends AsyncBaseSpec with BeforeAndAfterAll {
         "/echo-cookie",
         request => {
           request.cookie("test-cookie") match {
-            case Some(value) => Response.text(value)
-            case None        => Response.text("no cookie")
+            case Some(value) => value.asText
+            case None        => "no cookie".asText
           }
         },
       )
@@ -31,40 +31,43 @@ class CookieIntegrationTests extends AsyncBaseSpec with BeforeAndAfterAll {
             "cookie1" -> request.cookie("cookie1"),
             "cookie2" -> request.cookie("cookie2"),
           ).collect { case (name, Some(value)) => name -> value }
-          Response.json(cookies)
+          cookies.asJson
         },
       )
       // Set a simple cookie
       .get(
         "/set-cookie",
-        _ => {
-          Response.text("cookie set")
-            .withCookie("test-cookie", "hello")
-        },
+        _ =>
+          Future.successful(Complete(
+            Response.text("cookie set")
+              .withCookie("test-cookie", "hello"),
+          )),
       )
       // Set cookie with attributes
       .get(
         "/set-cookie-attrs",
-        _ => {
-          Response.text("cookie set with attributes")
-            .withCookie(
-              "session",
-              "abc123",
-              maxAge = Some(3600),
-              httpOnly = true,
-              secure = true,
-              path = Some("/api"),
-            )
-        },
+        _ =>
+          Future.successful(Complete(
+            Response.text("cookie set with attributes")
+              .withCookie(
+                "session",
+                "abc123",
+                maxAge = Some(3600),
+                httpOnly = true,
+                secure = true,
+                path = Some("/api"),
+              ),
+          )),
       )
       // Set multiple cookies
       .get(
         "/set-multiple-cookies",
-        _ => {
-          Response.text("multiple cookies set")
-            .withCookie("cookie1", "value1")
-            .withCookie("cookie2", "value2")
-        },
+        _ =>
+          Future.successful(Complete(
+            Response.text("multiple cookies set")
+              .withCookie("cookie1", "value1")
+              .withCookie("cookie2", "value2"),
+          )),
       )
 
     httpServer = server.listen(port) {}

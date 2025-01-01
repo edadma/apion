@@ -64,6 +64,7 @@ class Server {
   private def handleRequest(req: ServerRequest, res: ServerResponse): Unit = {
     // Convert Node.js request to our Request type
     val request = Request.fromServerRequest(req)
+    logger.debug(s"handleRequest: $request")
 
     // Process the request through our router
     router(request).map {

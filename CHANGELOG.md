@@ -31,9 +31,12 @@ Add missing basic features and more integration testing.
 
 ### Added
 - add security and CORS middleware integration tests
+- add cookie middleware
+- add support for multi-valued response headers
 
 ### Fixed
 - fix handling of request finalizers
+- fix handling of headers for case-insensitivity
 
 ### Changed
 - improve security middleware

@@ -115,7 +115,7 @@ object CompressionMiddleware:
             // Compress the response body
             compress(res.body, encoding, options).map { compressed =>
               res.copy(
-                headers = res.headers.addAll(Map(
+                headers = res.headers.addAll(Seq(
                   "Content-Encoding" -> encoding,
                   "Content-Length"   -> compressed.byteLength.toString,
                   "Vary"             -> "Accept-Encoding",

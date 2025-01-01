@@ -70,7 +70,7 @@ class Server {
       case Complete(_) => sys.error("Complete should be transformed to InternalComplete")
       case InternalComplete(finalReq, response) =>
         logger.debug(s"Processing ${finalReq.finalizers.length} finalizers")
-        finalReq.finalizers.foldLeft(Future.successful(response)) {
+        finalReq.finalizers.reverse.foldLeft(Future.successful(response)) {
           case (respFuture, finalizer) =>
             respFuture.flatMap { resp =>
               logger.debug("Executing finalizer")

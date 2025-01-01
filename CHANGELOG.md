@@ -11,8 +11,11 @@ Add missing basic features and more integration testing.
 
 ### Added
 - add security and CORS middleware integration tests
+- add basic (not using any middleware) integration tests
 - add cookie middleware
+- add integration tests for cookie handling
 - add support for multi-valued response headers
+- add integration test for authentication middleware
 
 ### Fixed
 - fix handling of request finalizers

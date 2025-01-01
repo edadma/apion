@@ -1,152 +1,173 @@
-//package io.github.edadma.apion
-//
-//import org.scalatest.BeforeAndAfterAll
-//import scala.compiletime.uninitialized
-//import scala.concurrent.Future
-//import scala.scalajs.js
-//import io.github.edadma.nodejs.{Server => NodeServer, fetch, Response, FetchOptions}
-//import zio.json._
-//import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits.global
-//
-//class CookieIntegrationTests extends AsyncBaseSpec with BeforeAndAfterAll {
-//  var server: Server         = uninitialized
-//  var httpServer: NodeServer = uninitialized
-//  val port                   = 3003
-//  val testSecret             = "test-secret-key-123"
-//
-//  override def beforeAll(): Unit = {
-//    server = Server()
-//      .use(CookieMiddleware(CookieMiddleware.Options(
-//        secret = testSecret,
-//        secure = false,
-//      )))
-//      .get(
-//        "/set-cookie",
-//        _ =>
-//          Future.successful(Complete(
-//            Response.text("Cookie set").withCookie(Cookie(
-//              name = "test-cookie",
-//              value = "test-value",
-//              maxAge = Some(3600),
-//            )),
-//          )),
-//      )
-//      .get(
-//        "/read-cookie",
-//        request =>
-//          request.cookie("test-cookie") match {
-//            case Some(value) => Future.successful(Complete(Response.text(value)))
-//            case None        => Future.successful(Complete(Response(404, body = "No cookie")))
-//          },
-//      )
-//      .get(
-//        "/multiple-cookies",
-//        _ =>
-//          Future.successful(Complete(
-//            Response.text("Multiple cookies set")
-//              .withCookie(Cookie("cookie1", "value1"))
-//              .withCookie(Cookie("cookie2", "value2")),
-//          )),
-//      )
-//      .get(
-//        "/clear-cookie",
-//        _ =>
-//          Future.successful(Complete(
-//            Response.text("Cookie cleared").clearCookie("test-cookie"),
-//          )),
-//      )
-//    httpServer = server.listen(port) {}
-//  }
-//
-//  override def afterAll(): Unit = {
-//    if (httpServer != null) {
-//      httpServer.close(() => ())
-//    }
-//  }
-//
-//  "Cookie Middleware" - {
-//    "should set a cookie" in {
-//      fetch(s"http://localhost:$port/set-cookie")
-//        .toFuture
-//        .map { response =>
-//          logger.debug(s"Response headers: ${response.headers}")
-//          Option(response.headers.get("set-cookie")) match {
-//            case Some(cookieHeader) =>
-//              logger.debug(s"Cookie header: $cookieHeader")
-//              cookieHeader should include("test-cookie=test-value")
-//              cookieHeader should include("Max-Age=3600")
-//              cookieHeader should include("HttpOnly")
-//            case None =>
-//              fail("No Set-Cookie header found")
-//          }
-//        }
-//    }
-//
-//    "should read a cookie" in {
-//      val cookieHeader = js.Dictionary("cookie" -> "test-cookie=test-value")
-//      val options      = FetchOptions(headers = cookieHeader)
-//
-//      fetch(s"http://localhost:$port/read-cookie", options)
-//        .toFuture
-//        .flatMap(response => response.text().toFuture)
-//        .map { text =>
-//          text shouldBe "test-value"
-//        }
-//    }
-//
-//    "should return 404 when cookie not found" in {
-//      fetch(s"http://localhost:$port/read-cookie")
-//        .toFuture
-//        .map { response =>
-//          response.status shouldBe 404
-//        }
-//    }
-//
-//    "should clear a cookie" in {
-//      fetch(s"http://localhost:$port/clear-cookie")
-//        .toFuture
-//        .map { response =>
-//          Option(response.headers.get("set-cookie")) match {
-//            case Some(cookieHeader) =>
-//              logger.debug(s"Clear cookie header: $cookieHeader")
-//              cookieHeader should include("test-cookie=")
-//              cookieHeader should include("Expires=Thu, 01 Jan 1970")
-//            case None =>
-//              fail("No Set-Cookie header found")
-//          }
-//        }
-//    }
-//
-//    "should handle multiple cookies" in {
-//      fetch(s"http://localhost:$port/multiple-cookies")
-//        .toFuture
-//        .map { response =>
-//          Option(response.headers.get("set-cookie")) match {
-//            case Some(cookieHeader) =>
-//              logger.debug(s"Multiple cookies header: $cookieHeader")
-//              cookieHeader should include("cookie1=value1")
-//              cookieHeader should include("cookie2=value2")
-//            case None =>
-//              fail("No Set-Cookie header found")
-//          }
-//        }
-//    }
-//
-//    "should read all cookies" in {
-//      val cookieHeader = js.Dictionary(
-//        "cookie" -> "cookie1=value1; cookie2=value2",
-//      )
-//      val options = FetchOptions(headers = cookieHeader)
-//
-//      fetch(s"http://localhost:$port/read-all-cookies", options)
-//        .toFuture
-//        .flatMap(response => response.text().toFuture)
-//        .map { text =>
-//          text should include("cookie1")
-//          text should include("value1")
-//          text should include("cookie2")
-//          text should include("value2")
-//        }
-//    }
-//  }
-//}
+package io.github.edadma.apion
+
+import scala.concurrent.Future
+import scala.scalajs.js
+import io.github.edadma.nodejs.{fetch, Server => NodeServer, FetchOptions}
+import org.scalatest.BeforeAndAfterAll
+import scala.compiletime.uninitialized
+
+class CookieIntegrationTests extends AsyncBaseSpec with BeforeAndAfterAll {
+  var server: Server         = uninitialized
+  var httpServer: NodeServer = uninitialized
+  val port                   = 3003 // Different port than other tests
+
+  override def beforeAll(): Unit = {
+    server = Server()
+      // Echo cookie value back
+      .get(
+        "/echo-cookie",
+        request => {
+          request.cookie("test-cookie") match {
+            case Some(value) => Response.text(value)
+            case None        => Response.text("no cookie")
+          }
+        },
+      )
+      // Echo multiple cookies back as JSON
+      .get(
+        "/echo-cookies",
+        request => {
+          val cookies = Map(
+            "cookie1" -> request.cookie("cookie1"),
+            "cookie2" -> request.cookie("cookie2"),
+          ).collect { case (name, Some(value)) => name -> value }
+          Response.json(cookies)
+        },
+      )
+      // Set a simple cookie
+      .get(
+        "/set-cookie",
+        _ => {
+          Response.text("cookie set")
+            .withCookie("test-cookie", "hello")
+        },
+      )
+      // Set cookie with attributes
+      .get(
+        "/set-cookie-attrs",
+        _ => {
+          Response.text("cookie set with attributes")
+            .withCookie(
+              "session",
+              "abc123",
+              maxAge = Some(3600),
+              httpOnly = true,
+              secure = true,
+              path = Some("/api"),
+            )
+        },
+      )
+      // Set multiple cookies
+      .get(
+        "/set-multiple-cookies",
+        _ => {
+          Response.text("multiple cookies set")
+            .withCookie("cookie1", "value1")
+            .withCookie("cookie2", "value2")
+        },
+      )
+
+    httpServer = server.listen(port) {}
+  }
+
+  override def afterAll(): Unit = {
+    if (httpServer != null) {
+      httpServer.close(() => ())
+    }
+  }
+
+  "Cookie handling" - {
+    "request cookies" - {
+      "should handle request with no cookies" in {
+        fetch(s"http://localhost:$port/echo-cookie")
+          .toFuture
+          .flatMap(response => response.text().toFuture)
+          .map(text => text shouldBe "no cookie")
+      }
+
+      "should read single cookie from request" in {
+        val options = FetchOptions(
+          headers = js.Dictionary(
+            "Cookie" -> "test-cookie=hello-world",
+          ),
+        )
+
+        fetch(s"http://localhost:$port/echo-cookie", options)
+          .toFuture
+          .flatMap(response => response.text().toFuture)
+          .map(text => text shouldBe "hello-world")
+      }
+
+      "should read multiple cookies from request" in {
+        val options = FetchOptions(
+          headers = js.Dictionary(
+            "Cookie" -> "cookie1=value1; cookie2=value2",
+          ),
+        )
+
+        fetch(s"http://localhost:$port/echo-cookies", options)
+          .toFuture
+          .flatMap(response => response.text().toFuture)
+          .map { text =>
+            val expected = """{"cookie1":"value1","cookie2":"value2"}"""
+            text shouldBe expected
+          }
+      }
+
+      "should handle URL-encoded cookie values" in {
+        val options = FetchOptions(
+          headers = js.Dictionary(
+            "Cookie" -> "test-cookie=hello%20world",
+          ),
+        )
+
+        fetch(s"http://localhost:$port/echo-cookie", options)
+          .toFuture
+          .flatMap(response => response.text().toFuture)
+          .map(text => text shouldBe "hello world")
+      }
+    }
+
+    "response cookies" - {
+      "should set a basic cookie" in {
+        fetch(s"http://localhost:$port/set-cookie")
+          .toFuture
+          .map { response =>
+            val setCookie = response.headers.get("Set-Cookie")
+            setCookie shouldBe "test-cookie=hello"
+          }
+      }
+
+      "should set cookie with attributes" in {
+        fetch(s"http://localhost:$port/set-cookie-attrs")
+          .toFuture
+          .map { response =>
+            val setCookie = response.headers.get("Set-Cookie")
+            setCookie should (
+              include("session=abc123") and
+                include("Max-Age=3600") and
+                include("HttpOnly") and
+                include("Secure") and
+                include("Path=/api")
+            )
+          }
+      }
+
+      "should set multiple cookies" in {
+        fetch(s"http://localhost:$port/set-multiple-cookies")
+          .toFuture
+          .map { response =>
+            // Get all Set-Cookie headers
+            val setCookies = response.headers
+              .get("Set-Cookie")
+              .split(",")
+              .map(_.trim)
+              .toSet
+
+            setCookies should contain("cookie1=value1")
+            setCookies should contain("cookie2=value2")
+          }
+      }
+    }
+  }
+}

@@ -4,8 +4,6 @@ import io.github.edadma.nodejs.ServerRequest
 
 import scala.concurrent.Future
 
-case class Auth(user: String, roles: Set[String])
-
 type Finalizer = (Request, Response) => Future[Response]
 
 case class Request(
@@ -16,7 +14,6 @@ case class Request(
     params: Map[String, String] = Map(),
     query: Map[String, String] = Map(),
     context: Map[String, Any] = Map(),
-    auth: Option[Auth] = None,
     rawRequest: ServerRequest,
     basePath: String = "", // Track the accumulated base path
     finalizers: List[Finalizer] = Nil,

@@ -39,8 +39,8 @@ object LoggingMiddleware:
         req.header("x-forwarded-for")
           .orElse(req.header("x-client-ip"))
           .getOrElse("-")
-      case ":remote-user" =>
-        req.auth.map(_.user).getOrElse("-")
+      case ":remote-user" => "-"
+//        req.auth.map(_.user).getOrElse("-")
       case ":date" =>
         val formatter = java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME
         java.time.ZonedDateTime.now().format(formatter)

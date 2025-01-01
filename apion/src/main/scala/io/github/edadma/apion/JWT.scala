@@ -124,6 +124,64 @@ object JWT:
     // Combine all parts
     s"$headerB64.$payloadB64.$signature"
 
+  case class RefreshToken(
+      jti: String, // Unique identifier for the refresh token
+      sub: String, // Subject (user ID)
+      exp: Long,   // Expiration timestamp
+      issuedAt: Long = System.currentTimeMillis() / 1000,
+  ) derives JsonEncoder, JsonDecoder
+
+  /** Generate a refresh token
+    *
+    * @param subject
+    *   User identifier
+    * @param validityPeriod
+    *   Refresh token validity in seconds (default 30 days)
+    * @return
+    *   Signed refresh token
+    */
+  def generateRefreshToken(
+      subject: String,
+      validityPeriod: Long = 30 * 24 * 3600,
+      secretKey: String,
+  ): String = {
+    val jti = java.util.UUID.randomUUID().toString // Generate unique token ID
+    val refreshTokenPayload = RefreshToken(
+      jti = jti,
+      sub = subject,
+      exp = System.currentTimeMillis() / 1000 + validityPeriod,
+    )
+    sign(refreshTokenPayload, secretKey)
+  }
+
+  /** Validate and refresh access token using a refresh token
+    *
+    * @param refreshToken
+    *   Existing refresh token
+    * @param secretKey
+    *   Secret key for verification
+    * @param accessTokenPayloadGenerator
+    *   Function to generate new access token payload
+    * @return
+    *   Either a new access token or an error
+    */
+  def refreshAccessToken[A: JsonEncoder: JsonDecoder](
+      refreshToken: String,
+      secretKey: String,
+      accessTokenPayloadGenerator: String => A,
+  ): Either[JWTError, String] = {
+    verify[RefreshToken](refreshToken, secretKey) match {
+      case Right(token) if token.exp > System.currentTimeMillis() / 1000 =>
+        // Generate new access token using the subject from refresh token
+        val newAccessTokenPayload = accessTokenPayloadGenerator(token.sub)
+        Right(sign(newAccessTokenPayload, secretKey))
+      case Right(_) =>
+        Left(JWTError("Refresh token expired"))
+      case Left(error) =>
+        Left(error)
+    }
+  }
+
 /** Example usage:
   *
   * case class TokenPayload( sub: String, // Subject (user id) roles: Set[String], exp: Long // Expiration time in

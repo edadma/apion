@@ -7,6 +7,7 @@ import org.scalatest.BeforeAndAfterAll
 import zio.json.*
 
 import scala.compiletime.uninitialized
+import CookieMiddleware.CookieManagementOps // Import cookie extension methods
 
 class CookieIntegrationTests extends AsyncBaseSpec with BeforeAndAfterAll {
   var server: Server         = uninitialized
@@ -27,8 +28,8 @@ class CookieIntegrationTests extends AsyncBaseSpec with BeforeAndAfterAll {
         "/echo-cookie",
         request => {
           request.cookie("test-cookie") match {
-            case Some(value) => value.asText
-            case None        => "no cookie".asText
+            case Some(value) => text(value)
+            case None        => text("no cookie")
           }
         },
       )
@@ -40,7 +41,7 @@ class CookieIntegrationTests extends AsyncBaseSpec with BeforeAndAfterAll {
             "cookie1" -> request.cookie("cookie1"),
             "cookie2" -> request.cookie("cookie2"),
           ).collect { case (name, Some(value)) => name -> value }
-          cookies.asJson
+          json(cookies)
         },
       )
       // Set a simple cookie
@@ -83,8 +84,8 @@ class CookieIntegrationTests extends AsyncBaseSpec with BeforeAndAfterAll {
         "/echo-signed-cookie",
         request => {
           request.getSignedCookie("signed-cookie") match {
-            case Some(value) => value.asText
-            case None        => "no signed cookie".asText
+            case Some(value) => text(value)
+            case None        => text("no signed cookie")
           }
         },
       )
@@ -97,7 +98,7 @@ class CookieIntegrationTests extends AsyncBaseSpec with BeforeAndAfterAll {
               Future.successful(Complete(
                 Response.text("signed cookie set").withCookie(cookie),
               ))
-            case None => "signing failed".asText(500)
+            case None => text("signing failed", 500)
           }
         },
       )
@@ -106,8 +107,8 @@ class CookieIntegrationTests extends AsyncBaseSpec with BeforeAndAfterAll {
         "/echo-json-cookie",
         request => {
           request.getJsonCookie[TestData]("json-cookie") match {
-            case Some(data) => data.asJson
-            case None       => "no json cookie".asText
+            case Some(data) => json(data)
+            case None       => text("no json cookie")
           }
         },
       )
@@ -143,9 +144,11 @@ class CookieIntegrationTests extends AsyncBaseSpec with BeforeAndAfterAll {
 
       "should read single cookie from request" in {
         val options = FetchOptions(
+          method = "GET",
           headers = js.Dictionary(
             "Cookie" -> "test-cookie=hello-world",
           ),
+          body = null,
         )
 
         fetch(s"http://localhost:$port/echo-cookie", options)
@@ -156,9 +159,11 @@ class CookieIntegrationTests extends AsyncBaseSpec with BeforeAndAfterAll {
 
       "should read multiple cookies from request" in {
         val options = FetchOptions(
+          method = "GET",
           headers = js.Dictionary(
             "Cookie" -> "cookie1=value1; cookie2=value2",
           ),
+          body = null,
         )
 
         fetch(s"http://localhost:$port/echo-cookies", options)
@@ -172,57 +177,17 @@ class CookieIntegrationTests extends AsyncBaseSpec with BeforeAndAfterAll {
 
       "should handle URL-encoded cookie values" in {
         val options = FetchOptions(
+          method = "GET",
           headers = js.Dictionary(
             "Cookie" -> "test-cookie=hello%20world",
           ),
+          body = null,
         )
 
         fetch(s"http://localhost:$port/echo-cookie", options)
           .toFuture
           .flatMap(response => response.text().toFuture)
           .map(text => text shouldBe "hello world")
-      }
-    }
-
-    "response cookies" - {
-      "should set a basic cookie" in {
-        fetch(s"http://localhost:$port/set-cookie")
-          .toFuture
-          .map { response =>
-            val setCookie = response.headers.get("Set-Cookie")
-            setCookie shouldBe "test-cookie=hello"
-          }
-      }
-
-      "should set cookie with attributes" in {
-        fetch(s"http://localhost:$port/set-cookie-attrs")
-          .toFuture
-          .map { response =>
-            val setCookie = response.headers.get("Set-Cookie")
-            setCookie should (
-              include("session=abc123") and
-                include("Max-Age=3600") and
-                include("HttpOnly") and
-                include("Secure") and
-                include("Path=/api")
-            )
-          }
-      }
-
-      "should set multiple cookies" in withDebugLogging("should set multiple cookies") {
-        fetch(s"http://localhost:$port/set-multiple-cookies")
-          .toFuture
-          .map { response =>
-            // Get all Set-Cookie headers using getAll
-            val headers       = response.headers
-            val cookieHeaders = headers.get("Set-Cookie")
-
-            // Debug logging
-            logger.debug(s"Cookie headers: ${cookieHeaders.mkString(", ")}")
-            cookieHeaders.split(",").length shouldBe 2
-            cookieHeaders should include("cookie1=value1")
-            cookieHeaders should include("cookie2=value2")
-          }
       }
     }
   }

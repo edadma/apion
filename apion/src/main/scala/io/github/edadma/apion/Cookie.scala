@@ -39,26 +39,26 @@ object CookieMiddleware {
       context = request.context + ("cookies" -> cookies),
     )
 
-    // Add cookie management methods via finalizer
-    val cookieFinalizer: Finalizer = (req, res) => {
-      // Get any cookies set during request handling
-      val newCookies = req.context.get("newCookies")
-        .collect {
-          case cookies: List[_] if cookies.forall(_.isInstanceOf[Cookie]) =>
-            cookies.collect { case c: Cookie => c }
-        }
-        .getOrElse(Nil)
+//    // Add cookie management methods via finalizer
+//    val cookieFinalizer: Finalizer = (req, res) => {
+//      // Get any cookies set during request handling
+//      val newCookies = req.context.get("newCookies")
+//        .collect {
+//          case cookies: List[_] if cookies.forall(_.isInstanceOf[Cookie]) =>
+//            cookies.collect { case c: Cookie => c }
+//        }
+//        .getOrElse(Nil)
+//
+//      // Add Set-Cookie headers for new cookies
+//      val cookieHeaders = newCookies.map(serializeCookie(_, options))
+//      Future.successful(
+//        res.copy(headers = cookieHeaders.foldLeft(res.headers) {
+//          case (headers, cookie) => headers.add("Set-Cookie", cookie)
+//        }),
+//      )
+//    }
 
-      // Add Set-Cookie headers for new cookies
-      val cookieHeaders = newCookies.map(serializeCookie(_, options))
-      Future.successful(
-        res.copy(headers = cookieHeaders.foldLeft(res.headers) {
-          case (headers, cookie) => headers.add("Set-Cookie", cookie)
-        }),
-      )
-    }
-
-    Future.successful(Continue(reqWithCookies.addFinalizer(cookieFinalizer)))
+    Future.successful(Continue(reqWithCookies /*.addFinalizer(cookieFinalizer)*/ ))
   }
 
   private def parseCookies(cookieHeader: String): Map[String, String] = {

@@ -18,53 +18,43 @@ class CookieIntegrationTests extends AsyncBaseSpec with BeforeAndAfterAll {
     server = Server()
       .use(CookieMiddleware(CookieMiddleware.Options(
         secret = testSecret,
-        secure = false, // Allow non-HTTPS for testing
+        secure = false,
       )))
       .get(
         "/set-cookie",
-        request => {
-          logger.debug("Handler /set-cookie called")
-          val withCookie = request.setCookie(Cookie(
-            name = "test-cookie",
-            value = "test-value",
-            maxAge = Some(3600),
-          ))
-          logger.debug(s"Cookie context: ${withCookie.context}")
-          Future.successful(InternalComplete(withCookie, Response.text("Cookie set")))
-        },
+        _ =>
+          Future.successful(Complete(
+            Response.text("Cookie set").withCookie(Cookie(
+              name = "test-cookie",
+              value = "test-value",
+              maxAge = Some(3600),
+            )),
+          )),
       )
       .get(
         "/read-cookie",
-        request => {
+        request =>
           request.cookie("test-cookie") match {
             case Some(value) => Future.successful(Complete(Response.text(value)))
             case None        => Future.successful(Complete(Response(404, body = "No cookie")))
-          }
-        },
-      )
-      .get(
-        "/read-all-cookies",
-        request => {
-          Future.successful(Complete(Response.json(request.cookies)))
-        },
-      )
-      .get(
-        "/clear-cookie",
-        request => {
-          val cookieRequest = request.clearCookie("test-cookie")
-          Future.successful(Complete(Response.text("Cookie cleared")))
-        },
+          },
       )
       .get(
         "/multiple-cookies",
-        request => {
-          val cookieRequest = request
-            .setCookie(Cookie("cookie1", "value1"))
-            .setCookie(Cookie("cookie2", "value2"))
-          Future.successful(Complete(Response.text("Multiple cookies set")))
-        },
+        _ =>
+          Future.successful(Complete(
+            Response.text("Multiple cookies set")
+              .withCookie(Cookie("cookie1", "value1"))
+              .withCookie(Cookie("cookie2", "value2")),
+          )),
       )
-
+      .get(
+        "/clear-cookie",
+        _ =>
+          Future.successful(Complete(
+            Response.text("Cookie cleared").clearCookie("test-cookie"),
+          )),
+      )
     httpServer = server.listen(port) {}
   }
 

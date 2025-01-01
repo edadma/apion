@@ -5,7 +5,7 @@ ThisBuild / scalaVersion         := "3.6.2"
 ThisBuild / organization         := "io.github.edadma"
 ThisBuild / organizationName     := "edadma"
 ThisBuild / organizationHomepage := Some(url("https://github.com/edadma"))
-ThisBuild / version              := "0.0.1"
+ThisBuild / version              := "0.0.2"
 
 ThisBuild / sonatypeCredentialHost := "s01.oss.sonatype.org"
 ThisBuild / sonatypeRepository     := "https://s01.oss.sonatype.org/service/local"
@@ -32,8 +32,16 @@ ThisBuild / developers := List(
     url = url("https://github.com/edadma"),
   ),
 )
-ThisBuild / description := "A type-safe HTTP server framework for Scala.js that combines Express-style ergonomics with Scala's powerful type system"
+
 ThisBuild / homepage := Some(url("https://github.com/edadma/apion"))
+
+ThisBuild / pomIncludeRepository := { _ => false }
+ThisBuild / publishTo := {
+  val nexus = "https://s01.oss.sonatype.org/"
+  if (isSnapshot.value) Some("snapshots" at nexus + "content/repositories/snapshots")
+  else Some("releases" at nexus + "service/local/staging/deploy/maven2")
+}
+ThisBuild / publishMavenStyle := true
 
 lazy val commonSettings = Seq(
   scalacOptions ++= Seq(
@@ -52,6 +60,7 @@ lazy val apion = project
   .settings(commonSettings)
   .settings(
     name := "apion",
+    description := "A type-safe HTTP server framework for Scala.js that combines Express-style ergonomics with Scala's powerful type system",
     libraryDependencies ++= Seq(
       "org.scalatest"    %%% "scalatest"                   % "3.2.19" % "test",
       "com.lihaoyi"      %%% "pprint"                      % "0.9.0"  % "test",
@@ -73,8 +82,8 @@ lazy val nodejs = project
   .enablePlugins(ScalaJSPlugin)
   .settings(commonSettings)
   .settings(
-    name                            := "nodejs",
-    version                         := "0.0.1",
+    name := "nodejs",
+    description := "A minimal Scala.js facade library providing the Node.js bindings needed to support the Apion web framework",
     scalaJSUseMainModuleInitializer := true,
     publishMavenStyle               := true,
     Test / publishArtifact          := false,
@@ -84,6 +93,5 @@ lazy val apion_root = project
   .in(file("."))
   .aggregate(apion, nodejs)
   .settings(
-    publish      := {},
-    publishLocal := {},
+    publish / skip := true,
   )

@@ -1,10 +1,11 @@
 package io.github.edadma.apion
 
-import zio.json._
+import io.github.edadma.nodejs.crypto
+import zio.json.*
+
 import scala.concurrent.{Future, Promise}
-import scala.util.{Try, Success, Failure}
+import scala.util.{Failure, Success, Try}
 import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits.global
-import java.util.UUID
 
 object AuthMiddleware:
   /** Configuration for authentication middleware */
@@ -63,6 +64,13 @@ object AuthMiddleware:
       details: Option[String] = None,
   ) derives JsonEncoder
 
+  private def generateUUID(): String =
+    val bytes = crypto.randomBytes(16)
+    bytes(6) = (bytes(6) & 0x0f) | 0x40 // Version 4
+    bytes(8) = (bytes(8) & 0x3f) | 0x80 // Variant
+    val hex = bytes.toString("hex")
+    s"${hex.substring(0, 8)}-${hex.substring(8, 12)}-${hex.substring(12, 16)}-${hex.substring(16, 20)}-${hex.substring(20)}"
+
   /** Create a new access token */
   def createAccessToken(
       subject: String,
@@ -77,7 +85,7 @@ object AuthMiddleware:
       iat = now,
       iss = config.issuer,
       aud = config.audience,
-      jti = UUID.randomUUID().toString,
+      jti = generateUUID(),
     )
     JWT.sign(payload, config.secretKey)
 
@@ -95,7 +103,7 @@ object AuthMiddleware:
       iat = now,
       iss = config.issuer,
       aud = config.audience,
-      jti = UUID.randomUUID().toString,
+      jti = generateUUID(),
     )
     JWT.sign(payload, config.secretKey)
 

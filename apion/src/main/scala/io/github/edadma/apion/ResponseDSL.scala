@@ -30,6 +30,6 @@ val ServerError: Future[Complete] =
 
 // Created with optional location header
 def Created[A: JsonEncoder](data: A, location: Option[String] = None): Future[Result] = {
-  val headers = location.map(l => Map("Location" -> l)).getOrElse(Map.empty)
+  val headers = location.map(l => Seq("Location" -> l)).getOrElse(Nil)
   Future.successful(Complete(Response.json(data, 201, headers)))
 }

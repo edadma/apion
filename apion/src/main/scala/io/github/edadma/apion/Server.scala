@@ -82,7 +82,11 @@ class Server {
           logger.debug(s"Writing response headers: ${finalResponse.headers.toMap}")
           res.writeHead(
             finalResponse.status,
-            js.Dictionary(finalResponse.headers.toMap.toSeq*),
+            js.Dictionary(
+              finalResponse.headers.toMap.flatMap { case (key, values) =>
+                values.map(value => key -> value)
+              }.toSeq*,
+            ),
           )
           // Write body and end response
           res.end(finalResponse.body)

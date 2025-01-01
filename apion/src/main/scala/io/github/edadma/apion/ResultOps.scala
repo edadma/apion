@@ -12,7 +12,7 @@ implicit class ResultOps(result: Future[Result]) {
 
   def withHeaders(newHeaders: (String, String)*): Future[Result] =
     result.map {
-      case Complete(r) => Complete(r.copy(headers = r.headers.addAll(newHeaders.toMap)))
+      case Complete(r) => Complete(r.copy(headers = r.headers.addAll(newHeaders)))
       case other       => other
     }
 }

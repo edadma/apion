@@ -5,13 +5,13 @@ import scala.concurrent.Future
 
 case class Response(
     status: Int = 200,
-    headers: ResponseHeaders = ResponseHeaders(Map("Content-Type" -> "application/json")),
+    headers: ResponseHeaders = ResponseHeaders(Seq("Content-Type" -> "application/json")),
     body: String,
 )
 
 object Response:
   // Global configuration for default headers
-  private var _defaultHeaders = ResponseHeaders(Map(
+  private var _defaultHeaders = ResponseHeaders(Seq(
     "Server"        -> "Apion",
     "Cache-Control" -> "no-store, no-cache, must-revalidate, max-age=0",
     "Pragma"        -> "no-cache",
@@ -23,12 +23,12 @@ object Response:
     * @param headers
     *   Map of headers to set globally
     */
-  def configure(headers: Map[String, String]): Unit =
+  def configure(headers: Seq[(String, String)]): Unit =
     _defaultHeaders = _defaultHeaders.addAll(headers)
 
   /** Reset default headers to original state */
   def resetDefaultHeaders(): Unit =
-    _defaultHeaders = ResponseHeaders(Map(
+    _defaultHeaders = ResponseHeaders(Seq(
       "Server"        -> "Apion",
       "Cache-Control" -> "no-store, no-cache, must-revalidate, max-age=0",
       "Pragma"        -> "no-cache",
@@ -46,7 +46,7 @@ object Response:
   def json[A: JsonEncoder](
       data: A,
       status: Int = 200,
-      additionalHeaders: Map[String, String] = Map.empty,
+      additionalHeaders: Seq[(String, String)] = Nil,
   ): Response =
     Response(
       status = status,
@@ -67,7 +67,7 @@ object Response:
   def text(
       content: String,
       status: Int = 200,
-      additionalHeaders: Map[String, String] = Map.empty,
+      additionalHeaders: Seq[(String, String)] = Nil,
   ): Response =
     Response(
       status = status,

@@ -79,33 +79,33 @@ object CorsMiddleware:
       Future.successful(Skip)
     else
       // Build CORS headers
-      var corsHeaders = Map(
+      var corsHeaders = Seq(
         "Access-Control-Allow-Origin" -> responseOrigin,
       )
 
       // Add Vary header if not using "*"
       if responseOrigin != "*" then
-        corsHeaders += "Vary" -> "Origin"
+        corsHeaders +:= "Vary" -> "Origin"
 
       // Add credentials if enabled and not using "*"
       if options.credentials && responseOrigin != "*" then
-        corsHeaders += "Access-Control-Allow-Credentials" -> "true"
+        corsHeaders +:= "Access-Control-Allow-Credentials" -> "true"
 
       // Add exposed headers if any
       if options.exposedHeaders.nonEmpty then
-        corsHeaders += "Access-Control-Expose-Headers" -> options.exposedHeaders.mkString(", ")
+        corsHeaders +:= "Access-Control-Expose-Headers" -> options.exposedHeaders.mkString(", ")
 
       // Handle preflight requests
       if request.method == "OPTIONS" then
         // Add preflight-specific headers
-        corsHeaders ++= Map(
+        corsHeaders ++= Seq(
           "Access-Control-Allow-Methods" -> options.methods.mkString(", "),
           "Access-Control-Allow-Headers" -> options.allowedHeaders.mkString(", "),
         )
 
         // Add max-age if specified
         options.maxAge.foreach { age =>
-          corsHeaders += "Access-Control-Max-Age" -> age.toString
+          corsHeaders +:= ("Access-Control-Max-Age" -> age.toString)
         }
 
         // Return preflight response

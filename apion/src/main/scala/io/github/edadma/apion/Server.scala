@@ -67,7 +67,7 @@ class Server {
 
     // Process the request through our router
     router(request).map {
-      case Complete(response) =>
+      case Complete(_) => sys.error("Complete should be transformed to InternalComplete")
       case InternalComplete(finalReq, response) =>
         logger.debug(s"Processing ${finalReq.finalizers.length} finalizers")
         finalReq.finalizers.foldLeft(Future.successful(response)) {

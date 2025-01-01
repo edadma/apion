@@ -1,221 +1,382 @@
-//package io.github.edadma.apion
-//
-//import scala.concurrent.{Future, ExecutionContext}
-//import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits.global
-//import scala.scalajs.js
-//import io.github.edadma.nodejs.ServerRequest
-//
-//class AuthMiddlewareTests extends AsyncBaseSpec:
-//  val TEST_SECRET_KEY = "test-secret-key-for-auth-middleware-tests"
-//
-//  def createValidToken(
-//      user: String,
-//      roles: Set[String] = Set("user"),
-//      expiration: Long = System.currentTimeMillis() / 1000 + 3600,
-//  ): String =
-//    val payload = AuthMiddleware.TokenPayload(
-//      sub = user,
-//      roles = roles,
-//      exp = expiration,
-//    )
-//    JWT.sign(payload, TEST_SECRET_KEY)
-//
-//  def mockServerRequest(
-//      method: String = "GET",
-//      url: String = "/",
-//      headers: Map[String, String] = Map(),
-//  ): ServerRequest =
-//    val req = js.Dynamic.literal(
-//      method = method,
-//      url = url,
-//      headers = js.Dictionary(headers.toSeq*),
-//      on = (_: String, _: js.Function1[js.Any, Unit]) => js.Dynamic.literal(),
-//    )
-//    req.asInstanceOf[ServerRequest]
-//
-//  "AuthMiddleware" - {
-//    "authentication flow" - {
-//      "should allow authenticated requests to non-excluded paths" in {
-//        val validToken = createValidToken("testuser")
-//        val request = Request.fromServerRequest(mockServerRequest(
-//          method = "GET",
-//          url = "/protected",
-//          headers = Map("Authorization" -> s"Bearer $validToken"),
-//        ))
-//
-//        val middleware = AuthMiddleware(
-//          requireAuth = true,
-//          excludePaths = Set("/public"),
-//          secretKey = TEST_SECRET_KEY,
-//        )
-//
-//        middleware(request).map {
-//          case Continue(req) =>
-//            req.auth.isDefined shouldBe true
-//            req.auth.get.user shouldBe "testuser"
-//            req.auth.get.roles shouldBe Set("user")
-//          case other =>
-//            fail(s"Expected Continue but got $other")
-//        }
-//      }
-//
-//      "should reject requests without token when authentication is required" in {
-//        val request = Request.fromServerRequest(mockServerRequest(
-//          method = "GET",
-//          url = "/protected",
-//          headers = Map.empty,
-//        ))
-//
-//        val middleware = AuthMiddleware(
-//          requireAuth = true,
-//          excludePaths = Set("/public"),
-//          secretKey = TEST_SECRET_KEY,
-//        )
-//
-//        middleware(request).map {
-//          case Complete(response) =>
-//            response.status shouldBe 401
-//            response.body should include("Missing Authorization header")
-//          case other =>
-//            fail(s"Expected Complete with 401 status but got $other")
-//        }
-//      }
-//
-//      "should allow requests to excluded paths without token" in {
-//        val request = Request.fromServerRequest(mockServerRequest(
-//          method = "GET",
-//          url = "/public",
-//          headers = Map.empty,
-//        ))
-//
-//        val middleware = AuthMiddleware(
-//          requireAuth = true,
-//          excludePaths = Set("/public"),
-//          secretKey = TEST_SECRET_KEY,
-//        )
-//
-//        middleware(request).map { result =>
-//          result shouldBe Skip
-//        }
-//      }
-//
-//      "should reject requests with expired tokens" in {
-//        val expiredToken = createValidToken(
-//          "expireduser",
-//          expiration = System.currentTimeMillis() / 1000 - 3600,
-//        )
-//
-//        val request = Request.fromServerRequest(mockServerRequest(
-//          method = "GET",
-//          url = "/protected",
-//          headers = Map("Authorization" -> s"Bearer $expiredToken"),
-//        ))
-//
-//        val middleware = AuthMiddleware(
-//          requireAuth = true,
-//          excludePaths = Set("/public"),
-//          secretKey = TEST_SECRET_KEY,
-//        )
-//
-//        middleware(request).map {
-//          case Complete(response) =>
-//            response.status shouldBe 401
-//            response.body should include("Token expired")
-//          case other =>
-//            fail(s"Expected Complete with 401 status but got $other")
-//        }
-//      }
-//
-//      "should reject requests with malformed tokens" in {
-//        val request = Request.fromServerRequest(mockServerRequest(
-//          method = "GET",
-//          url = "/protected",
-//          headers = Map("Authorization" -> "Bearer malformed-token"),
-//        ))
-//
-//        val middleware = AuthMiddleware(
-//          requireAuth = true,
-//          excludePaths = Set("/public"),
-//          secretKey = TEST_SECRET_KEY,
-//        )
-//
-//        middleware(request).map {
-//          case Complete(response) =>
-//            response.status shouldBe 401
-//            response.body should include("Invalid token")
-//          case other =>
-//            fail(s"Expected Complete with 401 status but got $other")
-//        }
-//      }
-//
-//      "should support multiple roles in token" in {
-//        val multiRoleToken = createValidToken(
-//          "multiuser",
-//          roles = Set("admin", "editor"),
-//        )
-//
-//        val request = Request.fromServerRequest(mockServerRequest(
-//          method = "GET",
-//          url = "/protected",
-//          headers = Map("Authorization" -> s"Bearer $multiRoleToken"),
-//        ))
-//
-//        val middleware = AuthMiddleware(
-//          requireAuth = true,
-//          excludePaths = Set("/public"),
-//          secretKey = TEST_SECRET_KEY,
-//        )
-//
-//        middleware(request).map {
-//          case Continue(req) =>
-//            req.auth.isDefined shouldBe true
-//            req.auth.get.user shouldBe "multiuser"
-//            req.auth.get.roles should contain allOf ("admin", "editor")
-//          case other =>
-//            fail(s"Expected Continue but got $other")
-//        }
-//      }
-//
-//      "should handle optional authentication paths" in {
-//        val request = Request.fromServerRequest(mockServerRequest(
-//          method = "GET",
-//          url = "/optional",
-//          headers = Map.empty,
-//        ))
-//
-//        val middleware = AuthMiddleware(
-//          requireAuth = false,
-//          excludePaths = Set("/public"),
-//          secretKey = TEST_SECRET_KEY,
-//        )
-//
-//        middleware(request).map { result =>
-//          result shouldBe Skip
-//        }
-//      }
-//
-//      "should handle optional auth with valid token" in {
-//        val validToken = createValidToken("optionaluser")
-//        val request = Request.fromServerRequest(mockServerRequest(
-//          method = "GET",
-//          url = "/optional",
-//          headers = Map("Authorization" -> s"Bearer $validToken"),
-//        ))
-//
-//        val middleware = AuthMiddleware(
-//          requireAuth = false,
-//          excludePaths = Set("/public"),
-//          secretKey = TEST_SECRET_KEY,
-//        )
-//
-//        middleware(request).map {
-//          case Continue(req) =>
-//            req.auth.isDefined shouldBe true
-//            req.auth.get.user shouldBe "optionaluser"
-//            req.auth.get.roles shouldBe Set("user")
-//          case other =>
-//            fail(s"Expected Continue but got $other")
-//        }
-//      }
-//    }
-//  }
+package io.github.edadma.apion
+
+import scala.concurrent.Future
+import scala.scalajs.js
+import io.github.edadma.nodejs.{fetch, Server => NodeServer, FetchOptions}
+import org.scalatest.BeforeAndAfterAll
+import scala.compiletime.uninitialized
+import zio.json._
+import AuthMiddleware._
+
+class AuthIntegrationTests extends AsyncBaseSpec with BeforeAndAfterAll {
+  var server: Server         = uninitialized
+  var httpServer: NodeServer = uninitialized
+  val port                   = 3004 // Different port than other tests
+  val testSecretKey          = "test-secret-key-for-auth-tests-1234"
+
+  case class SecureData(message: String) derives JsonEncoder, JsonDecoder
+
+  // Test data
+  val testUser     = "testuser123"
+  val testRoles    = Set("user", "admin")
+  val testAudience = "test-client"
+  val config = AuthConfig(
+    secretKey = testSecretKey,
+    requireAuth = true,
+    excludePaths = Set("/public"),
+    maxTokenLifetime = 3600,     // 1 hour for testing
+    tokenRefreshThreshold = 300, // 5 minutes
+    audience = Some(testAudience),
+    issuer = "test-auth",
+  )
+
+  // Create a shared token store for testing revocation
+  val tokenStore = new InMemoryTokenStore()
+
+  override def beforeAll(): Unit = {
+    val auth = AuthMiddleware(config, tokenStore)
+
+    server = Server()
+      // Public endpoint - no auth needed
+      .get("/public/hello", _ => "Hello Public!".asText)
+
+      // Protected endpoints
+      .use(auth)
+      .get(
+        "/secure/data",
+        request => {
+          request.context.get("auth") match {
+            case Some(auth: Auth) =>
+              SecureData(s"Secret data for ${auth.user}").asJson
+            case None =>
+              "No auth context found".asText(500)
+          }
+        },
+      )
+      // Admin only endpoint
+      .get(
+        "/secure/admin",
+        request => {
+          request.context.get("auth") match {
+            case Some(auth: Auth) if auth.hasRequiredRoles(Set("admin")) =>
+              SecureData("Admin console").asJson
+            case Some(_) =>
+              "Insufficient permissions".asText(403)
+            case None =>
+              "No auth context found".asText(500)
+          }
+        },
+      )
+      // Logout endpoint
+      .post(
+        "/auth/logout",
+        request => {
+          request.header("authorization") match {
+            case Some(header) if header.toLowerCase.startsWith("bearer ") =>
+              val token = header.substring(7)
+              AuthMiddleware.logout(token, testSecretKey, tokenStore)
+            case _ =>
+              "Invalid Authorization header".asText(400)
+          }
+        },
+      )
+      // Token refresh endpoint
+      .post(
+        "/auth/refresh",
+        request => {
+          request.header("authorization") match {
+            case Some(header) if header.toLowerCase.startsWith("bearer ") =>
+              val token = header.substring(7)
+              AuthMiddleware.refreshToken(token, config, tokenStore)
+            case _ =>
+              "Invalid Authorization header".asText(400)
+          }
+        },
+      )
+
+    httpServer = server.listen(port) {}
+  }
+
+  override def afterAll(): Unit = {
+    if (httpServer != null) {
+      httpServer.close(() => ())
+    }
+  }
+
+  "AuthMiddleware" - {
+    "basic auth flow" - {
+      "should allow access to public endpoints without token" in {
+        fetch(s"http://localhost:$port/public/hello")
+          .toFuture
+          .flatMap(response => response.text().toFuture)
+          .map { text =>
+            text shouldBe "Hello Public!"
+          }
+      }
+
+      "should deny access to secure endpoints without token" in {
+        fetch(s"http://localhost:$port/secure/data")
+          .toFuture
+          .map { response =>
+            response.status shouldBe 401
+            response.headers.get("WWW-Authenticate") shouldBe """Bearer realm="api""""
+          }
+      }
+
+      "should allow access to secure endpoints with valid token" in {
+        val token = AuthMiddleware.createAccessToken(testUser, testRoles, config)
+        val options = FetchOptions(
+          headers = js.Dictionary(
+            "Authorization" -> s"Bearer $token",
+          ),
+        )
+
+        fetch(s"http://localhost:$port/secure/data", options)
+          .toFuture
+          .flatMap(response => response.text().toFuture)
+          .map { text =>
+            text should include(testUser)
+            text should include("Secret data")
+          }
+      }
+
+      "should enforce role-based access control" in {
+        // Create token without admin role
+        val token = AuthMiddleware.createAccessToken(
+          testUser,
+          Set("user"), // Only user role
+          config,
+        )
+        val options = FetchOptions(
+          headers = js.Dictionary(
+            "Authorization" -> s"Bearer $token",
+          ),
+        )
+
+        fetch(s"http://localhost:$port/secure/admin", options)
+          .toFuture
+          .map { response =>
+            response.status shouldBe 403
+          }
+      }
+    }
+
+    "enhanced token features" - {
+      "should include refresh header when token is near expiration" in {
+        // Create token that's close to refresh threshold
+        val nearExpiryConfig = config.copy(
+          maxTokenLifetime = config.tokenRefreshThreshold + 60, // Just over the refresh threshold
+        )
+        val token = AuthMiddleware.createAccessToken(testUser, testRoles, nearExpiryConfig)
+        val options = FetchOptions(
+          headers = js.Dictionary(
+            "Authorization" -> s"Bearer $token",
+          ),
+        )
+
+        fetch(s"http://localhost:$port/secure/data", options)
+          .toFuture
+          .map { response =>
+            response.headers.get("X-Token-Refresh") shouldBe "true"
+          }
+      }
+
+      "should validate audience claim" in {
+        // Create token with wrong audience
+        val wrongAudienceConfig = config.copy(audience = Some("wrong-audience"))
+        val token               = AuthMiddleware.createAccessToken(testUser, testRoles, wrongAudienceConfig)
+        val options = FetchOptions(
+          headers = js.Dictionary(
+            "Authorization" -> s"Bearer $token",
+          ),
+        )
+
+        fetch(s"http://localhost:$port/secure/data", options)
+          .toFuture
+          .map { response =>
+            response.status shouldBe 401
+            // Verify error is about invalid claims
+            response.text().toFuture.map(_.toLowerCase should include("claims"))
+          }
+      }
+
+      "should validate issuer claim" in {
+        // Create token with wrong issuer
+        val wrongIssuerConfig = config.copy(issuer = "wrong-issuer")
+        val token             = AuthMiddleware.createAccessToken(testUser, testRoles, wrongIssuerConfig)
+        val options = FetchOptions(
+          headers = js.Dictionary(
+            "Authorization" -> s"Bearer $token",
+          ),
+        )
+
+        fetch(s"http://localhost:$port/secure/data", options)
+          .toFuture
+          .map { response =>
+            response.status shouldBe 401
+            response.text().toFuture.map(_.toLowerCase should include("claims"))
+          }
+      }
+
+      "should generate unique JTI claims" in {
+        // Create multiple tokens and verify unique JTIs
+        val token1 = AuthMiddleware.createAccessToken(testUser, testRoles, config)
+        val token2 = AuthMiddleware.createAccessToken(testUser, testRoles, config)
+
+        def extractJti(token: String): String = {
+          val parts = token.split("\\.")
+          val payload = new String(
+            java.util.Base64.getDecoder.decode(
+              parts(1).replace("-", "+").replace("_", "/") + "==",
+            ),
+          )
+          payload.fromJson[TokenPayload].toOption.get.jti
+        }
+
+        val jti1 = extractJti(token1)
+        val jti2 = extractJti(token2)
+
+        jti1 should not be jti2
+      }
+
+      "should properly chain finalizers" in {
+        // Add a test endpoint that adds its own finalizer
+        server.get(
+          "/secure/finalizer-test",
+          request => {
+            val testFinalizer: Finalizer = (req, res) =>
+              Future.successful(res.copy(
+                headers = res.headers.add("X-Test-Final", "true"),
+              ))
+
+            Future.successful(Continue(request.addFinalizer(testFinalizer)))
+          },
+        )
+
+        val token = AuthMiddleware.createAccessToken(testUser, testRoles, config)
+        val options = FetchOptions(
+          headers = js.Dictionary(
+            "Authorization" -> s"Bearer $token",
+          ),
+        )
+
+        fetch(s"http://localhost:$port/secure/finalizer-test", options)
+          .toFuture
+          .map { response =>
+            // Both the auth finalizer and our test finalizer should have run
+            response.headers.has("X-Test-Final") shouldBe true
+            response.status shouldBe 200
+          }
+      }
+    }
+
+    "token lifecycle" - {
+      "should handle token refresh" in {
+        // First create a refresh token
+        val refreshToken = AuthMiddleware.createRefreshToken(testUser, config)
+        val options = FetchOptions(
+          method = "POST",
+          headers = js.Dictionary(
+            "Authorization" -> s"Bearer $refreshToken",
+          ),
+        )
+
+        // Try to refresh the token
+        fetch(s"http://localhost:$port/auth/refresh", options)
+          .toFuture
+          .flatMap(response => response.json().toFuture)
+          .map { result =>
+            val jsonStr = js.JSON.stringify(result)
+            jsonStr should include("access_token")
+          }
+      }
+
+      "should reject expired tokens" in {
+        // Create token that's already expired
+        val expiredConfig = config.copy(maxTokenLifetime = -3600) // Expired 1 hour ago
+        val expiredToken  = AuthMiddleware.createAccessToken(testUser, testRoles, expiredConfig)
+
+        val options = FetchOptions(
+          headers = js.Dictionary(
+            "Authorization" -> s"Bearer $expiredToken",
+          ),
+        )
+
+        fetch(s"http://localhost:$port/secure/data", options)
+          .toFuture
+          .map { response =>
+            response.status shouldBe 401
+          }
+      }
+
+      "should handle token revocation" in {
+        val token = AuthMiddleware.createAccessToken(testUser, testRoles, config)
+        val options = FetchOptions(
+          method = "POST",
+          headers = js.Dictionary(
+            "Authorization" -> s"Bearer $token",
+          ),
+        )
+
+        // First try using the token
+        fetch(s"http://localhost:$port/secure/data", options)
+          .toFuture
+          .flatMap { response =>
+            response.status shouldBe 200
+
+            // Then logout/revoke the token
+            fetch(s"http://localhost:$port/auth/logout", options)
+              .toFuture
+              .flatMap { logoutResponse =>
+                logoutResponse.status shouldBe 200
+
+                // Finally verify token no longer works
+                fetch(s"http://localhost:$port/secure/data", options)
+                  .toFuture
+              }
+          }
+          .map { finalResponse =>
+            finalResponse.status shouldBe 401
+          }
+      }
+    }
+
+    "error handling" - {
+      "should handle malformed tokens" in {
+        val options = FetchOptions(
+          headers = js.Dictionary(
+            "Authorization" -> "Bearer not.a.validtoken",
+          ),
+        )
+
+        fetch(s"http://localhost:$port/secure/data", options)
+          .toFuture
+          .map { response =>
+            response.status shouldBe 401
+          }
+      }
+
+      "should handle missing authorization header" in {
+        fetch(s"http://localhost:$port/secure/data")
+          .toFuture
+          .map { response =>
+            response.status shouldBe 401
+          }
+      }
+
+      "should handle invalid authorization header format" in {
+        val options = FetchOptions(
+          headers = js.Dictionary(
+            "Authorization" -> "NotBearer token123",
+          ),
+        )
+
+        fetch(s"http://localhost:$port/secure/data", options)
+          .toFuture
+          .map { response =>
+            response.status shouldBe 401
+          }
+      }
+    }
+  }
+}

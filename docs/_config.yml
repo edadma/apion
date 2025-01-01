@@ -1,6 +1,6 @@
 remote_theme: just-the-docs/just-the-docs
 title: Apion
-description: A minimalist UI framework inspired by component-based design, built with Scala.js
+description: A type-safe HTTP server framework for Scala.js that combines Express-style ergonomics with Scala's powerful type system
 
 # Logo settings
 logo: "/assets/images/apion.png"

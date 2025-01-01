@@ -1,8 +1,39 @@
-ThisBuild / licenses += "ISC"  -> url("https://opensource.org/licenses/ISC")
-ThisBuild / versionScheme      := Some("semver-spec")
-ThisBuild / evictionErrorLevel := Level.Warn
-ThisBuild / scalaVersion       := "3.6.2"
-ThisBuild / organization       := "io.github.edadma"
+ThisBuild / licenses += "ISC"    -> url("https://opensource.org/licenses/ISC")
+ThisBuild / versionScheme        := Some("semver-spec")
+ThisBuild / evictionErrorLevel   := Level.Warn
+ThisBuild / scalaVersion         := "3.6.2"
+ThisBuild / organization         := "io.github.edadma"
+ThisBuild / organizationName     := "edadma"
+ThisBuild / organizationHomepage := Some(url("https://github.com/edadma"))
+ThisBuild / version              := "0.0.1"
+
+ThisBuild / sonatypeCredentialHost := "s01.oss.sonatype.org"
+ThisBuild / sonatypeRepository     := "https://s01.oss.sonatype.org/service/local"
+
+ThisBuild / publishConfiguration := publishConfiguration.value.withOverwrite(true).withChecksums(Vector.empty)
+ThisBuild / resolvers ++= Seq(
+  Resolver.mavenLocal,
+)
+ThisBuild / resolvers ++= Resolver.sonatypeOssRepos("snapshots") ++ Resolver.sonatypeOssRepos("releases")
+
+ThisBuild / sonatypeProfileName := "io.github.edadma"
+
+ThisBuild / scmInfo := Some(
+  ScmInfo(
+    url("https://github.com/edadma/apion"),
+    "scm:git@github.com:edadma/apion.git",
+  ),
+)
+ThisBuild / developers := List(
+  Developer(
+    id = "edadma",
+    name = "Edward A. Maxedon, Sr.",
+    email = "edadma@gmail.com",
+    url = url("https://github.com/edadma"),
+  ),
+)
+ThisBuild / description := "A type-safe HTTP server framework for Scala.js that combines Express-style ergonomics with Scala's powerful type system"
+ThisBuild / homepage := Some(url("https://github.com/edadma/apion"))
 
 lazy val commonSettings = Seq(
   scalacOptions ++= Seq(
@@ -20,8 +51,7 @@ lazy val apion = project
   .dependsOn(nodejs)
   .settings(commonSettings)
   .settings(
-    name    := "apion",
-    version := "0.0.1",
+    name := "apion",
     libraryDependencies ++= Seq(
       "org.scalatest"    %%% "scalatest"                   % "3.2.19" % "test",
       "com.lihaoyi"      %%% "pprint"                      % "0.9.0"  % "test",

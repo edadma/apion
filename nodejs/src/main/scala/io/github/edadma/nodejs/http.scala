@@ -22,8 +22,8 @@ trait ServerRequest extends js.Object:
 
 @js.native
 trait ServerResponse extends js.Object:
-  def writeHead(statusCode: Int): Unit                                 = js.native
-  def writeHead(statusCode: Int, headers: js.Dictionary[String]): Unit = js.native
-  def write(chunk: String): Unit                                       = js.native
-  def end(): Unit                                                      = js.native
-  def end(data: String): Unit                                          = js.native
+  def writeHead(statusCode: Int): Unit                                                    = js.native
+  def writeHead(statusCode: Int, headers: js.Dictionary[String | js.Array[String]]): Unit = js.native
+  def write(chunk: String): Unit                                                          = js.native
+  def end(): Unit                                                                         = js.native
+  def end(data: String): Unit                                                             = js.native

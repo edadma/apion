@@ -190,5 +190,125 @@ class CookieIntegrationTests extends AsyncBaseSpec with BeforeAndAfterAll {
           .map(text => text shouldBe "hello world")
       }
     }
+
+    "response cookies" - {
+      "should set cookie with attributes" in {
+        fetch(s"http://localhost:$port/set-cookie-attrs")
+          .toFuture
+          .map { response =>
+            val setCookie = response.headers.get("Set-Cookie")
+            setCookie should (
+              include("session=abc123") and
+                include("Max-Age=3600") and
+                include("HttpOnly") and
+                include("Secure") and
+                include("Path=/api")
+            )
+          }
+      }
+
+      "should set multiple cookies" in {
+        fetch(s"http://localhost:$port/set-multiple-cookies")
+          .toFuture
+          .map { response =>
+            val setCookie = response.headers.get("Set-Cookie")
+            setCookie should (
+              include("cookie1=value1") and
+                include("cookie2=value2")
+            )
+          }
+      }
+    }
+
+    "signed cookies" - {
+      "should set and verify signed cookies" in {
+        // First set a signed cookie
+        fetch(s"http://localhost:$port/set-signed-cookie")
+          .toFuture
+          .flatMap { response =>
+            val setCookie = response.headers.get("Set-Cookie")
+            setCookie should include("signed-cookie=")
+
+            // Then try to read it back
+            val options = FetchOptions(
+              method = "GET",
+              headers = js.Dictionary(
+                "Cookie" -> setCookie,
+              ),
+              body = null,
+            )
+
+            fetch(s"http://localhost:$port/echo-signed-cookie", options)
+              .toFuture
+              .flatMap(_.text().toFuture)
+          }
+          .map { text =>
+            text shouldBe "secret-value"
+          }
+      }
+
+      "should handle requests with tampered signed cookies" in {
+        val options = FetchOptions(
+          method = "GET",
+          headers = js.Dictionary(
+            "Cookie" -> "signed-cookie=tampered-value",
+          ),
+          body = null,
+        )
+
+        fetch(s"http://localhost:$port/echo-signed-cookie", options)
+          .toFuture
+          .flatMap(_.text().toFuture)
+          .map { text =>
+            text shouldBe "no signed cookie"
+          }
+      }
+    }
+
+    "JSON cookies" - {
+      "should set and parse JSON cookies" in {
+        // First set a JSON cookie
+        fetch(s"http://localhost:$port/set-json-cookie")
+          .toFuture
+          .flatMap { response =>
+            val setCookie = response.headers.get("Set-Cookie")
+            setCookie should include("json-cookie=")
+
+            // Then try to read it back
+            val options = FetchOptions(
+              method = "GET",
+              headers = js.Dictionary(
+                "Cookie" -> setCookie,
+              ),
+              body = null,
+            )
+
+            fetch(s"http://localhost:$port/echo-json-cookie", options)
+              .toFuture
+              .flatMap(_.text().toFuture)
+          }
+          .map { text =>
+            text should include(""""value":"test"""")
+            text should include(""""number":123""")
+          }
+      }
+
+      "should handle invalid JSON cookies" in {
+        val options = FetchOptions(
+          method = "GET",
+          headers = js.Dictionary(
+            "Cookie" -> """json-cookie={"invalid": json}""",
+          ),
+          body = null,
+        )
+
+        fetch(s"http://localhost:$port/echo-json-cookie", options)
+          .toFuture
+          .flatMap(_.text().toFuture)
+          .map { text =>
+            text shouldBe "no json cookie"
+          }
+      }
+    }
   }
 }

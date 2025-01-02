@@ -52,6 +52,28 @@ object ExampleServer {
 }
 ```
 
+Test the server using curl:
+
+```bash
+# Test the hello endpoint
+curl http://localhost:3000/hello
+
+# Create a new user
+curl -X POST http://localhost:3000/users \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Alice", "email": "alice@example.com"}'
+```
+
+Expected responses:
+
+```
+# GET /hello response:
+Hello World!
+
+# POST /users response (status 201):
+{"name":"Alice","email":"alice@example.com"}
+```
+
 ## Core Concepts
 
 ### Handlers

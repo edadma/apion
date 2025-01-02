@@ -17,6 +17,7 @@ object HeaderCase:
     "cache-control"                    -> "Cache-Control",
     "connection"                       -> "Connection",
     "cookie"                           -> "Cookie",
+    "date"                             -> "Date",
     "host"                             -> "Host",
     "origin"                           -> "Origin",
     "referer"                          -> "Referer",

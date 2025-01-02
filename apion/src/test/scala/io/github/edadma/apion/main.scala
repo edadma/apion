@@ -1,4 +1,4 @@
-package io.github.edadma.apion
-
+//package io.github.edadma.apion
+//
 //@main
 //def run(): Unit = StaticDemo.run()

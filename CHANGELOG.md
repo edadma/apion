@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- [ ] response header casing for both errors and successful response
+
 ### Changed
 
 - [ ] AuthConfig -> Config

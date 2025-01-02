@@ -5,7 +5,7 @@ ThisBuild / scalaVersion         := "3.6.2"
 ThisBuild / organization         := "io.github.edadma"
 ThisBuild / organizationName     := "edadma"
 ThisBuild / organizationHomepage := Some(url("https://github.com/edadma"))
-ThisBuild / version              := "0.0.2-1"
+ThisBuild / version              := "0.0.2-2"
 
 ThisBuild / sonatypeCredentialHost := "s01.oss.sonatype.org"
 ThisBuild / sonatypeRepository     := "https://s01.oss.sonatype.org/service/local"

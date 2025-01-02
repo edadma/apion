@@ -41,7 +41,7 @@ object Router:
         case seg                        => StaticSegment(seg)
       }.toList
 
-private class Router extends Handler:
+class Router extends Handler:
   private val routesBuffer = new scala.collection.mutable.ListBuffer[Process]
   private lazy val routes  = routesBuffer.toList
 

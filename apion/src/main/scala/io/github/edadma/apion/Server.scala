@@ -19,29 +19,28 @@ class Server {
     server
   }
 
-  // HTTP method handlers
-  def get(path: String, handler: Handler): Server = {
-    router.get(path, handler)
+  def get(path: String, handlers: Handler*): Server = {
+    router.get(path, handlers*)
     this
   }
 
-  def post(path: String, handler: Handler): Server = {
-    router.post(path, handler)
+  def post(path: String, handlers: Handler*): Server = {
+    router.post(path, handlers*)
     this
   }
 
-  def put(path: String, handler: Handler): Server = {
-    router.put(path, handler)
+  def put(path: String, handlers: Handler*): Server = {
+    router.put(path, handlers*)
     this
   }
 
-  def delete(path: String, handler: Handler): Server = {
-    router.delete(path, handler)
+  def delete(path: String, handlers: Handler*): Server = {
+    router.delete(path, handlers*)
     this
   }
 
-  def patch(path: String, handler: Handler): Server = {
-    router.patch(path, handler)
+  def patch(path: String, handlers: Handler*): Server = {
+    router.patch(path, handlers*)
     this
   }
 

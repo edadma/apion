@@ -106,6 +106,7 @@ case object Skip extends Result                        // Try next route
 Middleware can modify requests, generate responses, or handle errors:
 
 ```scala
+// Authentication middleware
 val auth = AuthMiddleware(AuthMiddleware.AuthConfig(
   secretKey = "your-secret-key",
   requireAuth = true,

@@ -12,12 +12,9 @@ def run(): Unit =
     .use(BodyParser.json[User]())
     .post(
       "/users",
-      request => {
-        request.context.get("body") match {
-          case Some(user: User) => user.asJson(201)
-          case _                => "Invalid user data".asText(400)
-        }
-      },
+      _.context.get("body") match
+        case Some(user: User) => user.asJson(201)
+        case _                => "Invalid user data".asText(400),
     )
     .listen(3000) {
       println("Server running at http://localhost:3000")

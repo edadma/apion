@@ -31,7 +31,7 @@ Add missing basic features and more integration testing.
 
 ## [0.0.1] - 2024-12-30
 
-Initial release of Apion, a lightweight HTTP/1.1 API server framework for Scala.js.
+Initial release of Apion, a lightweight HTTP API server framework for Scala.js.
 
 ### Added
 - Express-style chainable API with type safety

@@ -9,7 +9,11 @@ nav_order: 4
 ## Latest Release
 
 ### [0.0.1](0.0.1) - December 2024
-Initial release of Apion with core functionality.
+Initial release of Apion, a lightweight HTTP API server framework for Scala.js.
+
+### [0.0.2](0.0.2) - January 2025
+Add missing basic features and more integration testing.
 
 ## All Releases
 - [0.0.1](0.0.1) - Initial release
+- [0.0.2](0.0.2) - Add missing basic features

@@ -9,9 +9,12 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/edadma/apion"><img src="https://img.shields.io/github/v/release/edadma/apion?include_prereleases&sort=semver" alt="Version"></a>
-  <a href="https://opensource.org/licenses/ISC"><img src="https://img.shields.io/badge/License-ISC-blue.svg" alt="License: ISC"></a>
-  <a href="https://www.scala-js.org/"><img src="https://img.shields.io/badge/Scala.js-1.17.0-blue.svg" alt="Scala.js: 1.17.0"></a>
+  <a href="https://github.com/edadma/apion/releases"><img src="https://img.shields.io/github/v/release/edadma/apion?include_prereleases&sort=semver" alt="Release"></a>
+  <a href="https://central.sonatype.com/artifact/io.github.edadma/apion_sjs1_3"><img src="https://img.shields.io/maven-central/v/io.github.edadma/apion_sjs1_3" alt="Maven Central"></a>
+  <a href="https://github.com/edadma/apion/releases"><img src="https://img.shields.io/github/release-date-pre/edadma/apion" alt="Release Date"></a>
+  <a href="https://github.com/edadma/apion/commits"><img src="https://img.shields.io/github/last-commit/edadma/apion" alt="Last Commit"></a>
+  <a href="https://opensource.org/licenses/ISC"><img src="https://img.shields.io/badge/license-ISC-blue.svg" alt="License: ISC"></a>
+  <a href="https://www.scala-js.org"><img src="https://img.shields.io/badge/scala.js-1.17.0-blue.svg" alt="Scala.js: 1.17.0"></a>
 </p>
 
 ## Key Features

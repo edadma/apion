@@ -20,7 +20,7 @@ A lightweight, Express-inspired API server framework for Scala.js that provides 
 Add to your `build.sbt`:
 
 ```scala
-libraryDependencies += "io.github.edadma" %%% "apion" % "0.0.1"
+libraryDependencies += "io.github.edadma" %%% "apion" % "0.0.2"
 ```
 
 ## Quick Start
@@ -36,7 +36,7 @@ object ExampleServer {
   def main(args: Array[String]): Unit = {
     Server()
       .use(LoggingMiddleware())
-      .use(CommonMiddleware.cors())
+      .use(CorsMiddleware())
       .get("/hello", _ => "Hello World!".asText)
       .use(BodyParser.json[User]())
       .post("/users", request => {
@@ -64,8 +64,8 @@ type Handler = Request => Future[Result]
 sealed trait Result
 case class Continue(request: Request) extends Result   // Continue processing
 case class Complete(response: Response) extends Result // End with response
-case class Fail(error: ServerError) extends Result    // Propagate error  
-case object Skip extends Result                       // Try next route
+case class Fail(error: ServerError) extends Result     // Propagate error  
+case object Skip extends Result                        // Try next route
 ```
 
 ### Middleware
@@ -73,20 +73,28 @@ case object Skip extends Result                       // Try next route
 Middleware can modify requests, generate responses, or handle errors:
 
 ```scala
-// Authentication middleware
-val auth = AuthMiddleware(
+val auth = AuthMiddleware(AuthMiddleware.AuthConfig(
+  secretKey = "your-secret-key",
   requireAuth = true,
   excludePaths = Set("/public"),
-  secretKey = "your-secret-key"
-)
+  audience = Some("your-app"),
+  issuer = "your-service"
+))
 
-// Custom logging middleware
-val logger: Handler = request => {
-  println(s"${request.method} ${request.url}")
-  Future.successful(Continue(request))
-}
+// Cookie middleware
+val cookies = CookieMiddleware(CookieMiddleware.Options(
+  secret = Some("cookie-secret"),
+  parseJSON = true
+))
 
-server.use(auth).use(logger)
+// Security headers
+val security = SecurityMiddleware(SecurityMiddleware.Options(
+  contentSecurityPolicy = true,
+  frameguard = true,
+  xssFilter = true
+))
+
+server.use(auth).use(cookies).use(security)
 ```
 
 ### Routing
@@ -136,18 +144,18 @@ Convenient response creation:
 
 ```scala
 // JSON responses
-data.asJson                    // 200 OK
-data.asJson(201)              // Created
+data.asJson                      // 200 OK
+data.asJson(201)                 // Created
 ErrorResponse("msg").asJson(400) // Bad Request
 
 // Text responses
-"Hello".asText                 // 200 OK
-"Created".asText(201)         // Created
+"Hello".asText                   // 200 OK
+"Created".asText(201)            // Created
 
 // Common responses
-NotFound                      // 404 Not Found
-BadRequest                    // 400 Bad Request
-ServerError                   // 500 Internal Error
+NotFound                         // 404 Not Found
+BadRequest                       // 400 Bad Request
+ServerError                      // 500 Internal Error
 ```
 
 ### Error Handling
@@ -172,18 +180,60 @@ request.failNotFound("Not found")
 
 ```scala
 server.use(StaticMiddleware("public", StaticMiddleware.StaticOptions(
-  index = true,
-  maxAge = 86400,
-  etag = true
+  index = true,           // Serve index.html for directories
+  dotfiles = "ignore",    // How to handle dotfiles
+  etag = true,           // Enable ETag generation
+  maxAge = 3600,         // Cache max-age in seconds
+  redirect = true,       // Redirect directories to trailing slash
+  fallthrough = true     // Continue to next handler if file not found
 )))
+```
+
+### Cookie Handling
+```scala
+server
+  .use(CookieMiddleware(CookieMiddleware.Options(
+    secret = Some("cookie-secret"),
+    parseJSON = true
+  )))
+  .get("/set-cookie", request => 
+    Future.successful(Complete(
+      Response.text("Cookie set")
+        .withCookie(
+          name = "session",
+          value = "abc123",
+          maxAge = Some(3600),
+          httpOnly = true,
+          secure = true
+        )
+    ))
+  )
+  .get("/read-cookie", request => {
+    request.cookie("session") match {
+      case Some(value) => s"Cookie value: $value".asText
+      case None => "No cookie found".asText(404)
+    }
+  })
 ```
 
 ### Compression
 
 ```scala
 server.use(CompressionMiddleware(CompressionMiddleware.Options(
-  level = 6,
-  threshold = 1024,
+  // Compression filter options
+  level = 6,          // compression level 0-9
+  threshold = 1024,   // minimum size in bytes to compress
+  memLevel = 8,       // memory usage level 1-9
+  windowBits = 15,    // window size 9-15
+
+  // Brotli-specific options
+  brotliQuality = 11,      // compression quality 0-11
+  brotliBlockSize = 4096,  // block size 16-24
+
+  // Filter options
+  filter = _ => true,  // function to determine if response should be compressed
+
+  // Which encodings to support/prefer (in order of preference)
   encodings = List("br", "gzip", "deflate")
 )))
 ```
@@ -191,46 +241,55 @@ server.use(CompressionMiddleware(CompressionMiddleware.Options(
 ### Body Parsing
 
 ```scala
-// JSON parsing
-server.use(BodyParser.json[User]())
+// JSON parsing with type-safe handling
+case class User(name: String, email: String) derives JsonEncoder, JsonDecoder
 
-// Form data parsing
-server.use(BodyParser.urlencoded())
-```
-
-## Testing
-
-The framework includes testing utilities:
-
-```scala
-class APITests extends AsyncBaseSpec {
-  "API" - {
-    "should handle requests" in {
-      val request = Request(
-        method = "GET",
-        url = "/test",
-        headers = Map("Accept" -> "application/json")
-      )
-      
-      val handler = request => "Test".asText
-      
-      handler(request).map {
-        case Complete(response) => 
-          response.status shouldBe 200
-          response.body shouldBe "Test"
-      }
+server
+  .use(BodyParser.json[User]())
+  .post("/users", request => {
+    request.context.get("body") match {
+      case Some(userData: User) =>
+        // Body has been parsed and type-checked
+        userData.asJson(201)
+      case _ =>
+        "Invalid request body".asText(400)
     }
-  }
-}
+  })
+
+// URL-encoded form data parsing
+server
+  .use(BodyParser.urlencoded())
+  .post("/form", request => {
+    request.context.get("form") match {
+      case Some(formData: Map[String, String]) =>
+        // Access form fields
+        val name = formData.getOrElse("name", "")
+        formData.asJson
+      case _ =>
+        "Invalid form data".asText(400)
+    }
+  })
 ```
 
 ## Contributing
 
 1. Fork the repository
 2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+3. Write your changes
+4. Add appropriate tests:
+    - Unit tests for pure functions and utilities
+    - Integration tests for middleware, request handling chains, and complex features
+    - Consider both kinds when changes affect multiple areas
+5. Verify all tests pass with `sbt test`
+6. Push to the branch
+7. Create a Pull Request with:
+    - Description of changes
+    - Summary of tests added
+    - Any necessary documentation updates
+
+See `apion/src/test/scala/io/github/edadma/apion` for examples of:
+- Unit tests: `JWTTests.scala` shows testing pure JWT functionality
+- Integration tests: `AuthIntegrationTests.scala` shows testing middleware behavior in a running server
 
 ## License
 

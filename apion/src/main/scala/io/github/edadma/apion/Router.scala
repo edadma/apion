@@ -9,36 +9,27 @@ private case class StaticSegment(value: String) extends RouteSegment
 private case class ParamSegment(name: String)   extends RouteSegment
 private case class WildcardSegment()            extends RouteSegment
 
-trait Process {
-  val handler: Handler
-  val prefix: String // Store the route prefix
-}
+trait Process
 
 private case class Middleware(
     handler: Handler,
-    prefix: String = "",
 ) extends Process
 
 private case class Endpoint(
     method: String,
     segments: List[RouteSegment],
-    handler: Handler,
-    prefix: String = "",
+    handlers: List[Handler],
 ) extends Process
 
 private case class Route(
     segments: List[RouteSegment],
     handler: Handler,
-    prefix: String = "",
 ) extends Process
 
 private case class SubRouter(
     path: String,
     router: Router,
-    prefix: String = "",
-) extends Process {
-  val handler: Handler = router
-}
+) extends Process
 
 object Router:
   private def parsePath(path: String): List[RouteSegment] =
@@ -51,7 +42,7 @@ object Router:
       }.toList
 
 private class Router extends Handler:
-  private val routesBuffer = scala.collection.mutable.ListBuffer[Process]()
+  private val routesBuffer = new scala.collection.mutable.ListBuffer[Process]
   private lazy val routes  = routesBuffer.toList
 
   def apply(request: Request): Future[Result] =
@@ -66,48 +57,62 @@ private class Router extends Handler:
       case p :: rest =>
         logger.debug(s"Processing handler of type: ${p.getClass.getSimpleName}")
         val result: Future[Result] = p match
-          case SubRouter(path, router, prefix) =>
+          case SubRouter(path, router) =>
             matchSegments(Router.parsePath(path), remainingPath, Map()) match
               case Some((params, remaining)) =>
                 val subRequest = req.copy(
                   path = "/" + remaining.mkString("/"),
                   params = req.params ++ params,
-                  basePath = req.basePath + prefix + path,
+                  basePath = req.basePath + path,
                 )
                 router(subRequest)
               case None =>
                 processNext(rest, req, remainingPath)
 
-          case Endpoint(method, segments, handler, prefix) =>
+          case Endpoint(method, segments, handlers) =>
             logger.debug(s"Checking endpoint: $method /${segments.mkString("/")}")
             if (method != req.method) {
               processNext(rest, req, remainingPath)
             } else {
               matchSegments(segments, remainingPath, Map()) match {
                 case Some((params, Nil)) =>
-                  handler(req.copy(
-                    params = req.params ++ params,
-                    basePath = req.basePath + prefix,
-                  ))
+                  def runHandlers(hs: List[Handler], r: Request): Future[Result] =
+                    hs match
+                      case handler :: next =>
+                        handler(r).flatMap {
+                          case Continue(newReq)    => runHandlers(next, newReq)
+                          case Skip                => runHandlers(next, r)
+                          case Complete(response)  => Future.successful(InternalComplete(r, response))
+                          case _: InternalComplete => sys.error(s"InternalComplete should not appear here")
+                          case result              => Future.successful(result)
+                        }
+                      case Nil => Future.successful(Skip)
+
+                  runHandlers(
+                    handlers,
+                    req.copy(
+                      params = req.params ++ params,
+                      basePath = req.basePath,
+                    ),
+                  )
                 case _ =>
                   processNext(rest, req, remainingPath)
               }
             }
 
-          case Route(segments, handler, prefix) =>
+          case Route(segments, handler) =>
             matchSegments(segments, remainingPath, Map()) match
               case Some((params, remaining)) =>
                 handler(req.copy(
                   path = "/" + remaining.mkString("/"),
                   params = req.params ++ params,
-                  basePath = req.basePath + prefix,
+                  basePath = req.basePath,
                 ))
               case None =>
                 processNext(rest, req, remainingPath)
 
-          case Middleware(handler, prefix) =>
-            logger.debug(s"Executing middleware with prefix: $prefix")
-            handler(req.copy(basePath = req.basePath + prefix)).map { result =>
+          case Middleware(handler) =>
+            handler(req.copy(basePath = req.basePath)).map { result =>
               logger.debug(s"Middleware result: $result")
               result
             }
@@ -146,12 +151,12 @@ private class Router extends Handler:
     routesBuffer += Route(Router.parsePath(path), handler)
     this
 
-  private def addEndpoint(method: String, path: String, handler: Handler): Router =
-    routesBuffer += Endpoint(method, Router.parsePath(path), handler)
+  private def addEndpoint(method: String, path: String, handlers: List[Handler]): Router =
+    routesBuffer += Endpoint(method, Router.parsePath(path), handlers)
     this
 
-  def get(path: String, handler: Handler): Router    = addEndpoint("GET", path, handler)
-  def post(path: String, handler: Handler): Router   = addEndpoint("POST", path, handler)
-  def put(path: String, handler: Handler): Router    = addEndpoint("PUT", path, handler)
-  def delete(path: String, handler: Handler): Router = addEndpoint("DELETE", path, handler)
-  def patch(path: String, handler: Handler): Router  = addEndpoint("PATCH", path, handler)
+  def get(path: String, handlers: Handler*): Router    = addEndpoint("GET", path, handlers.toList)
+  def post(path: String, handlers: Handler*): Router   = addEndpoint("POST", path, handlers.toList)
+  def put(path: String, handlers: Handler*): Router    = addEndpoint("PUT", path, handlers.toList)
+  def delete(path: String, handlers: Handler*): Router = addEndpoint("DELETE", path, handlers.toList)
+  def patch(path: String, handlers: Handler*): Router  = addEndpoint("PATCH", path, handlers.toList)

@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- [x] add support for middleware chaining in route handlers
+  - [ ] tests
+
 ### Fixed
 
 - [ ] fix response header casing for both errors and successful response

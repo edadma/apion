@@ -9,11 +9,9 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/edadma/fluxus"><img src="https://img.shields.io/github/v/release/edadma/fluxus?include_prereleases&sort=semver" alt="Version"></a>
+  <a href="https://github.com/edadma/apion"><img src="https://img.shields.io/github/v/release/edadma/apion?include_prereleases&sort=semver" alt="Version"></a>
   <a href="https://opensource.org/licenses/ISC"><img src="https://img.shields.io/badge/License-ISC-blue.svg" alt="License: ISC"></a>
-  <a href="https://www.scala-js.org/"><img src="https://img.shields.io/badge/Scala.js-1.17.0-blue.svg" alt="Scala.js: 1.17.0">
-  <a href="https://tailwindcss.com/"><img src="https://img.shields.io/badge/TailwindCSS-3.4-blue.svg" alt="TailwindCSS: 3.4">
-  <a href="https://daisyui.com/"><img src="https://img.shields.io/badge/DaisyUI-4.12-blue.svg" alt="DaisyUI: 4.12">
+  <a href="https://www.scala-js.org/"><img src="https://img.shields.io/badge/Scala.js-1.17.0-blue.svg" alt="Scala.js: 1.17.0"></a>
 </p>
 
 ## Key Features

@@ -214,8 +214,8 @@ request.failNotFound("Not found")
 
 ```scala
 server.use(StaticMiddleware("public", StaticMiddleware.StaticOptions(
-  index = true,           // Serve index.html for directories
-  dotfiles = "ignore",    // How to handle dotfiles
+  index = true,          // Serve index.html for directories
+  dotfiles = "ignore",   // How to handle dotfiles
   etag = true,           // Enable ETag generation
   maxAge = 3600,         // Cache max-age in seconds
   redirect = true,       // Redirect directories to trailing slash

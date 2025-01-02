@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [ ] fix response header casing for both errors and successful response
 - [ ] fix response body handling
+- [ ] fix logging middleware not displaying timestamp
 
 ### Changed
 

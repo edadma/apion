@@ -25,31 +25,31 @@ libraryDependencies += "io.github.edadma" %%% "apion" % "0.0.2"
 
 ## Quick Start
 
-```scala
+```scala 3
 import io.github.edadma.apion._
 import zio.json._
-import scala.concurrent.Future
 
 case class User(name: String, email: String) derives JsonEncoder, JsonDecoder
 
-object ExampleServer {
-  def main(args: Array[String]): Unit = {
-    Server()
-      .use(LoggingMiddleware())
-      .use(CorsMiddleware())
-      .get("/hello", _ => "Hello World!".asText)
-      .use(BodyParser.json[User]())
-      .post("/users", request => {
+@main
+def run(): Unit =
+  Server()
+    .use(LoggingMiddleware())
+    .use(CorsMiddleware())
+    .get("/hello", _ => "Hello World!".asText)
+    .use(BodyParser.json[User]())
+    .post(
+      "/users",
+      request => {
         request.context.get("body") match {
           case Some(user: User) => user.asJson(201)
-          case _ => "Invalid user data".asText(400)
+          case _                => "Invalid user data".asText(400)
         }
-      })
-      .listen(3000) {
-        println("Server running at http://localhost:3000")
-      }
-  }
-}
+      },
+    )
+    .listen(3000) {
+      println("Server running at http://localhost:3000")
+    }
 ```
 
 Test the server using curl:

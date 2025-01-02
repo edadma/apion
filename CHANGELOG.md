@@ -8,12 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased] - 2025-
 
 
-
 ### Added
 
 ### Fixed
 
-- [ ] response header casing for both errors and successful response
+- [ ] fix response header casing for both errors and successful response
+- [ ] fix response body handling
 
 ### Changed
 

@@ -112,7 +112,6 @@ object CorsMiddleware:
         Future.successful(Complete(Response(
           status = options.preflightSuccessStatus,
           headers = ResponseHeaders(corsHeaders),
-          body = "",
         )))
       else
         // Add CORS headers to actual response via finalizer

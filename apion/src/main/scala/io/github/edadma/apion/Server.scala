@@ -95,7 +95,11 @@ class Server {
             }
           }
           res.writeHead(finalResponse.status, headerDict) // Write body and end response
-          res.end(finalResponse.body)
+
+          finalResponse.body match
+            case ResponseBody.Text(content, encoding) => res.end(content, encoding)
+            case ResponseBody.Binary(content)         => res.end(content)
+            case ResponseBody.Empty                   => res.end()
         }
 
       case Skip =>

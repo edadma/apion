@@ -56,7 +56,7 @@ class RouterTests extends AsyncBaseSpec {
         router(request).map {
           case InternalComplete(_, response) =>
             response.status shouldBe 201
-            response.body shouldBe "created"
+            response.bodyText shouldBe "created"
           case _ =>
             fail("Expected Complete response")
         }
@@ -131,7 +131,7 @@ class RouterTests extends AsyncBaseSpec {
 
         router(request).map {
           case InternalComplete(_, response) =>
-            response.body shouldBe "123"
+            response.bodyText shouldBe "123"
           case _ =>
             fail("Expected Complete with path parameter")
         }
@@ -152,7 +152,7 @@ class RouterTests extends AsyncBaseSpec {
 
         router(request).map {
           case InternalComplete(_, response) =>
-            response.body shouldBe "123-456"
+            response.bodyText shouldBe "123-456"
           case _ =>
             fail("Expected Complete with multiple parameters")
         }
@@ -171,7 +171,7 @@ class RouterTests extends AsyncBaseSpec {
 
         router(request).map {
           case InternalComplete(_, response) =>
-            response.body shouldBe "123"
+            response.bodyText shouldBe "123"
           case _ =>
             fail("Expected Complete with parameter")
         }
@@ -210,7 +210,7 @@ class RouterTests extends AsyncBaseSpec {
 
         router(request).map {
           case InternalComplete(_, response) =>
-            response.body shouldBe "subroute"
+            response.bodyText shouldBe "subroute"
           case _ =>
             fail("Expected Complete from subrouter")
         }
@@ -231,7 +231,7 @@ class RouterTests extends AsyncBaseSpec {
 
         router(request).map {
           case InternalComplete(_, response) =>
-            response.body shouldBe "123"
+            response.bodyText shouldBe "123"
           case _ =>
             fail("Expected Complete from subrouter with params")
         }
@@ -255,7 +255,7 @@ class RouterTests extends AsyncBaseSpec {
 
         router(request).map {
           case InternalComplete(_, response) =>
-            response.body shouldBe "/api/users"
+            response.bodyText shouldBe "/api/users"
           case _ =>
             fail("Expected Complete with accumulated base path")
         }
@@ -282,7 +282,7 @@ class RouterTests extends AsyncBaseSpec {
 
         router(request).map {
           case InternalComplete(_, response) =>
-            response.body shouldBe "middleware"
+            response.bodyText shouldBe "middleware"
           case _ =>
             fail("Expected Complete with middleware modification")
         }
@@ -309,7 +309,7 @@ class RouterTests extends AsyncBaseSpec {
 
         router(request).map {
           case InternalComplete(_, response) =>
-            response.body shouldBe "true"
+            response.bodyText shouldBe "true"
           case _ =>
             fail("Expected Complete with path middleware")
         }
@@ -333,7 +333,7 @@ class RouterTests extends AsyncBaseSpec {
         router(request).map {
           case InternalComplete(_, response) =>
             response.status shouldBe 403
-            response.body shouldBe "blocked"
+            response.bodyText shouldBe "blocked"
           case _ =>
             fail("Expected Complete from middleware")
         }

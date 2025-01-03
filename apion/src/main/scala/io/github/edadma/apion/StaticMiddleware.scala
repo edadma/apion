@@ -46,7 +46,7 @@ object StaticMiddleware:
       if options.redirect && !urlPath.endsWith("/") then
         // Redirect to add trailing slash
         Future.successful(
-          Complete(Response(301, ResponseHeaders(Seq("Location" -> s"$urlPath/")), "")),
+          Complete(Response(301, ResponseHeaders(Seq("Location" -> s"$urlPath/")))),
         )
       else if options.index then
         // Try to serve index.html
@@ -89,7 +89,7 @@ object StaticMiddleware:
       // Check if client cache is valid
       val ifNoneMatch = request.header("if-none-match")
       if etag.exists(e => ifNoneMatch.contains(e)) then
-        Future.successful(Complete(Response(304, body = "")))
+        Future.successful(Complete(Response(304)))
       else
         // Read and send file
         fs.readFile(path).toFuture

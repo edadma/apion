@@ -1,12 +1,18 @@
 package io.github.edadma.apion
 
+import io.github.edadma.apion.ResponseBody.Text
 import zio.json.*
+
+import scala.language.implicitConversions
 
 case class Response(
     status: Int = 200,
     headers: ResponseHeaders = ResponseHeaders.empty,
-    body: String,
-)
+    body: ResponseBody = ResponseBody.Empty,
+):
+  def bodyText: String = body match
+    case ResponseBody.Text(content, _) => content
+    case _                             => sys.error(s"Response body was not text: ${body}")
 
 object Response:
   // Global configuration for default headers
@@ -52,7 +58,7 @@ object Response:
       status = status,
       headers =
         ResponseHeaders(standardHeaders.appended("Content-Type" -> "application/json").appendedAll(additionalHeaders)),
-      body = data.toJson,
+      body = Text(data.toJson),
     )
 
   /** Create a plain text response with standard headers
@@ -72,7 +78,7 @@ object Response:
       status = status,
       headers =
         ResponseHeaders(standardHeaders.appended("Content-Type" -> "text/plain").appendedAll(additionalHeaders)),
-      body = content,
+      body = Text(content),
     )
 
   /** Generate standard HTTP response headers Includes common headers like Date, Server, Cache-Control

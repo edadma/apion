@@ -35,7 +35,7 @@
 Add to your `build.sbt`:
 
 ```scala
-libraryDependencies += "io.github.edadma" %%% "apion" % "0.0.2"
+libraryDependencies += "io.github.edadma" %%% "apion" % "0.0.3"
 ```
 
 ## Quick Start
@@ -108,7 +108,7 @@ Middleware can modify requests, generate responses, or handle errors:
 
 ```scala
 // Authentication middleware
-val auth = AuthMiddleware(AuthMiddleware.AuthConfig(
+val auth = AuthMiddleware(AuthMiddleware.Config(
   secretKey = "your-secret-key",
   requireAuth = true,
   excludePaths = Set("/public"),
@@ -214,7 +214,7 @@ request.failNotFound("Not found")
 ### Static Files
 
 ```scala
-server.use(StaticMiddleware("public", StaticMiddleware.StaticOptions(
+server.use(StaticMiddleware("public", StaticMiddleware.Options(
   index = true,          // Serve index.html for directories
   dotfiles = "ignore",   // How to handle dotfiles
   etag = true,           // Enable ETag generation

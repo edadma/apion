@@ -38,9 +38,9 @@ object StaticMiddleware:
     *   File system implementation (defaults to RealFS)
     */
   def apply(
-             root: String,
-             options: Options = Options(),
-             fs: FSInterface = RealFS,
+      root: String,
+      options: Options = Options(),
+      fs: FSInterface = RealFS,
   ): Handler = { request =>
     def handleDirectory(path: String, urlPath: String): Future[Result] =
       if options.redirect && !urlPath.endsWith("/") then

@@ -1,6 +1,5 @@
 package io.github.edadma.apion
 
-import io.github.edadma.nodejs.crypto
 import zio.json.*
 
 import scala.concurrent.{Future, Promise}
@@ -9,7 +8,7 @@ import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits.global
 
 object AuthMiddleware:
   /** Configuration for authentication middleware */
-  case class AuthConfig(
+  case class Config(
       secretKey: String,
       requireAuth: Boolean = true,
       excludePaths: Set[String] = Set.empty,
@@ -68,7 +67,7 @@ object AuthMiddleware:
   def createAccessToken(
       subject: String,
       roles: Set[String],
-      config: AuthConfig,
+      config: Config,
   ): String =
     val now = System.currentTimeMillis() / 1000
     val payload = TokenPayload(
@@ -85,7 +84,7 @@ object AuthMiddleware:
   /** Create a refresh token */
   def createRefreshToken(
       subject: String,
-      config: AuthConfig,
+      config: Config,
       validityPeriod: Long = 30 * 24 * 3600, // 30 days
   ): String =
     val now = System.currentTimeMillis() / 1000
@@ -101,7 +100,7 @@ object AuthMiddleware:
     JWT.sign(payload, config.secretKey)
 
   /** Main authentication middleware */
-  def apply(config: AuthConfig, tokenStore: TokenStore = new InMemoryTokenStore()): Handler = request =>
+  def apply(config: Config, tokenStore: TokenStore = new InMemoryTokenStore()): Handler = request =>
     // Check if path should bypass auth
     val shouldExclude = config.excludePaths.exists(path => request.url.startsWith(path))
 
@@ -223,7 +222,7 @@ object AuthMiddleware:
         )
 
   /** Refresh access token */
-  def refreshToken(refreshToken: String, config: AuthConfig, tokenStore: TokenStore): Future[Result] =
+  def refreshToken(refreshToken: String, config: Config, tokenStore: TokenStore): Future[Result] =
     Try(JWT.verify[TokenPayload](refreshToken, config.secretKey)) match
       case Success(Right(payload)) =>
         tokenStore.isTokenRevoked(payload.jti).flatMap { isRevoked =>

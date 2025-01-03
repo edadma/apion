@@ -3,6 +3,7 @@ package io.github.edadma.apion
 object StaticDemo:
   def run(): Unit =
     val server = Server()
+      .use(LoggingMiddleware())
       .use(StaticMiddleware("project"))
 
     server.listen(3000) {

@@ -20,7 +20,7 @@ class AuthIntegrationTests extends AsyncBaseSpec with BeforeAndAfterAll {
   val testUser     = "testuser123"
   val testRoles    = Set("user", "admin")
   val testAudience = "test-client"
-  val config = AuthConfig(
+  val config = Config(
     secretKey = testSecretKey,
     requireAuth = true,
     excludePaths = Set("/public"),

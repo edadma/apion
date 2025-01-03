@@ -30,16 +30,12 @@ class ResponseHeaders private (private val headers: Map[String, List[String]]):
   def remove(header: String): ResponseHeaders =
     new ResponseHeaders(headers - header.toLowerCase)
 
-  def toMap: Map[String, List[String]] =
-    headers.map((k, v) => normalize(k) -> v)
+  def toMap: Map[String, List[String]] = headers.map((k, v) => normalize(k) -> v)
 
   def normalize(header: String): String =
     val lower = header.toLowerCase
 
     lower.split('-').map(s => if ResponseHeaders.allCaps.contains(s) then s.toUpperCase else s.capitalize).mkString("-")
-
-//  private def makeHeaders(hs: Seq[(String, String)]): Map[String, List[String]] =
-//    hs.map((k, v) => k.toLowerCase -> List(v)).toMap
 
   override def toString: String = s"ResponseHeaders($headers)"
 

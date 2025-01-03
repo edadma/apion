@@ -4,11 +4,10 @@ import scala.concurrent.Future
 import scala.scalajs.js
 import scala.util.{Success, Failure}
 import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits.global
-import scala.scalajs.js.typedarray.Uint8Array
-import io.github.edadma.nodejs.{ReadFileOptions, Stats}
+import io.github.edadma.nodejs.Stats
 
 object StaticMiddleware:
-  case class StaticOptions(
+  case class Options(
       index: Boolean = true,       // Whether to serve index.html for directories
       dotfiles: String = "ignore", // How to treat dotfiles (ignore|allow|deny)
       etag: Boolean = true,        // Enable/disable etag generation
@@ -39,9 +38,9 @@ object StaticMiddleware:
     *   File system implementation (defaults to RealFS)
     */
   def apply(
-      root: String,
-      options: StaticOptions = StaticOptions(),
-      fs: FSInterface = RealFS,
+             root: String,
+             options: Options = Options(),
+             fs: FSInterface = RealFS,
   ): Handler = { request =>
     def handleDirectory(path: String, urlPath: String): Future[Result] =
       if options.redirect && !urlPath.endsWith("/") then

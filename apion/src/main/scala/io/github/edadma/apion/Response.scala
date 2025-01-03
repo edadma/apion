@@ -1,7 +1,6 @@
 package io.github.edadma.apion
 
 import zio.json.*
-import scala.concurrent.Future
 
 case class Response(
     status: Int = 200,

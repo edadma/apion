@@ -14,14 +14,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- [ ] fix response header casing for both errors and successful response
+- [x] fix response header casing for both errors and successful response
 - [ ] fix response body handling
-- [ ] fix logging middleware not displaying timestamp
+- [x] fix logging middleware not displaying timestamp
 
 ### Changed
 
-- [ ] AuthConfig -> Config
-- [ ] StaticOptions -> Options
+- [x] AuthConfig -> Config
+- [x] StaticOptions -> Options
 
 ### Removed
 

@@ -88,7 +88,6 @@ class Server {
           // Convert headers to dictionary, preserving multiple values
           val headerDict = js.Dictionary[String | js.Array[String]]()
           finalResponse.headers.toMap.foreach { case (key, values) =>
-            println((key, values))
             if (values.length > 1) {
               headerDict(key) = js.Array(values*)
             } else {

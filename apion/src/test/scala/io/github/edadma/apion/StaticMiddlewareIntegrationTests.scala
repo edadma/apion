@@ -36,7 +36,7 @@ class StaticMiddlewareIntegrationTests extends AsyncBaseSpec with BeforeAndAfter
         "/public",
         StaticMiddleware(
           "project/public",
-          StaticMiddleware.StaticOptions(
+          StaticMiddleware.Options(
             index = true,
             dotfiles = "ignore",
             etag = true,
@@ -51,7 +51,7 @@ class StaticMiddlewareIntegrationTests extends AsyncBaseSpec with BeforeAndAfter
         "/private",
         StaticMiddleware(
           "project/private",
-          StaticMiddleware.StaticOptions(
+          StaticMiddleware.Options(
             index = true,
             dotfiles = "deny",
             etag = true,
@@ -66,7 +66,7 @@ class StaticMiddlewareIntegrationTests extends AsyncBaseSpec with BeforeAndAfter
         "/restricted",
         StaticMiddleware(
           "project/restricted",
-          StaticMiddleware.StaticOptions(
+          StaticMiddleware.Options(
             index = true,
             dotfiles = "allow",
             etag = true,

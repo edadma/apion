@@ -14,9 +14,3 @@ object crypto extends js.Object:
 trait Hmac extends js.Object:
   def update(data: String): Hmac       = js.native
   def digest(encoding: String): String = js.native
-
-/** Enhanced Buffer type for crypto operations */
-@js.native
-trait CryptoBuffer extends Buffer:
-  def apply(index: Int): Int               = js.native
-  def update(index: Int, value: Int): Unit = js.native

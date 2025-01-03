@@ -78,9 +78,6 @@ class ResponseHeaders private (private val headers: Map[String, List[(String, St
   def toMap: Map[String, List[String]] =
     headers.view.mapValues(_.map(_._2)).toMap
 
-  def toOriginalCaseMap: Map[String, List[(String, String)]] =
-    headers.view.mapValues(identity).toMap
-
   override def toString: String = s"ResponseHeaders($headers)"
 
 object ResponseHeaders:

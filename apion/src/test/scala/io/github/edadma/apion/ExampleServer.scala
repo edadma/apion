@@ -3,7 +3,7 @@ import zio.json._
 
 case class User(name: String, email: String) derives JsonEncoder, JsonDecoder
 
-@main
+//@main
 def run(): Unit =
   Server()
     .use(LoggingMiddleware())

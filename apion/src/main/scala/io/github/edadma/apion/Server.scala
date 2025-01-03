@@ -85,10 +85,11 @@ class Server {
           }.toSeq)
           // Write response headers
           logger.debug(s"Writing response headers: ${finalResponse.headers.toMap}")
-          // Convert headers to dictionary, preserving multiple values for Set-Cookie
+          // Convert headers to dictionary, preserving multiple values
           val headerDict = js.Dictionary[String | js.Array[String]]()
           finalResponse.headers.toMap.foreach { case (key, values) =>
-            if (key.toLowerCase == "set-cookie" && values.length > 1) {
+            println((key, values))
+            if (values.length > 1) {
               headerDict(key) = js.Array(values*)
             } else {
               headerDict(key) = values.head

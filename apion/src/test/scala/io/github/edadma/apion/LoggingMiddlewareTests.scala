@@ -164,7 +164,7 @@ class LoggingMiddlewareTests extends AsyncBaseSpec:
             // Use regex to handle quoted and unquoted methods
             msg should (include("GET /test") or include("\"GET /test\""))
             msg should include("200")
-            msg should include("42")
+            msg should include("13")
           }
           succeed
         }

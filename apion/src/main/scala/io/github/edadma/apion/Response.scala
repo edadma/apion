@@ -9,7 +9,12 @@ case class Response(
     status: Int = 200,
     headers: ResponseHeaders = ResponseHeaders.empty,
     body: ResponseBody = EmptyBody,
-)
+):
+  def bodyText: String =
+    body match
+      case TextBody(content, _, _) => content
+      case ContentBody(_)          => sys.error(s"bodyText: binary body")
+      case EmptyBody               => sys.error(s"bodyText: no body")
 
 object Response:
   // Global configuration for default headers

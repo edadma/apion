@@ -20,7 +20,7 @@ class RouterTests extends AsyncBaseSpec {
     "HTTP Methods" - {
       "should handle GET requests" in {
         val router       = new Router()
-        val testResponse = Response(200, ResponseHeaders.empty, "get response")
+        val testResponse = Response.text("get response")
 
         router.get("/test", request => Future.successful(Complete(testResponse)))
         val request = Request.fromServerRequest(mockServerRequest("GET", "/test"))
@@ -34,7 +34,7 @@ class RouterTests extends AsyncBaseSpec {
 
       "should skip non-matching POST request" in {
         val router       = new Router()
-        val testResponse = Response(201, ResponseHeaders.empty, "created")
+        val testResponse = Response.text("created", 201)
 
         router.post("/users", request => Future.successful(Complete(testResponse)))
 
@@ -47,7 +47,7 @@ class RouterTests extends AsyncBaseSpec {
 
       "should handle a POST request" in {
         val router       = new Router()
-        val testResponse = Response(201, ResponseHeaders.empty, "created")
+        val testResponse = Response.text("created", 201)
 
         router.post("/users", request => Future.successful(Complete(testResponse)))
 
@@ -56,7 +56,7 @@ class RouterTests extends AsyncBaseSpec {
         router(request).map {
           case InternalComplete(_, response) =>
             response.status shouldBe 201
-            response.body.asInstanceOf[ResponseBody.Content].content.toString shouldBe "created"
+            response.bodyText shouldBe "created"
           case _ =>
             fail("Expected Complete response")
         }
@@ -64,7 +64,7 @@ class RouterTests extends AsyncBaseSpec {
 
       "should handle PUT requests" in {
         val router       = new Router()
-        val testResponse = Response(200, ResponseHeaders.empty, "updated")
+        val testResponse = Response.text("updated")
 
         router.put("/test", request => Future.successful(Complete(testResponse)))
         val request = Request.fromServerRequest(mockServerRequest("PUT", "/test"))
@@ -78,7 +78,7 @@ class RouterTests extends AsyncBaseSpec {
 
       "should handle DELETE requests" in {
         val router       = new Router()
-        val testResponse = noContent
+        val testResponse = Response.noContent()
 
         router.delete("/test", request => Future.successful(Complete(testResponse)))
         val request = Request.fromServerRequest(mockServerRequest("DELETE", "/test"))
@@ -92,7 +92,7 @@ class RouterTests extends AsyncBaseSpec {
 
       "should handle PATCH requests" in {
         val router       = new Router()
-        val testResponse = Response(200, ResponseHeaders.empty, "patched")
+        val testResponse = Response.text("patched")
 
         router.patch("/test", request => Future.successful(Complete(testResponse)))
         val request = Request.fromServerRequest(mockServerRequest("PATCH", "/test"))
@@ -106,7 +106,7 @@ class RouterTests extends AsyncBaseSpec {
 
       "should Skip when method doesn't match" in {
         val router       = new Router()
-        val testResponse = Response(200, ResponseHeaders.empty, "test")
+        val testResponse = Response.text("test")
 
         router.get("/test", request => Future.successful(Complete(testResponse)))
         val request = Request.fromServerRequest(mockServerRequest("POST", "/test"))
@@ -124,14 +124,14 @@ class RouterTests extends AsyncBaseSpec {
         router.get(
           "/users/:id",
           request =>
-            Future.successful(Complete(Response(200, ResponseHeaders.empty, request.params("id")))),
+            request.params("id").asText,
         )
 
         val request = Request.fromServerRequest(mockServerRequest("GET", "/users/123"))
 
         router(request).map {
           case InternalComplete(_, response) =>
-            response.body.asInstanceOf[ResponseBody.Content].content.toString shouldBe "123"
+            response.bodyText shouldBe "123"
           case _ =>
             fail("Expected Complete with path parameter")
         }
@@ -144,7 +144,7 @@ class RouterTests extends AsyncBaseSpec {
           "/users/:userId/posts/:postId",
           request => {
             val result = s"${request.params("userId")}-${request.params("postId")}"
-            Future.successful(Complete(Response(200, ResponseHeaders.empty, result)))
+            result.asText
           },
         )
 
@@ -152,7 +152,7 @@ class RouterTests extends AsyncBaseSpec {
 
         router(request).map {
           case InternalComplete(_, response) =>
-            response.body.asInstanceOf[ResponseBody.Content].content.toString shouldBe "123-456"
+            response.bodyText shouldBe "123-456"
           case _ =>
             fail("Expected Complete with multiple parameters")
         }
@@ -164,14 +164,14 @@ class RouterTests extends AsyncBaseSpec {
         router.get(
           "/api/users/:id/profile",
           request =>
-            Future.successful(Complete(Response(200, ResponseHeaders.empty, request.params("id")))),
+            request.params("id").asText,
         )
 
         val request = Request.fromServerRequest(mockServerRequest("GET", "/api/users/123/profile"))
 
         router(request).map {
           case InternalComplete(_, response) =>
-            response.body.asInstanceOf[ResponseBody.Content].content.toString shouldBe "123"
+            response.bodyText shouldBe "123"
           case _ =>
             fail("Expected Complete with parameter")
         }
@@ -183,7 +183,7 @@ class RouterTests extends AsyncBaseSpec {
         router.get(
           "/users/:id",
           request =>
-            Future.successful(Complete(Response(200, ResponseHeaders.empty, request.params("id")))),
+            request.params("id").asText,
         )
 
         val request = Request.fromServerRequest(mockServerRequest("GET", "/posts/123"))
@@ -202,7 +202,7 @@ class RouterTests extends AsyncBaseSpec {
         subrouter.get(
           "/test",
           request =>
-            Future.successful(Complete(Response(200, ResponseHeaders.empty, "subroute"))),
+            "subroute".asText,
         )
 
         router.use("/api", subrouter)
@@ -210,7 +210,7 @@ class RouterTests extends AsyncBaseSpec {
 
         router(request).map {
           case InternalComplete(_, response) =>
-            response.body.asInstanceOf[ResponseBody.Content].content.toString shouldBe "subroute"
+            response.bodyText shouldBe "subroute"
           case _ =>
             fail("Expected Complete from subrouter")
         }
@@ -223,7 +223,7 @@ class RouterTests extends AsyncBaseSpec {
         subrouter.get(
           "/:id",
           request =>
-            Future.successful(Complete(Response(200, ResponseHeaders.empty, request.params("id")))),
+            request.params("id").asText,
         )
 
         router.use("/users", subrouter)
@@ -231,7 +231,7 @@ class RouterTests extends AsyncBaseSpec {
 
         router(request).map {
           case InternalComplete(_, response) =>
-            response.body.asInstanceOf[ResponseBody.Content].content.toString shouldBe "123"
+            response.bodyText shouldBe "123"
           case _ =>
             fail("Expected Complete from subrouter with params")
         }
@@ -244,8 +244,7 @@ class RouterTests extends AsyncBaseSpec {
 
         usersRouter.get(
           "/profile",
-          request =>
-            Future.successful(Complete(Response(200, ResponseHeaders.empty, request.basePath))),
+          _.basePath.asText,
         )
 
         apiRouter.use("/users", usersRouter)
@@ -255,7 +254,7 @@ class RouterTests extends AsyncBaseSpec {
 
         router(request).map {
           case InternalComplete(_, response) =>
-            response.body.asInstanceOf[ResponseBody.Content].content.toString shouldBe "/api/users"
+            response.bodyText shouldBe "/api/users"
           case _ =>
             fail("Expected Complete with accumulated base path")
         }
@@ -275,14 +274,14 @@ class RouterTests extends AsyncBaseSpec {
         router.get(
           "/test",
           request =>
-            Future.successful(Complete(Response(200, ResponseHeaders.empty, request.headers("X-Test")))),
+            request.headers("X-Test").asText,
         )
 
         val request = Request.fromServerRequest(mockServerRequest("GET", "/test"))
 
         router(request).map {
           case InternalComplete(_, response) =>
-            response.body.asInstanceOf[ResponseBody.Content].content.toString shouldBe "middleware"
+            response.bodyText shouldBe "middleware"
           case _ =>
             fail("Expected Complete with middleware modification")
         }
@@ -301,15 +300,14 @@ class RouterTests extends AsyncBaseSpec {
 
         router.get(
           "/protected/resource",
-          request =>
-            Future.successful(Complete(Response(200, ResponseHeaders.empty, request.headers("X-Auth")))),
+          _.headers("X-Auth").asText,
         )
 
         val request = Request.fromServerRequest(mockServerRequest("GET", "/protected/resource"))
 
         router(request).map {
           case InternalComplete(_, response) =>
-            response.body.asInstanceOf[ResponseBody.Content].content.toString shouldBe "true"
+            response.bodyText shouldBe "true"
           case _ =>
             fail("Expected Complete with path middleware")
         }
@@ -319,13 +317,13 @@ class RouterTests extends AsyncBaseSpec {
         val router = new Router()
 
         router.use(request =>
-          Future.successful(Complete(Response(403, ResponseHeaders.empty, "blocked"))),
+          "blocked".asText(403),
         )
 
         router.get(
           "/test",
           request =>
-            Future.successful(Complete(Response(200, ResponseHeaders.empty, "should not reach"))),
+            "should not reach".asText,
         )
 
         val request = Request.fromServerRequest(mockServerRequest("GET", "/test"))
@@ -333,7 +331,7 @@ class RouterTests extends AsyncBaseSpec {
         router(request).map {
           case InternalComplete(_, response) =>
             response.status shouldBe 403
-            response.body.asInstanceOf[ResponseBody.Content].content.toString shouldBe "blocked"
+            response.bodyText shouldBe "blocked"
           case _ =>
             fail("Expected Complete from middleware")
         }

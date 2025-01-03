@@ -50,6 +50,6 @@ object DemoApp {
   private def requestLogger: Handler =
     request => {
       println(s"${request.method} ${request.url}")
-      request.skip
+      skip
     }
 }

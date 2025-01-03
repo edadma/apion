@@ -14,6 +14,8 @@ class Server {
     handleRequest(req, res),
   )
 
+  def close(cb: => Unit = ()): Unit = server.close(() => cb)
+
   def listen(port: Int)(callback: => Unit): NodeServer = {
     server.listen(port, () => callback)
     server

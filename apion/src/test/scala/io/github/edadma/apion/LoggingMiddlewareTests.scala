@@ -19,7 +19,7 @@ class LoggingMiddlewareTests extends AsyncBaseSpec:
     )
     req.asInstanceOf[ServerRequest]
 
-  val testResponse = Response(200, ResponseHeaders("Content-Length", "42"), "test response")
+  val testResponse: Response = Response.text("test response")
 
   // Create a handler that logs and returns the response
   def createLoggingHandler(): Handler = request =>

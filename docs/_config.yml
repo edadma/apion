@@ -4,7 +4,7 @@ description: A type-safe HTTP server framework for Scala.js that combines Expres
 
 # Logo settings
 logo: "/assets/images/apion.png"
-favicon_ico: "/assets/images/favicon.ico"
+favicon_ico: "/assets/images/apion.ico"
 
 # Enable search
 search_enabled: true

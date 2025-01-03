@@ -104,7 +104,7 @@ object AuthMiddleware:
     // Check if path should bypass auth
     val shouldExclude = config.excludePaths.exists(path => request.url.startsWith(path))
 
-    if shouldExclude then request.skip
+    if shouldExclude then skip
     else
       def handleAuthFailure(
           requireAuth: Boolean,

@@ -1,7 +1,6 @@
 package io.github.edadma.apion
 
-import io.github.edadma.apion.ResponseBody.Text
-import io.github.edadma.nodejs.Buffer
+import io.github.edadma.nodejs.{Buffer, bufferMod}
 import zio.json.*
 
 import scala.language.implicitConversions
@@ -9,11 +8,8 @@ import scala.language.implicitConversions
 case class Response(
     status: Int = 200,
     headers: ResponseHeaders = ResponseHeaders.empty,
-    body: ResponseBody = ResponseBody.Empty,
-):
-  def bodyText: String = body match
-    case Text(content, _) => content
-    case _                => sys.error(s"Response body was not text: ${body}")
+    body: ResponseBody = EmptyBody,
+)
 
 object Response:
   // Global configuration for default headers
@@ -42,6 +38,12 @@ object Response:
       "X-Powered-By"  -> "Apion",
     )
 
+  def noContent(additionalHeaders: Seq[(String, String)] = Nil): Response = Response(
+    status = 204,
+    headers = ResponseHeaders(standardHeaders.appendedAll(additionalHeaders)),
+    body = EmptyBody,
+  )
+
   /** Create a JSON response with standard headers
     * @param data
     *   Data to be JSON encoded
@@ -54,12 +56,19 @@ object Response:
       data: A,
       status: Int = 200,
       additionalHeaders: Seq[(String, String)] = Nil,
+      encoding: String = "utf8",
   ): Response =
+    val text   = data.toJson
+    val buffer = bufferMod.Buffer.from(text, encoding)
+
     Response(
       status = status,
       headers =
-        ResponseHeaders(standardHeaders.appended("Content-Type" -> "application/json").appendedAll(additionalHeaders)),
-      body = Text(data.toJson),
+        ResponseHeaders(standardHeaders
+          .appended("Content-Type" -> s"application/json; charset=$encoding")
+          .appended("Content-Length" -> buffer.length.toString)
+          .appendedAll(additionalHeaders)),
+      body = TextBody(text, encoding, buffer),
     )
 
   /** Create a plain text response with standard headers
@@ -73,13 +82,21 @@ object Response:
   def text(
       content: String,
       status: Int = 200,
+      encoding: String = "utf8",
       additionalHeaders: Seq[(String, String)] = Nil,
   ): Response =
+    val buffer = bufferMod.Buffer.from(content, encoding)
+
     Response(
       status = status,
       headers =
-        ResponseHeaders(standardHeaders.appended("Content-Type" -> "text/plain").appendedAll(additionalHeaders)),
-      body = Text(content),
+        ResponseHeaders(
+          standardHeaders
+            .appended("Content-Type" -> s"text/plain; charset=$encoding")
+            .appended("Content-Length" -> buffer.length.toString)
+            .appendedAll(additionalHeaders),
+        ),
+      body = TextBody(content, encoding, buffer),
     )
 
   /** Create a binary response with standard headers
@@ -99,8 +116,13 @@ object Response:
     Response(
       status = status,
       headers =
-        ResponseHeaders(standardHeaders.appended("Content-Type" -> "text/plain").appendedAll(additionalHeaders)),
-      body = ResponseBody.Binary(content),
+        ResponseHeaders(
+          standardHeaders
+            .appended("Content-Type" -> "application/octet-stream")
+            .appended("Content-Length" -> content.length.toString)
+            .appendedAll(additionalHeaders),
+        ),
+      body = ContentBody(content),
     )
 
   /** Generate standard HTTP response headers Includes common headers like Date, Server, Cache-Control

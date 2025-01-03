@@ -83,6 +83,7 @@ class Server {
           logger.debug(finalResponse.headers.toMap.flatMap { case (key, values) =>
             values.map(value => key -> value)
           }.toSeq)
+
           // Write response headers
           logger.debug(s"Writing response headers: ${finalResponse.headers.toMap}")
           // Convert headers to dictionary, preserving multiple values
@@ -97,9 +98,9 @@ class Server {
           res.writeHead(finalResponse.status, headerDict) // Write body and end response
 
           finalResponse.body match
-            case ResponseBody.Text(content, encoding) => res.end(content, encoding)
-            case ResponseBody.Binary(content)         => res.end(content)
-            case ResponseBody.Empty                   => res.end()
+            case TextBody(_, _, data) => res.end(data)
+            case ContentBody(content) => res.end(content)
+            case EmptyBody            => res.end()
         }
 
       case Skip =>

@@ -31,14 +31,14 @@ object CompressionMiddleware:
     else
       // Get size based on response body type
       val bodySize = response.body match
-        case ResponseBody.Text(content, _) => content.length
-        case ResponseBody.Binary(content)  => content.byteLength
+        case TextBody(_, _, data) => data.byteLength
+        case ContentBody(content) => content.byteLength
 //        case ResponseBody.Stream(_)        =>
 //          // For streams, rely on Content-Length header if present
 //          response.headers.get("Content-Length")
 //            .map(_.toInt)
 //            .getOrElse(options.threshold + 1) // Assume it's worth compressing if no length known
-        case ResponseBody.Empty => 0
+        case EmptyBody => 0
 
       if bodySize < options.threshold then false
       else
@@ -127,9 +127,9 @@ object CompressionMiddleware:
             // Compress the response body
             val body =
               res.body match
-                case ResponseBody.Text(content, encoding) => bufferMod.Buffer.from(content, encoding)
-                case ResponseBody.Binary(content)         => content
-                case ResponseBody.Empty                   => sys.error("compressionFinalizer: empty body")
+                case TextBody(content, _, data) => data
+                case ContentBody(content)       => content
+                case EmptyBody                  => sys.error("compressionFinalizer: empty body")
 
             compress(body, encoding, options).map { compressed =>
               res.copy(
@@ -138,7 +138,7 @@ object CompressionMiddleware:
                   "Content-Length"   -> compressed.byteLength.toString,
                   "Vary"             -> "Accept-Encoding",
                 )),
-                body = ResponseBody.Binary(compressed),
+                body = ContentBody(compressed),
               )
             }.recover { case e =>
               logger.error(s"Compression error: ${e.getMessage}")

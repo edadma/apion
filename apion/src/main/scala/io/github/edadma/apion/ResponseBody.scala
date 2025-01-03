@@ -5,11 +5,9 @@ import io.github.edadma.nodejs.Buffer
 import scala.language.implicitConversions
 
 sealed trait ResponseBody
-object ResponseBody {
-  implicit def stringToResponseBody(s: String): ResponseBody.Text = ResponseBody.Text(s)
+//implicit def stringToResponseBody(s: String): ResponseBody = Response.text(s, "utf-8", )
 
-  case class Text(content: String, encoding: String = "utf8") extends ResponseBody
-  case class Binary(content: Buffer)                          extends ResponseBody
+case class TextBody(content: String, encoding: String, data: Buffer) extends ResponseBody
+case class ContentBody(content: Buffer)                              extends ResponseBody
 //  case class Stream(readable: ReadableStream)                 extends ResponseBody
-  case object Empty extends ResponseBody
-}
+case object EmptyBody extends ResponseBody

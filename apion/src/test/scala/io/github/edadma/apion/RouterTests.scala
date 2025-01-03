@@ -56,7 +56,7 @@ class RouterTests extends AsyncBaseSpec {
         router(request).map {
           case InternalComplete(_, response) =>
             response.status shouldBe 201
-            response.bodyText shouldBe "created"
+            response.body.asInstanceOf[ResponseBody.Content].content.toString shouldBe "created"
           case _ =>
             fail("Expected Complete response")
         }
@@ -78,7 +78,7 @@ class RouterTests extends AsyncBaseSpec {
 
       "should handle DELETE requests" in {
         val router       = new Router()
-        val testResponse = Response(204, ResponseHeaders.empty, "")
+        val testResponse = noContent
 
         router.delete("/test", request => Future.successful(Complete(testResponse)))
         val request = Request.fromServerRequest(mockServerRequest("DELETE", "/test"))
@@ -131,7 +131,7 @@ class RouterTests extends AsyncBaseSpec {
 
         router(request).map {
           case InternalComplete(_, response) =>
-            response.bodyText shouldBe "123"
+            response.body.asInstanceOf[ResponseBody.Content].content.toString shouldBe "123"
           case _ =>
             fail("Expected Complete with path parameter")
         }
@@ -152,7 +152,7 @@ class RouterTests extends AsyncBaseSpec {
 
         router(request).map {
           case InternalComplete(_, response) =>
-            response.bodyText shouldBe "123-456"
+            response.body.asInstanceOf[ResponseBody.Content].content.toString shouldBe "123-456"
           case _ =>
             fail("Expected Complete with multiple parameters")
         }
@@ -171,7 +171,7 @@ class RouterTests extends AsyncBaseSpec {
 
         router(request).map {
           case InternalComplete(_, response) =>
-            response.bodyText shouldBe "123"
+            response.body.asInstanceOf[ResponseBody.Content].content.toString shouldBe "123"
           case _ =>
             fail("Expected Complete with parameter")
         }
@@ -210,7 +210,7 @@ class RouterTests extends AsyncBaseSpec {
 
         router(request).map {
           case InternalComplete(_, response) =>
-            response.bodyText shouldBe "subroute"
+            response.body.asInstanceOf[ResponseBody.Content].content.toString shouldBe "subroute"
           case _ =>
             fail("Expected Complete from subrouter")
         }
@@ -231,7 +231,7 @@ class RouterTests extends AsyncBaseSpec {
 
         router(request).map {
           case InternalComplete(_, response) =>
-            response.bodyText shouldBe "123"
+            response.body.asInstanceOf[ResponseBody.Content].content.toString shouldBe "123"
           case _ =>
             fail("Expected Complete from subrouter with params")
         }
@@ -255,7 +255,7 @@ class RouterTests extends AsyncBaseSpec {
 
         router(request).map {
           case InternalComplete(_, response) =>
-            response.bodyText shouldBe "/api/users"
+            response.body.asInstanceOf[ResponseBody.Content].content.toString shouldBe "/api/users"
           case _ =>
             fail("Expected Complete with accumulated base path")
         }
@@ -282,7 +282,7 @@ class RouterTests extends AsyncBaseSpec {
 
         router(request).map {
           case InternalComplete(_, response) =>
-            response.bodyText shouldBe "middleware"
+            response.body.asInstanceOf[ResponseBody.Content].content.toString shouldBe "middleware"
           case _ =>
             fail("Expected Complete with middleware modification")
         }
@@ -309,7 +309,7 @@ class RouterTests extends AsyncBaseSpec {
 
         router(request).map {
           case InternalComplete(_, response) =>
-            response.bodyText shouldBe "true"
+            response.body.asInstanceOf[ResponseBody.Content].content.toString shouldBe "true"
           case _ =>
             fail("Expected Complete with path middleware")
         }
@@ -333,7 +333,7 @@ class RouterTests extends AsyncBaseSpec {
         router(request).map {
           case InternalComplete(_, response) =>
             response.status shouldBe 403
-            response.bodyText shouldBe "blocked"
+            response.body.asInstanceOf[ResponseBody.Content].content.toString shouldBe "blocked"
           case _ =>
             fail("Expected Complete from middleware")
         }

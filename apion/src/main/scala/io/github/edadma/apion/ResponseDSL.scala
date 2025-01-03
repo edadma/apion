@@ -8,6 +8,12 @@ import zio.json.*
 
 import java.time.Instant
 
+def skip: Future[Result]                        = Future.successful(Skip)
+def fail(error: ServerError): Future[Result]    = Future.successful(Fail(error))
+def failValidation(msg: String): Future[Result] = Future.successful(Fail(ValidationError(msg)))
+def failAuth(msg: String): Future[Result]       = Future.successful(Fail(AuthError(msg)))
+def failNotFound(msg: String): Future[Result]   = Future.successful(Fail(NotFoundError(msg)))
+
 // Extension methods for any value that has a JsonEncoder
 implicit class JsonResponseOps[A: JsonEncoder](val data: A) {
   def asJson: Future[Complete]              = Future.successful(Complete(Response.json(data)))
@@ -34,13 +40,12 @@ def text(content: String): Future[Result]                      = content.asText
 def text(content: String, status: Int): Future[Result]         = content.asText(status)
 
 // Common responses
-val NotFound: Future[Complete]   = Future.successful(Complete(Response(404, body = """{"error": "Not Found"}""")))
-val BadRequest: Future[Complete] = Future.successful(Complete(Response(400, body = """{"error": "Bad Request"}""")))
-val ServerError: Future[Complete] =
-  Future.successful(Complete(Response(500, body = """{"error": "Internal Server Error"}""")))
+val notFound: Future[Complete]    = "Not Found".asText(404)
+val badRequest: Future[Complete]  = "Bad Request".asText(400)
+val serverError: Future[Complete] = "Internal Server Error".asText(500)
 
 // Created with optional location header
-def Created[A: JsonEncoder](data: A, location: Option[String] = None): Future[Result] = {
+def created[A: JsonEncoder](data: A, location: Option[String] = None): Future[Result] = {
   val headers = location.map(l => Seq("Location" -> l)).getOrElse(Nil)
   Future.successful(Complete(Response.json(data, 201, headers)))
 }

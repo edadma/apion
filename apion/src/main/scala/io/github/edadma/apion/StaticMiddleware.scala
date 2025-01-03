@@ -52,12 +52,9 @@ object StaticMiddleware:
         // Try to serve index.html
         val indexPath = s"$path/index.html".replaceAll("/+", "/")
         fs.stat(indexPath).toFuture.transformWith {
-          case Success(stats) =>
-            serveFile(indexPath, stats)
-          case Failure(_) if options.fallthrough =>
-            Future.successful(Skip)
-          case Failure(_) =>
-            Future.successful(Complete(Response(404, body = "Not Found")))
+          case Success(stats)                    => serveFile(indexPath, stats)
+          case Failure(_) if options.fallthrough => skip
+          case Failure(_)                        => notFound
         }
       else
         Future.successful(Skip)
@@ -67,10 +64,10 @@ object StaticMiddleware:
       val fileName = path.split('/').last
       if fileName.startsWith(".") then
         options.dotfiles match
-          case "ignore" => Future.successful(Skip)
-          case "deny"   => Future.successful(Complete(Response(403, body = "Forbidden")))
+          case "ignore" => skip
+          case "deny"   => "Forbidden".asText(403)
           case "allow"  => sendFile(path, stats)
-          case _        => Future.successful(Skip)
+          case _        => skip
       else
         sendFile(path, stats)
 
@@ -101,7 +98,7 @@ object StaticMiddleware:
             ) ++ etag.map("ETag" -> _))
 
             logger.debug(s"sendFile: $content")
-            Complete(Response(200, headers, content.toString))
+            Complete(Response(200, headers, ContentBody(content)))
           }
 
     logger.debug(s"static middleware url: ${request.url}, $options")
@@ -112,7 +109,7 @@ object StaticMiddleware:
 
     // Prevent directory traversal
     if decodedPath.contains("..") then
-      Future.successful(Complete(Response(403, body = "Forbidden")))
+      "Forbidden".asText(403)
     else
       // Construct full file path
       val fullPath = s"$root/$decodedPath".replaceAll("/+", "/")
@@ -131,6 +128,6 @@ object StaticMiddleware:
 
         case Failure(_) =>
           logger.debug(s"not found: $fullPath")
-          Future.successful(Complete(Response(404, body = "Not Found")))
+          notFound
       }
   }

@@ -18,7 +18,7 @@ case class Request(
     basePath: String = "", // Track the accumulated base path
     finalizers: List[Finalizer] = Nil,
     cookies: Map[String, String] = Map(),
-) extends RequestDSL {
+) /*extends RequestDSL*/ {
   def header(h: String): Option[String] = headers.get(h.toLowerCase)
 
   def cookie(name: String): Option[String] = cookies.get(name)

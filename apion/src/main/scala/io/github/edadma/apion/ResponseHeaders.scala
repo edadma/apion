@@ -41,30 +41,26 @@ object HeaderCase:
       lower.split('-').map(_.capitalize).mkString("-"),
     )
 
-/** ResponseHeaders wraps the header map to provide case-insensitive access while maintaining original header casing for
-  * the outgoing response
+/** ResponseHeaders wraps the header map to provide case-insensitive access while maintaining canonical header casing
+  * for the outgoing response
   */
-class ResponseHeaders private (private val headers: Map[String, List[(String, String)]]):
-  // The tuple contains (originalCase, value)
-
-  def get(header: String): Option[String] =
-    headers.get(header.toLowerCase).flatMap(_.headOption.map(_._2))
-
-  def getOriginalCase(header: String): Option[String] =
-    headers.get(header.toLowerCase).flatMap(_.headOption.map(_._1))
+class ResponseHeaders private (private val headers: Map[String, List[String]]):
+  def get(header: String): Option[String] = headers.get(header.toLowerCase).map(_.head)
 
   def contains(header: String): Boolean =
     headers.contains(header.toLowerCase)
 
   def add(header: String, value: String): ResponseHeaders =
-    val lowerCase    = header.toLowerCase
-    val originalCase = HeaderCase.normalize(header)
+    val lowerCase = header.toLowerCase
 
     new ResponseHeaders(
-      headers.updatedWith(lowerCase) {
-        case Some(existing) => Some((originalCase, value) :: existing)
-        case None           => Some(List((originalCase, value)))
-      },
+      if ResponseHeaders.multiHeader(lowerCase) then
+        headers.updatedWith(lowerCase) {
+          case Some(existing) => Some(value :: existing)
+          case None           => Some(List(value))
+        }
+      else
+        headers.updated(lowerCase, List(value)),
     )
 
   def addAll(newHeaders: Seq[(String, String)]): ResponseHeaders =
@@ -78,9 +74,14 @@ class ResponseHeaders private (private val headers: Map[String, List[(String, St
   def toMap: Map[String, List[String]] =
     headers.view.mapValues(_.map(_._2)).toMap
 
+  private def makeHeaders(hs: Seq[(String, String)]): Map[String, List[String]] =
+    hs.map((k, v) => k.toLowerCase -> List(v)).toMap
+
   override def toString: String = s"ResponseHeaders($headers)"
 
 object ResponseHeaders:
+  private val multiHeader = Set("set-cookie", "wwww-authenticate")
+
   def empty: ResponseHeaders = new ResponseHeaders(Map.empty)
 
   def apply(headers: Seq[(String, String)]): ResponseHeaders =

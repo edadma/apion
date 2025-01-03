@@ -5,28 +5,11 @@ import scala.concurrent.Future
 
 case class Response(
     status: Int = 200,
-    headers: Map[String, List[String]], // = Map("content-type" -> Seq("application/json")),
+    headers: ResponseHeaders = ResponseHeaders.empty,
     body: String,
-):
-  def header(name: String): Option[String] = headers.get(name.toLowerCase).map(_.head)
-
-  def header(name: String, value: String): Response =
-    val key = name.toLowerCase
-
-    copy(
-      headers =
-        if Response.multiHeader(key) then
-          headers.updatedWith(key) {
-            case None           => Some(List(value))
-            case Some(existing) => Some(value :: existing)
-          }
-        else
-          headers.updated(key, List(value)),
-    )
+)
 
 object Response:
-  private val multiHeader = Set("set-cookie", "wwww-authenticate")
-
   // Global configuration for default headers
   private var defaultHeaders = Seq(
     "server"        -> "Apion",
@@ -69,12 +52,9 @@ object Response:
     Response(
       status = status,
       headers =
-        makeHeaders(standardHeaders.appended("Content-Type" -> "application/json").appendedAll(additionalHeaders)),
+        ResponseHeaders(standardHeaders.appended("Content-Type" -> "application/json").appendedAll(additionalHeaders)),
       body = data.toJson,
     )
-
-  private def makeHeaders(hs: Seq[(String, String)]): Map[String, List[String]] =
-    hs.map((k, v) => k.toLowerCase -> List(v)).toMap
 
   /** Create a plain text response with standard headers
     * @param content
@@ -91,7 +71,8 @@ object Response:
   ): Response =
     Response(
       status = status,
-      headers = makeHeaders(standardHeaders.appended("Content-Type" -> "text/plain").appendedAll(additionalHeaders)),
+      headers =
+        ResponseHeaders(standardHeaders.appended("Content-Type" -> "text/plain").appendedAll(additionalHeaders)),
       body = content,
     )
 

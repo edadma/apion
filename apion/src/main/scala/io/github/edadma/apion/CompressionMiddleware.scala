@@ -130,6 +130,7 @@ object CompressionMiddleware:
                 case ResponseBody.Text(content, encoding) => bufferMod.Buffer.from(content, encoding)
                 case ResponseBody.Binary(content)         => content
                 case ResponseBody.Empty                   => sys.error("compressionFinalizer: empty body")
+
             compress(body, encoding, options).map { compressed =>
               res.copy(
                 headers = res.headers.addAll(Seq(
@@ -137,7 +138,7 @@ object CompressionMiddleware:
                   "Content-Length"   -> compressed.byteLength.toString,
                   "Vary"             -> "Accept-Encoding",
                 )),
-                body = compressed.toString("binary"),
+                body = ResponseBody.Binary(compressed),
               )
             }.recover { case e =>
               logger.error(s"Compression error: ${e.getMessage}")

@@ -47,8 +47,11 @@ class CompressionMiddlewareIntegrationTests extends AsyncBaseSpec with BeforeAnd
       fetch(s"http://localhost:$port/large", options)
         .toFuture
         .map { response =>
+          val contentLength = response.headers.get("Content-Length").toInt
+
           response.headers.get("Content-Encoding") shouldBe "gzip"
-          response.headers.has("Content-Length") shouldBe true
+          contentLength should be > 0
+          contentLength should be < 1000
           response.headers.get("Vary") shouldBe "Accept-Encoding"
         }
     }
@@ -81,42 +84,21 @@ class CompressionMiddlewareIntegrationTests extends AsyncBaseSpec with BeforeAnd
         }
     }
 
-//    "should verify content is correctly decompressed" in {
-//      val largeText = "a" * 1000
-//      val options = FetchOptions(
-//        headers = js.Dictionary(
-//          "Accept-Encoding" -> "gzip",
-//        ),
-//      )
-//
-//      fetch(s"http://localhost:$port/large", options)
-//        .toFuture
-//        .flatMap(response => response.text().toFuture)
-//        .map { text =>
-//          text shouldBe largeText
-//        }
-//    }
-
-    "should verify compression works" in withDebugLogging(
-      "should verify compression works",
+    "should verify content is correctly decompressed" in withDebugLogging(
+      "should verify content is correctly decompressed",
     ) {
+      val largeText = "a" * 1000
       val options = FetchOptions(
         headers = js.Dictionary(
           "Accept-Encoding" -> "gzip",
-          "Accept"          -> "*/*",
         ),
       )
 
-      for {
-        response <- fetch(s"http://localhost:$port/large", options).toFuture
-        _ = logger.debug(s"Response headers: ${response.headers}")
-        _ = logger.debug(s"Content-Encoding: ${response.headers.get("Content-Encoding")}")
-        _ = logger.debug(s"Content-Length: ${response.headers.get("Content-Length")}")
-        body <- response.arrayBuffer().toFuture // Use arrayBuffer instead of text
-      } yield {
-        response.headers.get("Content-Encoding") shouldBe "gzip"
-        response.headers.has("Content-Length") shouldBe true
-        body.byteLength should be > 0
-      }
+      fetch(s"http://localhost:$port/large", options)
+        .toFuture
+        .flatMap(response => response.text().toFuture)
+        .map { text =>
+          text shouldBe largeText
+        }
     }
   }

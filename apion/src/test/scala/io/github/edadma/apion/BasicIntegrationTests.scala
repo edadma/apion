@@ -54,8 +54,8 @@ class BasicIntegrationTests extends AsyncBaseSpec with BeforeAndAfterAll {
 
       // Response status codes test
       .get("/created", _ => "Created".asText(201))
-      .get("/no-content", _ => Response.noContent()
-      .get("/bad-request", _ => badRequest
+      .get("/no-content", _ => noContent)
+      .get("/bad-request", _ => badRequest)
 
       // Basic body parsing test
       .use(BodyParser.json[SimpleData]())

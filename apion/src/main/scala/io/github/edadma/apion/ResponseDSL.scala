@@ -38,6 +38,7 @@ def json[A: JsonEncoder](data: A): Future[Result]              = data.asJson
 def json[A: JsonEncoder](data: A, status: Int): Future[Result] = data.asJson(status)
 def text(content: String): Future[Result]                      = content.asText
 def text(content: String, status: Int): Future[Result]         = content.asText(status)
+def noContent                                                  = Future.successful(Complete(Response.noContent()))
 
 // Common responses
 val notFound: Future[Complete]    = "Not Found".asText(404)

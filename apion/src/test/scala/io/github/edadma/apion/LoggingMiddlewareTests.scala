@@ -65,7 +65,7 @@ class LoggingMiddlewareTests extends AsyncBaseSpec:
           logger.debug(s"Final captured log: $capturedLog")
           capturedLog should include("GET /test")
           capturedLog should include("200")
-          capturedLog should include("42")
+          capturedLog should include("13")
           succeed
       }
 

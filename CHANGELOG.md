@@ -10,25 +10,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - streaming response capability
 
-## [Unreleased] - 2025-
-
+## [0.0.3] - 2025-01-03
 
 ### Added
 
-- [x] add support for middleware chaining in route handlers
-- [x] add compression middleware integration tests
+- add support for middleware chaining in route handlers
+- add compression middleware integration tests
 
 ### Fixed
 
-- [x] fix response header casing for both errors and successful response
-- [x] fix response body handling
-- [x] fix logging middleware not displaying timestamp
-- [ ] content-length header not generated for 404 with json error
+- fix response header casing for both errors and successful response
+- fix response body handling
+- fix logging middleware not displaying timestamp
+- content-length header not generated for 404 with json error
 
 ### Changed
 
-- [x] AuthConfig -> Config
-- [x] StaticOptions -> Options
+- AuthConfig -> Config
+- StaticOptions -> Options
 
 ### Removed
 

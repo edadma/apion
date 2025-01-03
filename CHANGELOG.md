@@ -16,12 +16,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - [x] add support for middleware chaining in route handlers
-- [ ] add compression middleware integration tests
+- [x] add compression middleware integration tests
 
 ### Fixed
 
 - [x] fix response header casing for both errors and successful response
-- [ ] fix response body handling
+- [x] fix response body handling
 - [x] fix logging middleware not displaying timestamp
 - [ ] content-length header not generated for 404 with json error
 

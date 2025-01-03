@@ -1,5 +1,7 @@
 package io.github.edadma.apion
 
+import io.github.edadma.nodejs.Buffer
+
 import scala.concurrent.Future
 import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits.global
 import zio.json.*
@@ -16,6 +18,13 @@ implicit class JsonResponseOps[A: JsonEncoder](val data: A) {
 implicit class StringResponseOps(val text: String) {
   def asText: Future[Complete]              = Future.successful(Complete(Response.text(text)))
   def asText(status: Int): Future[Complete] = Future.successful(Complete(Response.text(text, status)))
+}
+
+// Extension method for node Buffers
+implicit class BufferResponseOps(val buffer: Buffer) {
+  def asBinary: Future[Complete] = Future.successful(Complete(Response.binary(buffer)))
+
+  def asBinary(status: Int): Future[Complete] = Future.successful(Complete(Response.binary(buffer, status)))
 }
 
 // Direct response methods

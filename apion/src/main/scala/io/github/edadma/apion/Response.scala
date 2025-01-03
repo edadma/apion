@@ -1,6 +1,7 @@
 package io.github.edadma.apion
 
 import io.github.edadma.apion.ResponseBody.Text
+import io.github.edadma.nodejs.Buffer
 import zio.json.*
 
 import scala.language.implicitConversions
@@ -11,8 +12,8 @@ case class Response(
     body: ResponseBody = ResponseBody.Empty,
 ):
   def bodyText: String = body match
-    case ResponseBody.Text(content, _) => content
-    case _                             => sys.error(s"Response body was not text: ${body}")
+    case Text(content, _) => content
+    case _                => sys.error(s"Response body was not text: ${body}")
 
 object Response:
   // Global configuration for default headers
@@ -79,6 +80,27 @@ object Response:
       headers =
         ResponseHeaders(standardHeaders.appended("Content-Type" -> "text/plain").appendedAll(additionalHeaders)),
       body = Text(content),
+    )
+
+  /** Create a binary response with standard headers
+    *
+    * @param content
+    *   Binary content
+    * @param status
+    *   HTTP status code (default 200)
+    * @param additionalHeaders
+    *   Optional additional headers
+    */
+  def binary(
+      content: Buffer,
+      status: Int = 200,
+      additionalHeaders: Seq[(String, String)] = Nil,
+  ): Response =
+    Response(
+      status = status,
+      headers =
+        ResponseHeaders(standardHeaders.appended("Content-Type" -> "text/plain").appendedAll(additionalHeaders)),
+      body = ResponseBody.Binary(content),
     )
 
   /** Generate standard HTTP response headers Includes common headers like Date, Server, Cache-Control

@@ -18,5 +18,6 @@ Add missing basic features and more integration testing.
 Initial release of Apion, a lightweight HTTP API server framework for Scala.js.
 
 ## All Releases
+- [0.0.3](0.0.3) - Fix response handling
 - [0.0.2](0.0.2) - Add missing basic features
 - [0.0.1](0.0.1) - Initial release

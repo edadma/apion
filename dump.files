@@ -39,6 +39,7 @@ RouterTests.scala
 ./apion/src/test/scala/io/github/edadma/apion
 AuthIntegrationTests.scala
 BasicIntegrationTests.scala
+CompressionMiddlewareIntegrationTests.scala
 CookieIntegrationTests.scala
 SecurityAndCorsIntegrationTests.scala
 StaticMiddlewareIntegrationTests.scala

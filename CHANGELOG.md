@@ -10,7 +10,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - streaming response capability
 
+### Fixed
+
+### Removed
+
+### Deprecated
+
+### Security
+
 ## [0.0.3] - 2025-01-03
+
+Fix response handling, and add support for middleware chaining.
 
 ### Added
 
@@ -29,11 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - AuthConfig -> Config
 - StaticOptions -> Options
 
-### Removed
-
-### Deprecated
-
-### Security
+[0.0.3]: https://github.com/edadma/apion/releases/tag/v0.0.3
 
 ## [0.0.2] - 2025-01-01
 

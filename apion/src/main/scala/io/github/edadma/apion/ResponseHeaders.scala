@@ -1,46 +1,5 @@
 package io.github.edadma.apion
 
-/** HeaderCase handles case-insensitive header names while preserving original casing This is important because while
-  * HTTP header names are case-insensitive, some clients or tools may expect specific casing.
-  */
-object HeaderCase:
-  /** Canonical cases for common headers - this helps maintain consistent casing across the application while still
-    * allowing case-insensitive matching
-    */
-  private val CanonicalCases = Map(
-    "content-type"                     -> "Content-Type",
-    "content-length"                   -> "Content-Length",
-    "authorization"                    -> "Authorization",
-    "user-agent"                       -> "User-Agent",
-    "accept"                           -> "Accept",
-    "accept-encoding"                  -> "Accept-Encoding",
-    "cache-control"                    -> "Cache-Control",
-    "connection"                       -> "Connection",
-    "cookie"                           -> "Cookie",
-    "date"                             -> "Date",
-    "host"                             -> "Host",
-    "origin"                           -> "Origin",
-    "referer"                          -> "Referer",
-    "x-forwarded-for"                  -> "X-Forwarded-For",
-    "x-frame-options"                  -> "X-Frame-Options",
-    "x-content-type-options"           -> "X-Content-Type-Options",
-    "x-xss-protection"                 -> "X-XSS-Protection",
-    "access-control-allow-origin"      -> "Access-Control-Allow-Origin",
-    "access-control-allow-methods"     -> "Access-Control-Allow-Methods",
-    "access-control-allow-headers"     -> "Access-Control-Allow-Headers",
-    "access-control-expose-headers"    -> "Access-Control-Expose-Headers",
-    "access-control-max-age"           -> "Access-Control-Max-Age",
-    "access-control-allow-credentials" -> "Access-Control-Allow-Credentials",
-  )
-
-  def normalize(header: String): String =
-    val lower = header.toLowerCase
-    CanonicalCases.getOrElse(
-      lower,
-      // If not in canonical cases, capitalize each word
-      lower.split('-').map(_.capitalize).mkString("-"),
-    )
-
 /** ResponseHeaders wraps the header map to provide case-insensitive access while maintaining canonical header casing
   * for the outgoing response
   */
@@ -72,16 +31,42 @@ class ResponseHeaders private (private val headers: Map[String, List[String]]):
     new ResponseHeaders(headers - header.toLowerCase)
 
   def toMap: Map[String, List[String]] =
-    headers.view.mapValues(_.map(_._2)).toMap
+    headers.map((k, v) => normalize(k) -> v)
 
-  private def makeHeaders(hs: Seq[(String, String)]): Map[String, List[String]] =
-    hs.map((k, v) => k.toLowerCase -> List(v)).toMap
+  def normalize(header: String): String =
+    val lower = header.toLowerCase
+
+    lower.split('-').map(s => if ResponseHeaders.allCaps.contains(s) then s.toUpperCase else s.capitalize).mkString("-")
+
+//  private def makeHeaders(hs: Seq[(String, String)]): Map[String, List[String]] =
+//    hs.map((k, v) => k.toLowerCase -> List(v)).toMap
 
   override def toString: String = s"ResponseHeaders($headers)"
 
 object ResponseHeaders:
   private val multiHeader = Set("set-cookie", "wwww-authenticate")
 
+  private val allCaps = Set(
+    "api",
+    "cors",
+    "csrf",
+    "csp",
+    "dns",
+    "hsts",
+    "http",
+    "json",
+    "jwt",
+    "php",
+    "rpc",
+    "ssl",
+    "tls",
+    "uri",
+    "url",
+    "www",
+    "xml",
+    "xss",
+    "xsrf",
+  )
   def empty: ResponseHeaders = new ResponseHeaders(Map.empty)
 
   def apply(headers: Seq[(String, String)]): ResponseHeaders =

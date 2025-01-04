@@ -1,8 +1,12 @@
 package io.github.edadma.apion
 
+import zio.json.*
+
 import io.github.edadma.nodejs.ServerRequest
 
-import scala.concurrent.Future
+import scala.concurrent.{Promise, Future}
+
+import scala.scalajs.js
 
 type Finalizer = (Request, Response) => Future[Response]
 
@@ -19,6 +23,43 @@ case class Request(
     finalizers: List[Finalizer] = Nil,
     cookies: Map[String, String] = Map(),
 ) /*extends RequestDSL*/ {
+  private var bodyPromise: Option[Promise[String]] = None
+
+  def textBody: Future[String] = {
+    if (bodyPromise.isEmpty) {
+      bodyPromise = Some(Promise[String]())
+      var body = ""
+
+      rawRequest.on(
+        "data",
+        (chunk: js.Any) => {
+          body += chunk.toString
+        },
+      )
+
+      rawRequest.on(
+        "end",
+        () => {
+          bodyPromise.get.success(body)
+        },
+      )
+
+      rawRequest.on(
+        "error",
+        (error: js.Error) => {
+          bodyPromise.get.failure(new Exception(s"Body read error: ${error.message}"))
+        },
+      )
+    }
+
+    bodyPromise.get.future
+  }
+
+  def jsonBody[T: JsonDecoder]: Future[Option[T]] = {
+    import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits.global
+    textBody.map(body => body.fromJson[T].toOption)
+  }
+
   def header(h: String): Option[String] = headers.get(h.toLowerCase)
 
   def cookie(name: String): Option[String] = cookies.get(name)

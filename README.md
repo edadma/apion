@@ -52,16 +52,14 @@ def run(): Unit =
     .use(LoggingMiddleware())
     .use(CorsMiddleware())
     .get("/hello", _ => "Hello World!".asText)
-    .use(BodyParser.json[User]())
     .post(
       "/users",
-       _.context.get("body") match
-          case Some(user: User) => user.asJson(201)
-          case _                => "Invalid user data".asText(400),
+       _.jsonBody[User].flatMap {
+          case Some(user) => user.asJson(201)
+          case _          => "Invalid user data".asText(400)
+       },
     )
-    .listen(3000) {
-      println("Server running at http://localhost:3000")
-    }
+    .listen(3000) { println("Server running at http://localhost:3000") }
 ```
 
 Test the server using curl:

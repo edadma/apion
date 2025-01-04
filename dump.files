@@ -3,7 +3,6 @@
 # Apion library
 ./apion/src/main/scala/io/github/edadma/apion
 AuthMiddleware.scala
-BodyParser.scala
 Cookie.scala
 CookieMiddleware.scala
 CompressionMiddleware.scala

@@ -60,6 +60,22 @@ case class Request(
     textBody.map(body => body.fromJson[T].toOption)
   }
 
+  def formBody: Future[Map[String, String]] = {
+    import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits.global
+
+    textBody.map { body =>
+      body.split("&").flatMap { param =>
+        param.split("=", 2) match {
+          case Array(key, value) =>
+            Some(decodeURIComponent(key) -> decodeURIComponent(value))
+          case Array(key) =>
+            Some(decodeURIComponent(key) -> "")
+          case _ => None
+        }
+      }.toMap
+    }
+  }
+
   def header(h: String): Option[String] = headers.get(h.toLowerCase)
 
   def cookie(name: String): Option[String] = cookies.get(name)

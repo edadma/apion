@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased] - 2025-
 
 ### Added
+- add request tests
 
 ### Fixed
 - fix request handling of Content-Type header

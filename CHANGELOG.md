@@ -9,9 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - [ ] add request validation: explore using `refined` library
-- [ ] add support for streaming multimedia to static file reader
+- [ ] add support for HTTP Range headers
 
 ### Fixed
+- [ ] *** improve memory usage and responsiveness for large file downloads
 
 ### Changed
 

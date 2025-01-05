@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 ### Fixed
+- fix request handling of Content-Type header
+- fix request stream processing
 
 ### Changed
 

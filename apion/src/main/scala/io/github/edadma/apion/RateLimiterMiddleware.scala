@@ -2,11 +2,23 @@ package io.github.edadma.apion
 
 import scala.concurrent.Future
 import scala.collection.concurrent.TrieMap
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration.{DurationInt, Duration}
 import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits.global
 import zio.json._
 
 object RateLimiterMiddleware {
+  // Default configuration (similar to express-rate-limit defaults)
+  private val DefaultLimit = RateLimit(
+    maxRequests = 60,  // 60 requests
+    window = 1.minute, // per minute
+    burst = 0,
+    headers = true,
+  )
+
+  private val DefaultOptions = Options(limit = DefaultLimit)
+
+  def apply(): Handler = apply(DefaultOptions) // No-args constructor using defaults
+
   // Configuration
   case class RateLimit(
       maxRequests: Int, // Max requests allowed in window

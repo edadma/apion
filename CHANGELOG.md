@@ -7,14 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased] - 2025-
 
+### Added
+- [ ] add request validation: explore using `refined` library
+- [ ] add support for streaming multimedia to static file reader
+
+### Fixed
+
+### Changed
+
+### Removed
+
+## [0.0.5] - 2025-01-05
+
 Improve request and response streaming.
 
 ### Added
 - add request tests
-- [x] add rate limiter middleware
-- [ ] add request validation: explore using `refined` library
-- [ ] add proper streaming response handling
-- [ ] add support for streaming multimedia to static file reader 
+- add rate limiter middleware
+- add proper streaming response handling
 - add missing request connection information methods
 
 ### Fixed
@@ -22,9 +32,9 @@ Improve request and response streaming.
 - fix request stream processing
 
 ### Changed
-- [ ] static file reader now uses streaming file reader and provides streaming response
+- static file reader now uses streaming file reader and provides streaming response
 
-### Removed
+[0.0.5]: https://github.com/edadma/apion/releases/tag/v0.0.5
 
 ## [0.0.4] - 2025-01-04
 

@@ -8,6 +8,9 @@ nav_order: 4
 
 ## Latest Release
 
+### [0.0.5](0.0.5) - January 2025
+Improve request and response streaming.
+
 ### [0.0.4](0.0.4) - January 2025
 Add streaming request body parsing.
 
@@ -21,7 +24,8 @@ Add missing basic features and more integration testing.
 Initial release of Apion, a lightweight HTTP API server framework for Scala.js.
 
 ## All Releases
-- [0.0.4](0.0.5) - Add streaming request body parsing
+- [0.0.5](0.0.5) - Improve request and response streaming
+- [0.0.4](0.0.4) - Add streaming request body parsing
 - [0.0.3](0.0.3) - Fix response handling
 - [0.0.2](0.0.2) - Add missing basic features
 - [0.0.1](0.0.1) - Initial release

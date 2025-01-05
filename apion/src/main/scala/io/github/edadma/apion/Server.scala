@@ -102,7 +102,16 @@ class Server {
           finalResponse.body match
             case StringBody(_, data) => res.end(data)
             case BufferBody(content) => res.end(content)
-            case EmptyBody            => res.end()
+            case ReadableStreamBody(stream) =>
+              stream.pipe(res)
+              stream.on(
+                "error",
+                (err: js.Any) => {
+                  logger.error(s"Stream error: $err")
+                  res.end()
+                },
+              )
+            case EmptyBody => res.end()
         }
 
       case Skip =>

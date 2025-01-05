@@ -55,12 +55,11 @@ trait ServerRequest extends js.Object:
   def resume(): this.type                            = js.native
 
 @js.native
-trait ServerResponse extends js.Object:
+trait ServerResponse extends WritableStream:
   // Basic response methods
   def writeHead(statusCode: Int): Unit                                                    = js.native
   def writeHead(statusCode: Int, headers: js.Dictionary[String | js.Array[String]]): Unit = js.native
   def write(chunk: String): Unit                                                          = js.native
-  def end(): Unit                                                                         = js.native
   def end(data: String, encoding: String = "utf8"): Unit                                  = js.native
   def end(data: Buffer): Unit                                                             = js.native
 

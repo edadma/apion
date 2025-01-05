@@ -29,6 +29,11 @@ object zlib extends js.Object:
   ): Unit = js.native
 
 @js.native
+trait Transform extends ReadableStream with WritableStream {
+  // Inherits from both Readable and Writable
+}
+
+@js.native
 trait ZlibOptions extends js.Object:
   val level: js.UndefOr[Int]      = js.native
   val memLevel: js.UndefOr[Int]   = js.native

@@ -88,18 +88,15 @@ object StaticMiddleware:
       if etag.exists(e => ifNoneMatch.contains(e)) then
         Future.successful(Complete(Response(304)))
       else
-        // Read and send file
-        fs.readFile(path).toFuture
-          .map { content =>
-            val headers = ResponseHeaders(Seq(
-              "Content-Type"   -> mimeType,
-              "Content-Length" -> stats.size.toString,
-              "Cache-Control"  -> s"max-age=${options.maxAge}",
-            ) ++ etag.map("ETag" -> _))
+        // Create read stream
+        val stream = fs.createReadStream(path)
+        val headers = ResponseHeaders(Seq(
+          "Content-Type"   -> mimeType,
+          "Content-Length" -> stats.size.toString,
+          "Cache-Control"  -> s"max-age=${options.maxAge}",
+        ) ++ etag.map("ETag" -> _))
 
-            logger.debug(s"sendFile: $content")
-            Complete(Response(200, headers, BufferBody(content)))
-          }
+        Future.successful(Complete(Response(200, headers, ReadableStreamBody(stream))))
 
     logger.debug(s"static middleware url: ${request.url}, $options")
     logger.debug(s"static middleware path: ${request.path}")

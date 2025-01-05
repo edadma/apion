@@ -36,14 +36,3 @@ trait Stats extends js.Object:
   def size: Double           = js.native
   def mode: Double           = js.native
   def mtime: js.Date         = js.native
-
-@js.native
-trait ReadableStream extends js.Object {
-  def pipe(destination: WritableStream): Unit                            = js.native
-  def on(event: String, callback: js.Function1[js.Any, Unit]): this.type = js.native
-}
-
-@js.native
-trait WritableStream extends js.Object {
-  def end(): Unit = js.native
-}

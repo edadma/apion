@@ -4,6 +4,7 @@ import io.github.edadma.apion._
 import zio.json._
 import scala.concurrent.Future
 import scala.scalajs.js
+import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits.global
 
 case class UserData(name: String, email: String) derives JsonEncoder, JsonDecoder
 
@@ -25,8 +26,8 @@ object DemoApp {
     // Handler that uses the parsed body
     val createUserHandler: Handler =
       request => {
-        request.context.get("body") match {
-          case Some(userData: UserData) =>
+        request.json[UserData].flatMap {
+          case Some(userData) =>
             ApiResponse(
               message = "User created successfully",
               user = userData,
@@ -42,7 +43,6 @@ object DemoApp {
       .use(requestLogger)
       .get("/", greetingHandler)
       .get("/greet/:name", echoNameHandler)
-      .use("/api", BodyParser.json[UserData]())
       .post("/api/users", createUserHandler)
       .listen(3000) { println("Server running at http://localhost:3000") }
   }

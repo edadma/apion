@@ -69,14 +69,14 @@ lazy val apion = project
       "org.scala-js"      %%% "scala-js-macrotask-executor" % "1.1.1",
       "io.github.cquiroz" %%% "scala-java-time"             % "2.6.0",
     ),
-    jsEnv                                  := new org.scalajs.jsenv.nodejs.NodeJSEnv(),
-    scalaJSUseMainModuleInitializer        := true,
-    Test / scalaJSUseMainModuleInitializer := true,
-    Test / scalaJSUseTestModuleInitializer := false,
-//    Test / scalaJSUseMainModuleInitializer := false,
-//    Test / scalaJSUseTestModuleInitializer := true,
-    publishMavenStyle      := true,
-    Test / publishArtifact := false,
+    jsEnv                           := new org.scalajs.jsenv.nodejs.NodeJSEnv(),
+    scalaJSUseMainModuleInitializer := true,
+//    Test / scalaJSUseMainModuleInitializer := true,
+//    Test / scalaJSUseTestModuleInitializer := false,
+    Test / scalaJSUseMainModuleInitializer := false,
+    Test / scalaJSUseTestModuleInitializer := true,
+    publishMavenStyle                      := true,
+    Test / publishArtifact                 := false,
   )
 
 lazy val nodejs = project

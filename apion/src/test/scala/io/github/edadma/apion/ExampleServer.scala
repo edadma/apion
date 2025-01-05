@@ -12,7 +12,7 @@ def run(): Unit =
     .get("/hello", _ => "Hello World!".asText)
     .post(
       "/users",
-      _.jsonBody[User].flatMap {
+      _.json[User].flatMap {
         case Some(user) => user.asJson(201)
         case _          => "Invalid user data".asText(400)
       },

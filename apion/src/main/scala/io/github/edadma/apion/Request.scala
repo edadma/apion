@@ -7,6 +7,7 @@ import io.github.edadma.nodejs.ServerRequest
 import scala.concurrent.{Promise, Future}
 
 import scala.scalajs.js
+import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits.global
 
 type Finalizer = (Request, Response) => Future[Response]
 
@@ -25,7 +26,7 @@ case class Request(
 ) /*extends RequestDSL*/ {
   private var bodyPromise: Option[Promise[String]] = None
 
-  def textBody: Future[String] = {
+  def text: Future[String] = {
     if (bodyPromise.isEmpty) {
       bodyPromise = Some(Promise[String]())
       var body = ""
@@ -55,15 +56,14 @@ case class Request(
     bodyPromise.get.future
   }
 
-  def jsonBody[T: JsonDecoder]: Future[Option[T]] = {
-    import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits.global
-    textBody.map(body => body.fromJson[T].toOption)
+  def json[T: JsonDecoder]: Future[Option[T]] = {
+    text.map(body => body.fromJson[T].toOption)
   }
 
-  def formBody: Future[Map[String, String]] = {
+  def form: Future[Map[String, String]] = {
     import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits.global
 
-    textBody.map { body =>
+    text.map { body =>
       body.split("&").flatMap { param =>
         param.split("=", 2) match {
           case Array(key, value) =>

@@ -58,11 +58,10 @@ class BasicIntegrationTests extends AsyncBaseSpec with BeforeAndAfterAll {
       .get("/bad-request", _ => badRequest)
 
       // Basic body parsing test
-      .use(BodyParser.json[SimpleData]())
       .post(
         "/echo",
         request => {
-          request.context.get("body") match {
+          request.json[SimpleData].flatMap {
             case Some(data: SimpleData) => data.asJson
             case _                      => "Invalid request".asText(400)
           }

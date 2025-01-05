@@ -41,6 +41,7 @@ AuthIntegrationTests.scala
 BasicIntegrationTests.scala
 CompressionMiddlewareIntegrationTests.scala
 CookieIntegrationTests.scala
+RateLimiterMiddlewareIntegrationTests.scala
 SecurityAndCorsIntegrationTests.scala
 StaticMiddlewareIntegrationTests.scala
 

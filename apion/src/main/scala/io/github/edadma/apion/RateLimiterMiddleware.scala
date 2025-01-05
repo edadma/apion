@@ -54,7 +54,8 @@ object RateLimiterMiddleware {
         startTime: Long = System.currentTimeMillis(),
     )
 
-    private val windows = TrieMap[String, WindowData]()
+    // Change from TrieMap to mutable Map
+    private val windows = scala.collection.mutable.Map[String, WindowData]()
 
     def increment(key: String, window: Duration): Future[(Int, Int)] = Future {
       val now      = System.currentTimeMillis()

@@ -20,7 +20,7 @@ object RealFS extends FSInterface:
     fs.promises.readFile(path, options)
 
   def createReadStream(path: String): ReadableStream =
-    fs.promises.createReadStream(path)
+    fs.createReadStream(path)
 
   def stat(path: String): js.Promise[Stats] =
     fs.promises.stat(path)

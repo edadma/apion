@@ -6,11 +6,11 @@ import scala.scalajs.js.annotation.*
 @js.native
 @JSImport("fs", JSImport.Namespace)
 object fs extends js.Object:
-  val promises: FSPromises = js.native
+  val promises: FSPromises                           = js.native
+  def createReadStream(path: String): ReadableStream = js.native
 
 @js.native
 trait FSPromises extends js.Object:
-  def createReadStream(path: String): ReadableStream                                = js.native
   def readFile(path: String): js.Promise[Buffer]                                    = js.native
   def readFile(path: String, options: ReadFileOptions): js.Promise[String | Buffer] = js.native
   def stat(path: String): js.Promise[Stats]                                         = js.native

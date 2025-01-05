@@ -12,9 +12,10 @@ case class Response(
 ):
   def bodyText: String =
     body match
-      case TextBody(content, _, _) => content
-      case ContentBody(_)          => sys.error(s"bodyText: binary body")
-      case EmptyBody               => sys.error(s"bodyText: no body")
+      case StringBody(content, _) => content
+      case _: BufferBody          => sys.error(s"bodyText: binary body")
+      case _: ReadableStreamBody  => sys.error(s"bodyText: stream body")
+      case EmptyBody              => sys.error(s"bodyText: no body")
 
 object Response:
   // Global configuration for default headers
@@ -73,7 +74,7 @@ object Response:
           .appended("Content-Type" -> s"application/json; charset=$encoding")
           .appended("Content-Length" -> buffer.length.toString)
           .appendedAll(additionalHeaders)),
-      body = TextBody(text, encoding, buffer),
+      body = StringBody(text, buffer),
     )
 
   /** Create a plain text response with standard headers
@@ -101,7 +102,7 @@ object Response:
             .appended("Content-Length" -> buffer.length.toString)
             .appendedAll(additionalHeaders),
         ),
-      body = TextBody(content, encoding, buffer),
+      body = StringBody(content, buffer),
     )
 
   /** Create a binary response with standard headers
@@ -127,7 +128,7 @@ object Response:
             .appended("Content-Length" -> content.length.toString)
             .appendedAll(additionalHeaders),
         ),
-      body = ContentBody(content),
+      body = BufferBody(content),
     )
 
   /** Generate standard HTTP response headers Includes common headers like Date, Server, Cache-Control

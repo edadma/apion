@@ -100,8 +100,8 @@ class Server {
           res.writeHead(finalResponse.status, headerDict) // Write body and end response
 
           finalResponse.body match
-            case TextBody(_, _, data) => res.end(data)
-            case ContentBody(content) => res.end(content)
+            case StringBody(_, data) => res.end(data)
+            case BufferBody(content) => res.end(content)
             case EmptyBody            => res.end()
         }
 

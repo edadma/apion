@@ -31,8 +31,8 @@ object CompressionMiddleware:
     else
       // Get size based on response body type
       val bodySize = response.body match
-        case TextBody(_, _, data) => data.byteLength
-        case ContentBody(content) => content.byteLength
+        case StringBody(_, data) => data.byteLength
+        case BufferBody(content) => content.byteLength
 //        case ResponseBody.Stream(_)        =>
 //          // For streams, rely on Content-Length header if present
 //          response.headers.get("Content-Length")
@@ -127,9 +127,9 @@ object CompressionMiddleware:
             // Compress the response body
             val body =
               res.body match
-                case TextBody(content, _, data) => data
-                case ContentBody(content)       => content
-                case EmptyBody                  => sys.error("compressionFinalizer: empty body")
+                case StringBody(_, data) => data
+                case BufferBody(content) => content
+                case EmptyBody            => sys.error("compressionFinalizer: empty body")
 
             compress(body, encoding, options).map { compressed =>
               res.copy(
@@ -138,7 +138,7 @@ object CompressionMiddleware:
                   "Content-Length"   -> compressed.byteLength.toString,
                   "Vary"             -> "Accept-Encoding",
                 )),
-                body = ContentBody(compressed),
+                body = BufferBody(compressed),
               )
             }.recover { case e =>
               logger.error(s"Compression error: ${e.getMessage}")

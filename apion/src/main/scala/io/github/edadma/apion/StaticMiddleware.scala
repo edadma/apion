@@ -98,7 +98,7 @@ object StaticMiddleware:
             ) ++ etag.map("ETag" -> _))
 
             logger.debug(s"sendFile: $content")
-            Complete(Response(200, headers, ContentBody(content)))
+            Complete(Response(200, headers, BufferBody(content)))
           }
 
     logger.debug(s"static middleware url: ${request.url}, $options")

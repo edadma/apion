@@ -63,3 +63,10 @@ object BrotliOptions:
     js.Dynamic.literal(
       params = js.Dictionary(params.toSeq*),
     ).asInstanceOf[BrotliOptions]
+
+@js.native
+trait ZlibModule extends js.Object {
+  def createGzip(options: ZlibOptions = null): Transform             = js.native
+  def createBrotliCompress(options: BrotliOptions = null): Transform = js.native
+  def createDeflate(options: ZlibOptions = null): Transform          = js.native
+}

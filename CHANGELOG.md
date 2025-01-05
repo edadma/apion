@@ -11,7 +11,7 @@ Improve request stream processing.
 
 ### Added
 - add request tests
-- [ ] add rate limiter middleware 
+- [x] add rate limiter middleware
 - [ ] add request validation: explore using `refined` library
 - add missing request connection information methods
 

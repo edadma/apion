@@ -13,6 +13,8 @@ Improve request stream processing.
 - add request tests
 - [x] add rate limiter middleware
 - [ ] add request validation: explore using `refined` library
+- [ ] add proper streaming response handling
+- [ ] add support for streaming multimedia to static file reader 
 - add missing request connection information methods
 
 ### Fixed
@@ -20,6 +22,7 @@ Improve request stream processing.
 - fix request stream processing
 
 ### Changed
+- [ ] static file reader now uses streaming file reader and provides streaming response
 
 ### Removed
 

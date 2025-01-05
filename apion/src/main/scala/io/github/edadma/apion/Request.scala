@@ -24,6 +24,27 @@ case class Request(
     finalizers: List[Finalizer] = Nil,
     cookies: Map[String, String] = Map(),
 ) /*extends RequestDSL*/ {
+  // Connection information
+  def ip: String = rawRequest.socket.remoteAddress
+
+  def secure: Boolean = rawRequest.socket.encrypted.getOrElse(false)
+
+  def protocol: String = if secure then "https" else "http"
+
+  def hostname: Option[String] = rawRequest.hostname.toOption
+
+  def port: Option[Int] = rawRequest.port.toOption
+
+  // HTTP version and state
+  def httpVersion: String = rawRequest.httpVersion
+
+  def complete: Boolean = rawRequest.complete
+
+  def aborted: Boolean = rawRequest.aborted
+
+  // Raw headers exactly as received (preserves case and duplicates)
+  def rawHeaders: List[String] = rawRequest.rawHeaders.toList
+
   private var bodyPromise: Option[Promise[Buffer]] = None
 
   // Get raw body as Buffer

@@ -11,6 +11,8 @@ Improve request stream processing.
 
 ### Added
 - add request tests
+- [ ] add rate limiter middleware 
+- [ ] add request validation: explore using `refined` library
 
 ### Fixed
 - fix request handling of Content-Type header

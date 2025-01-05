@@ -58,6 +58,7 @@ crypto.scala
 fetch.scala
 fs.scala
 http.scala
+stream.scala
 zlib.scala
 
 # build/development files

@@ -35,7 +35,7 @@
 Add to your `build.sbt`:
 
 ```scala
-libraryDependencies += "io.github.edadma" %%% "apion" % "0.0.3"
+libraryDependencies += "io.github.edadma" %%% "apion" % "0.0.4"
 ```
 
 ## Quick Start
@@ -164,8 +164,8 @@ def handler(request: Request): Future[Result] = {
   val query = request.query
   
   // Get typed body from context
-  request.context.get("body") match {
-    case Some(user: User) => // Handle user data
+  request.json[User].flatMap {
+    case Some(user) => // Handle user data
     case _ => request.failValidation("Invalid body")
   }
 }
@@ -278,11 +278,10 @@ server.use(CompressionMiddleware(CompressionMiddleware.Options(
 case class User(name: String, email: String) derives JsonEncoder, JsonDecoder
 
 server
-  .use(BodyParser.json[User]())
   .post("/users", request => {
-    request.context.get("body") match {
-      case Some(userData: User) =>
-        // Body has been parsed and type-checked
+    request.json[User].flatMap {
+      case Some(userData) =>
+        // Body has been parsed as type User
         userData.asJson(201)
       case _ =>
         "Invalid request body".asText(400)
@@ -291,10 +290,9 @@ server
 
 // URL-encoded form data parsing
 server
-  .use(BodyParser.urlencoded())
   .post("/form", request => {
-    request.context.get("form") match {
-      case Some(formData: Map[String, String]) =>
+    request.form.flatMap {
+      case Some(formData) =>
         // Access form fields
         val name = formData.getOrElse("name", "")
         formData.asJson

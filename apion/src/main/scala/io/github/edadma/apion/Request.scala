@@ -2,7 +2,7 @@ package io.github.edadma.apion
 
 import zio.json.*
 
-import io.github.edadma.nodejs.ServerRequest
+import io.github.edadma.nodejs.{Buffer, ServerRequest, bufferMod}
 
 import scala.concurrent.{Promise, Future}
 
@@ -24,24 +24,27 @@ case class Request(
     finalizers: List[Finalizer] = Nil,
     cookies: Map[String, String] = Map(),
 ) /*extends RequestDSL*/ {
-  private var bodyPromise: Option[Promise[String]] = None
+  private var bodyPromise: Option[Promise[Buffer]] = None
 
-  def text: Future[String] = {
+  // Get raw body as Buffer
+  def body: Future[Buffer] = {
     if (bodyPromise.isEmpty) {
-      bodyPromise = Some(Promise[String]())
-      var body = ""
+      bodyPromise = Some(Promise[Buffer]())
+      val chunks = new scala.collection.mutable.ArrayBuffer[Buffer]()
 
       rawRequest.on(
         "data",
-        (chunk: js.Any) => {
-          body += chunk.toString
+        (chunk: Buffer) => {
+          // Accumulate chunks as Buffer objects
+          chunks += chunk
         },
       )
 
       rawRequest.on(
         "end",
         () => {
-          bodyPromise.get.success(body)
+          // Concatenate all chunks into final Buffer
+          bodyPromise.get.success(bufferMod.Buffer.concat(js.Array(chunks.toArray*)))
         },
       )
 
@@ -56,25 +59,34 @@ case class Request(
     bodyPromise.get.future
   }
 
-  def json[T: JsonDecoder]: Future[Option[T]] = {
-    text.map(body => body.fromJson[T].toOption)
-  }
+  // Higher level helpers
+  def text: Future[String] =
+    // Parse Content-Type header
+    val charset = header("content-type")
+      .flatMap { ct =>
+        // Look for charset in Content-Type (e.g. "text/plain; charset=iso-8859-1")
+        ct.split(";")
+          .map(_.trim)
+          .find(_.startsWith("charset="))
+          .map(_.substring(8).toLowerCase)
+      }
+      .getOrElse("utf8") // Default to UTF-8 if not specified
 
-  def form: Future[Map[String, String]] = {
-    import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits.global
+    body.map(_.toString(charset))
 
-    text.map { body =>
-      body.split("&").flatMap { param =>
+  def json[T: JsonDecoder]: Future[Option[T]] =
+    text.map(_.fromJson[T].toOption)
+
+  def form: Future[Map[String, String]] =
+    text.map { content =>
+      content.split("&").flatMap { param =>
         param.split("=", 2) match {
           case Array(key, value) =>
             Some(decodeURIComponent(key) -> decodeURIComponent(value))
-          case Array(key) =>
-            Some(decodeURIComponent(key) -> "")
           case _ => None
         }
       }.toMap
     }
-  }
 
   def header(h: String): Option[String] = headers.get(h.toLowerCase)
 

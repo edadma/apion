@@ -1,13 +1,15 @@
-// File: nodejs/src/main/scala/io/github/edadma/nodejs/zlib.scala
+// nodejs/src/main/scala/io/github/edadma/nodejs/zlib.scala
 package io.github.edadma.nodejs
 
 import scala.scalajs.js
 import scala.scalajs.js.annotation.*
-import scala.scalajs.js.typedarray.Uint8Array
 
 @js.native
 @JSImport("zlib", JSImport.Namespace)
-object zlib extends js.Object:
+object zlib extends ZlibModule
+
+@js.native
+trait ZlibModule extends js.Object:
   def gzip(buf: String | Buffer, callback: js.Function2[js.Error | Null, Buffer, Unit]): Unit = js.native
   def gunzip(buf: Buffer, callback: js.Function2[js.Error | Null, Buffer, Unit]): Unit        = js.native
 
@@ -17,7 +19,6 @@ object zlib extends js.Object:
   def brotliCompress(buf: String | Buffer, callback: js.Function2[js.Error | Null, Buffer, Unit]): Unit = js.native
   def brotliDecompress(buf: Buffer, callback: js.Function2[js.Error | Null, Buffer, Unit]): Unit        = js.native
 
-  // Optional compression parameters
   def gzip(buf: String | Buffer, options: ZlibOptions, callback: js.Function2[js.Error | Null, Buffer, Unit]): Unit =
     js.native
   def deflate(buf: String | Buffer, options: ZlibOptions, callback: js.Function2[js.Error | Null, Buffer, Unit]): Unit =
@@ -28,10 +29,12 @@ object zlib extends js.Object:
       callback: js.Function2[js.Error | Null, Buffer, Unit],
   ): Unit = js.native
 
+  def createGzip(options: ZlibOptions = null): Transform             = js.native
+  def createBrotliCompress(options: BrotliOptions = null): Transform = js.native
+  def createDeflate(options: ZlibOptions = null): Transform          = js.native
+
 @js.native
-trait Transform extends ReadableStream with WritableStream {
-  // Inherits from both Readable and Writable
-}
+trait Transform extends ReadableStream with WritableStream
 
 @js.native
 trait ZlibOptions extends js.Object:
@@ -63,10 +66,3 @@ object BrotliOptions:
     js.Dynamic.literal(
       params = js.Dictionary(params.toSeq*),
     ).asInstanceOf[BrotliOptions]
-
-@js.native
-trait ZlibModule extends js.Object {
-  def createGzip(options: ZlibOptions = null): Transform             = js.native
-  def createBrotliCompress(options: BrotliOptions = null): Transform = js.native
-  def createDeflate(options: ZlibOptions = null): Transform          = js.native
-}

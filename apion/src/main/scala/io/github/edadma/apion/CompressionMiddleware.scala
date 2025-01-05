@@ -3,24 +3,17 @@ package io.github.edadma.apion
 import scala.concurrent.{Future, Promise}
 import scala.scalajs.js
 import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits.global
-import io.github.edadma.nodejs.{ZlibModule, Buffer, bufferMod, ZlibOptions, BrotliOptions, ReadableStream}
+import io.github.edadma.nodejs.{Buffer, bufferMod, ZlibOptions, BrotliOptions, ReadableStream, zlib}
 
 object CompressionMiddleware:
   case class Options(
-      // Compression filter options
-      level: Int = 6,        // compression level 0-9
-      threshold: Int = 1024, // minimum size in bytes to compress
-      memLevel: Int = 8,     // memory usage level 1-9
-      windowBits: Int = 15,  // window size 9-15
-
-      // Brotli-specific options
-      brotliQuality: Int = 11,     // compression quality 0-11
-      brotliBlockSize: Int = 4096, // block size 16-24
-
-      // Filter options
-      filter: Request => Boolean = _ => true, // function to determine if response should be compressed
-
-      // Which encodings to support/prefer (in order of preference)
+      level: Int = 6,
+      threshold: Int = 1024,
+      memLevel: Int = 8,
+      windowBits: Int = 15,
+      brotliQuality: Int = 11,
+      brotliBlockSize: Int = 4096,
+      filter: Request => Boolean = _ => true,
       encodings: List[String] = List("br", "gzip", "deflate"),
   )
 
@@ -28,8 +21,8 @@ object CompressionMiddleware:
       stream: ReadableStream,
       encoding: String,
       options: Options,
-  ): ReadableStream = {
-    encoding match {
+  ): ReadableStream =
+    encoding match
       case "br" =>
         val brotliOpts = BrotliOptions(Map(
           "quality"   -> options.brotliQuality,
@@ -55,29 +48,22 @@ object CompressionMiddleware:
           memLevel = Some(options.memLevel),
           windowBits = Some(options.windowBits),
         )
-        val deflate = ZlibModule.createDeflate(zlibOpts)
+        val deflate = zlib.createDeflate(zlibOpts)
         stream.pipe(deflate)
         deflate
 
-      case _ => stream // No compression
-    }
-  }
+      case _ => stream
 
   private def shouldCompress(request: Request, response: Response, options: Options): Boolean =
     if !options.filter(request) then false
     else if response.headers.get("Content-Encoding").exists(_.nonEmpty) then false
     else if response.headers.get("Transfer-Encoding").exists(_.nonEmpty) then false
     else
-      // Get size based on response body type
       val bodySize = response.body match
-        case StringBody(_, data) => data.byteLength
-        case BufferBody(content) => content.byteLength
-//        case ResponseBody.Stream(_)        =>
-//          // For streams, rely on Content-Length header if present
-//          response.headers.get("Content-Length")
-//            .map(_.toInt)
-//            .getOrElse(options.threshold + 1) // Assume it's worth compressing if no length known
-        case EmptyBody => 0
+        case StringBody(_, content) => bufferMod.Buffer.from(content).byteLength
+        case BufferBody(content)    => content.byteLength
+        case ReadableStreamBody(_)  => options.threshold + 1 // Assume it's worth compressing
+        case EmptyBody              => 0
 
       if bodySize < options.threshold then false
       else
@@ -95,9 +81,7 @@ object CompressionMiddleware:
   private def getBestEncoding(acceptEncoding: Option[String], supported: List[String]): Option[String] =
     acceptEncoding match
       case Some(accepts) =>
-        // Parse accept-encoding header
         val encodings = accepts.split(",").map(_.trim.toLowerCase).toList
-        // Find first supported encoding that is accepted
         supported.find(enc => encodings.exists(_.startsWith(enc)))
       case None => None
 
@@ -155,52 +139,51 @@ object CompressionMiddleware:
     promise.future
 
   def apply(options: Options = Options()): Handler = request =>
-    // Create compression finalizer
     val compressionFinalizer: Finalizer = (req, res) =>
       if !shouldCompress(req, res, options) then
         Future.successful(res)
       else
-        // Get best encoding based on Accept-Encoding header
         getBestEncoding(req.header("accept-encoding"), options.encodings) match
           case Some(encoding) =>
-            // Compress the response body
-            val body =
-              res.body match
-                case StringBody(_, data) => data
-                case BufferBody(content) => content
-                case ReadableStreamBody(stream) =>
-                  if !shouldCompress(req, res, options) then
-                    Future.successful(res)
-                  else
-                    getBestEncoding(req.header("accept-encoding"), options.encodings) match {
-                      case Some(encoding) =>
-                        val compressedStream = compressStream(stream, encoding, options)
-                        Future.successful(res.copy(
-                          headers = res.headers.addAll(Seq(
-                            "Content-Encoding" -> encoding,
-                            "Vary"             -> "Accept-Encoding",
-                          )),
-                          body = ReadableStreamBody(compressedStream),
-                        ))
-                      case None =>
-                        Future.successful(res)
-                    }
-                case EmptyBody => sys.error("compressionFinalizer: empty body")
-
-            compress(body, encoding, options).map { compressed =>
-              res.copy(
-                headers = res.headers.addAll(Seq(
-                  "Content-Encoding" -> encoding,
-                  "Content-Length"   -> compressed.byteLength.toString,
-                  "Vary"             -> "Accept-Encoding",
-                )),
-                body = BufferBody(compressed),
-              )
-            }.recover { case e =>
-              logger.error(s"Compression error: ${e.getMessage}")
-              res // Return uncompressed response on error
-            }
-
+            res.body match
+              case StringBody(_, content) =>
+                compress(content, encoding, options).map { compressed =>
+                  res.copy(
+                    headers = res.headers.addAll(Seq(
+                      "Content-Encoding" -> encoding,
+                      "Content-Length"   -> compressed.byteLength.toString,
+                      "Vary"             -> "Accept-Encoding",
+                    )),
+                    body = BufferBody(compressed),
+                  )
+                }.recover { case e =>
+                  logger.error(s"Compression error: ${e.getMessage}")
+                  res
+                }
+              case BufferBody(content) =>
+                compress(content, encoding, options).map { compressed =>
+                  res.copy(
+                    headers = res.headers.addAll(Seq(
+                      "Content-Encoding" -> encoding,
+                      "Content-Length"   -> compressed.byteLength.toString,
+                      "Vary"             -> "Accept-Encoding",
+                    )),
+                    body = BufferBody(compressed),
+                  )
+                }.recover { case e =>
+                  logger.error(s"Compression error: ${e.getMessage}")
+                  res
+                }
+              case ReadableStreamBody(stream) =>
+                Future.successful(res.copy(
+                  headers = res.headers.addAll(Seq(
+                    "Content-Encoding" -> encoding,
+                    "Vary"             -> "Accept-Encoding",
+                  )),
+                  body = ReadableStreamBody(compressStream(stream, encoding, options)),
+                ))
+              case EmptyBody =>
+                Future.successful(res)
           case None =>
             Future.successful(res)
 

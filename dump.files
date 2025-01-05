@@ -11,6 +11,7 @@ Handler.scala
 JWT.scala
 LoggingMiddleware.scala
 package.scala
+RateLimiterMiddleware.scala
 RealFS.scala
 Request.scala
 RequestDSL.scala

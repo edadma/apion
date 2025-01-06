@@ -28,7 +28,6 @@ libraryDependencies += "io.github.edadma" %%% "apion" % "0.0.5"
 Create a basic server:
 ```scala
 import io.github.edadma.apion._
-import zio.json._
 
 @main
 def run(): Unit =

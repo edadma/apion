@@ -23,10 +23,6 @@ nav:
   - API: "/api"
   - Releases: "/releases"
 
-nav_order:
-  - Home: 1
-  - Release History: 2
-
 # Additional configuration for Just-the-Docs
 aux_links:
   "Apion on GitHub":

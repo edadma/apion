@@ -76,5 +76,7 @@ CHANGELOG.md
 ./docs
 _config.yml
 index.md
+./docs/api
+index.md
 ./docs/releases
-0.0.1.md
+index.md

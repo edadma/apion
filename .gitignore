@@ -26,3 +26,6 @@ output.css
 code.txt
 *.zip
 log
+
+Gemfile.lock
+_site/

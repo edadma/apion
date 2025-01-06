@@ -42,7 +42,7 @@ def run(): Unit =
 
 ## Next Steps
 
-- See the [Getting Started Guide](/guides/getting-started) for a complete introduction
-- Browse the [API Reference](/api) for detailed documentation
-- Follow the [Tutorials](/tutorials) for step-by-step examples
-- Check [Release Notes](/releases) for latest updates
+- See the [Getting Started Guide](guides/getting-started) for a complete introduction
+- Browse the [API Reference](api) for detailed documentation
+- Follow the [Tutorials](tutorials) for step-by-step examples
+- Check [Release Notes](releases) for latest updates

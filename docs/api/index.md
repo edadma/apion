@@ -321,9 +321,6 @@ server
 
 ## Additional Resources
 
-- [Example Applications](https://github.com/edadma/apion/tree/main/examples)
-- [Middleware Guide](guides/middleware.md)
-- [Security Best Practices](guides/security.md)
-- [Performance Tuning](guides/performance.md)
-- [Testing Strategies](guides/testing.md)
-- [Migration Guide](guides/migration.md)
+- [GitHub Repository](https://github.com/edadma/apion)
+- [Bug Reports](https://github.com/edadma/apion/issues)
+- [Release Notes](../releases)

@@ -29,3 +29,6 @@ log
 
 Gemfile.lock
 _site/
+.bundle/
+.sass-cache/
+docs/vendor/

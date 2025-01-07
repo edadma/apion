@@ -80,5 +80,6 @@ index.md
 ./docs/api
 index.md
 request.md
+response.md
 ./docs/releases
 index.md

@@ -1,0 +1,13 @@
+- [ ] add support for HTTP Range headers
+
+
+## [Unreleased] - 2025-
+
+### Added
+
+### Fixed
+- improve memory usage and responsiveness for large file downloads
+
+### Changed
+
+### Removed

@@ -16,6 +16,7 @@ assignees: edadma
 ## Version Updates
 - [ ] Update version in `build.sbt`
 - [ ] Update version in README installation instructions
+- [ ] Update version in docs
 - [ ] Update version badges in README
 - [ ] Check example code snippets in README use current version
 

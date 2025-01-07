@@ -35,7 +35,7 @@
 Add to your `build.sbt`:
 
 ```scala
-libraryDependencies += "io.github.edadma" %%% "apion" % "0.0.5"
+libraryDependencies += "io.github.edadma" %%% "apion" % "0.0.6"
 ```
 
 ## Quick Start

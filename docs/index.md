@@ -34,7 +34,5 @@ def run(): Unit =
   Server()
     .use(LoggingMiddleware())
     .get("/hello", _ => "Hello World!".asText)
-    .listen(3000) {
-      println("Server running at http://localhost:3000")
-    }
+    .listen(3000) { println("Server running at http://localhost:3000") }
 ```

@@ -25,22 +25,16 @@ case class Request(
     cookies: Map[String, String] = Map(),
 ) /*extends RequestDSL*/ {
   // Connection information
-  def ip: String = rawRequest.socket.remoteAddress
-
-  def secure: Boolean = rawRequest.socket.encrypted.getOrElse(false)
-
-  def protocol: String = if secure then "https" else "http"
-
+  def ip: String               = rawRequest.socket.remoteAddress
+  def secure: Boolean          = rawRequest.socket.encrypted.getOrElse(false)
+  def protocol: String         = if secure then "https" else "http"
   def hostname: Option[String] = rawRequest.hostname.toOption
-
-  def port: Option[Int] = rawRequest.port.toOption
+  def port: Option[Int]        = rawRequest.port.toOption
 
   // HTTP version and state
   def httpVersion: String = rawRequest.httpVersion
-
-  def complete: Boolean = rawRequest.complete
-
-  def aborted: Boolean = rawRequest.aborted
+  def complete: Boolean   = rawRequest.complete
+  def aborted: Boolean    = rawRequest.aborted
 
   // Raw headers exactly as received (preserves case and duplicates)
   def rawHeaders: List[String] = rawRequest.rawHeaders.toList
@@ -51,21 +45,39 @@ case class Request(
   def body: Future[Buffer] = {
     if (bodyPromise.isEmpty) {
       bodyPromise = Some(Promise[Buffer]())
-      val chunks = new scala.collection.mutable.ArrayBuffer[Buffer]()
+      val chunks    = new scala.collection.mutable.ArrayBuffer[Buffer]()
+      var totalSize = 0
+
+      // Set up timeout (e.g., 30 seconds)
+      val timeoutTimer = js.timers.setTimeout(30000) {
+        if (!bodyPromise.get.isCompleted) {
+          bodyPromise.get.failure(new Exception("Body read timeout"))
+          rawRequest.destroy(js.Error("Read timeout"))
+        }
+      }
 
       rawRequest.on(
         "data",
         (chunk: Buffer) => {
-          // Accumulate chunks as Buffer objects
-          chunks += chunk
+          totalSize += chunk.length
+          // Check if body exceeds reasonable size (e.g., 50MB)
+          if (totalSize > 50 * 1024 * 1024) {
+            bodyPromise.get.failure(new Exception("Request body too large"))
+            rawRequest.destroy(js.Error("Body too large"))
+          } else {
+            chunks += chunk
+          }
         },
       )
 
       rawRequest.on(
         "end",
         () => {
-          // Concatenate all chunks into final Buffer
-          bodyPromise.get.success(bufferMod.Buffer.concat(js.Array(chunks.toArray*)))
+          if (!bodyPromise.get.isCompleted) {
+            val finalBuffer = bufferMod.Buffer.concat(js.Array(chunks.toArray*))
+            bodyPromise.get.success(finalBuffer)
+            clearTimer()
+          }
         },
       )
 
@@ -73,8 +85,12 @@ case class Request(
         "error",
         (error: js.Error) => {
           bodyPromise.get.failure(new Exception(s"Body read error: ${error.message}"))
+          clearTimer()
         },
       )
+
+      // Clear timer on success or error
+      def clearTimer(): Unit = js.timers.clearTimeout(timeoutTimer)
     }
 
     bodyPromise.get.future

@@ -8,12 +8,15 @@ import io.github.edadma.nodejs.Stats
 
 object StaticMiddleware:
   case class Options(
-      index: Boolean = true,       // Whether to serve index.html for directories
-      dotfiles: String = "ignore", // How to treat dotfiles (ignore|allow|deny)
-      etag: Boolean = true,        // Enable/disable etag generation
-      maxAge: Int = 0,             // Cache max-age in seconds
-      redirect: Boolean = true,    // Redirect directories to trailing slash
-      fallthrough: Boolean = true, // Continue to next handler if file not found
+      index: Boolean = true,          // Whether to serve index.html for directories
+      dotfiles: String = "ignore",    // How to treat dotfiles (ignore|allow|deny)
+      etag: Boolean = true,           // Enable/disable etag generation
+      maxAge: Int = 0,                // Cache max-age in seconds
+      redirect: Boolean = true,       // Redirect directories to trailing slash
+      fallthrough: Boolean = true,    // Continue to next handler if file not found
+      highWaterMark: Int = 64 * 1024, // Buffer size
+      timeout: Int = 30000,           // Timeout in ms
+      maxChunkSize: Int = 1024 * 1024, // Max chunk size
   )
 
   private val MimeTypes = Map(

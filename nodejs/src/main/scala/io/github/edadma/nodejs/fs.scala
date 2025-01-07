@@ -6,8 +6,9 @@ import scala.scalajs.js.annotation.*
 @js.native
 @JSImport("fs", JSImport.Namespace)
 object fs extends js.Object:
-  val promises: FSPromises                           = js.native
-  def createReadStream(path: String): ReadableStream = js.native
+  val promises: FSPromises                                                       = js.native
+  def createReadStream(path: String): ReadableStream                             = js.native
+  def createReadStream(path: String, options: ReadStreamOptions): ReadableStream = js.native
 
 @js.native
 trait FSPromises extends js.Object:
@@ -36,3 +37,21 @@ trait Stats extends js.Object:
   def size: Double           = js.native
   def mode: Double           = js.native
   def mtime: js.Date         = js.native
+
+@js.native
+trait ReadStreamOptions extends js.Object {
+  val highWaterMark: js.UndefOr[Int]
+  val encoding: js.UndefOr[String]
+}
+
+object ReadStreamOptions {
+  def apply(
+      highWaterMark: Int = 64 * 1024,
+      encoding: String = null,
+  ): ReadStreamOptions = {
+    val opts = js.Dynamic.literal()
+    opts.updateDynamic("highWaterMark")(highWaterMark)
+    if (encoding != null) opts.updateDynamic("encoding")(encoding)
+    opts.asInstanceOf[ReadStreamOptions]
+  }
+}

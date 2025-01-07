@@ -1,6 +1,6 @@
 package io.github.edadma.apion
 
-import io.github.edadma.nodejs.{ServerRequest, ServerResponse, http, Server as NodeServer}
+import io.github.edadma.nodejs.{PipeOptions, ServerRequest, ServerResponse, http, Server as NodeServer}
 
 import scala.scalajs.js
 import scala.concurrent.Future
@@ -103,14 +103,21 @@ class Server {
             case StringBody(_, data) => res.end(data)
             case BufferBody(content) => res.end(content)
             case ReadableStreamBody(stream) =>
-              stream.pipe(res)
-              stream.on(
-                "error",
-                (err: js.Any) => {
-                  logger.error(s"Stream error: $err")
-                  res.end()
-                },
-              )
+              stream
+                .pipe(res, PipeOptions()) // Don't end automatically
+                .on(
+                  "error",
+                  (err: js.Error) => {
+                    logger.error(s"Stream error: ${err.message}")
+                    res.end() // End on error
+                  },
+                )
+                .on(
+                  "end",
+                  () => {
+                    res.end() // End explicitly when stream completes
+                  },
+                )
             case EmptyBody => res.end()
         }
 

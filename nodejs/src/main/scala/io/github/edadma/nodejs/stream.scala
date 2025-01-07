@@ -3,10 +3,20 @@ package io.github.edadma.nodejs
 import scala.scalajs.js
 import scala.scalajs.js.annotation.*
 
+trait PipeOptions extends js.Object {
+  val end: js.UndefOr[Boolean]
+}
+
+object PipeOptions {
+  def apply(end: Boolean = true): PipeOptions =
+    js.Dynamic.literal(end = end).asInstanceOf[PipeOptions]
+}
+
 @js.native
 trait ReadableStream extends js.Object {
-  def pipe(destination: WritableStream): Unit                            = js.native
-  def on(event: String, callback: js.Function1[js.Any, Unit]): this.type = js.native
+  def pipe(destination: WritableStream): this.type                       = js.native
+  def pipe(destination: WritableStream, options: PipeOptions): this.type = js.native
+  def on(event: String, callback: js.Any): this.type                     = js.native
 }
 
 @js.native

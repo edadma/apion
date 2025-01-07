@@ -34,7 +34,6 @@ assignees: edadma
 
 ## Release Verification
 - [ ] Clean build: `sbt clean`
-- [ ] Compile all modules: `sbt compile`
 - [ ] Run full test suite again: `sbt test`
 - [ ] Verify documentation site builds correctly
 - [ ] Test published artifacts locally:

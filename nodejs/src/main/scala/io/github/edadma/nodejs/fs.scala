@@ -29,6 +29,23 @@ object ReadFileOptions:
     flag.foreach(f => opts.updateDynamic("flag")(f))
     opts.asInstanceOf[ReadFileOptions]
 
+trait ReadStreamOptions extends js.Object {
+  val start: js.UndefOr[Double]
+  val end: js.UndefOr[Double]
+}
+
+object ReadStreamOptions {
+  def apply(
+      start: Option[Double] = None,
+      end: Option[Double] = None,
+  ): ReadStreamOptions = {
+    val opts = js.Dynamic.literal()
+    start.foreach(s => opts.updateDynamic("start")(s))
+    end.foreach(e => opts.updateDynamic("end")(e))
+    opts.asInstanceOf[ReadStreamOptions]
+  }
+}
+
 @js.native
 trait Stats extends js.Object:
   def isDirectory(): Boolean = js.native

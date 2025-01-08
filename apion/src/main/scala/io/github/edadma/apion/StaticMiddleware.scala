@@ -14,6 +14,7 @@ object StaticMiddleware:
       maxAge: Int = 0,             // Cache max-age in seconds
       redirect: Boolean = true,    // Redirect directories to trailing slash
       fallthrough: Boolean = true, // Continue to next handler if file not found
+      acceptRanges: Boolean = true,
   )
 
   private val MimeTypes = Map(
@@ -71,6 +72,25 @@ object StaticMiddleware:
       else
         sendFile(path, stats)
 
+    def parseRange(header: String, fileSize: Double): Option[(Double, Double)] = {
+      if (!header.startsWith("bytes=")) return None
+
+      val range = header.substring(6).split("-", 2) match {
+        case Array("", n) => // suffix length
+          n.toDoubleOption.map(len => (math.max(0, fileSize - len), fileSize - 1))
+        case Array(start, "") => // to end
+          start.toDoubleOption.map(s => (s, fileSize - 1))
+        case Array(start, end) => // explicit range
+          for {
+            s <- start.toDoubleOption
+            e <- end.toDoubleOption
+            if s <= e && s < fileSize
+          } yield (s, math.min(e, fileSize - 1))
+        case _ => None
+      }
+      range.filter { case (start, end) => start < fileSize }
+    }
+
     def sendFile(path: String, stats: Stats): Future[Result] =
       // Get MIME type from extension
       val mimeType = path.split('.').lastOption
@@ -97,6 +117,7 @@ object StaticMiddleware:
         ) ++ etag.map("ETag" -> _))
 
         Future.successful(Complete(Response(200, headers, ReadableStreamBody(stream))))
+    end sendFile
 
     logger.debug(s"static middleware url: ${request.url}, $options")
     logger.debug(s"static middleware path: ${request.path}")

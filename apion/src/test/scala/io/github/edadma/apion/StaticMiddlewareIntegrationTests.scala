@@ -142,4 +142,111 @@ class StaticMiddlewareIntegrationTests extends AsyncBaseSpec with BeforeAndAfter
         }
     }
   }
+
+  "range requests" - {
+    "should handle basic range request" in {
+      val options = FetchOptions(
+        method = "GET",
+        headers = js.Dictionary(
+          "Range" -> "bytes=0-9",
+        ),
+      )
+
+      fetch(s"http://localhost:$port/public/index.html", options)
+        .toFuture
+        .map { response =>
+          response.status shouldBe 206
+          response.headers.get("Content-Range") should startWith("bytes 0-9/")
+          response.headers.get("Content-Length") shouldBe "10"
+          response.headers.get("Accept-Ranges") shouldBe "bytes"
+        }
+    }
+
+    "should handle range request for suffix length" in {
+      val options = FetchOptions(
+        method = "GET",
+        headers = js.Dictionary(
+          "Range" -> "bytes=-10",
+        ),
+      )
+
+      fetch(s"http://localhost:$port/public/index.html", options)
+        .toFuture
+        .map { response =>
+          response.status shouldBe 206
+          response.headers.get("Content-Range") should include("bytes")
+          response.headers.get("Content-Length") shouldBe "10"
+        }
+    }
+
+    "should handle range request from offset to end" in {
+      val options = FetchOptions(
+        method = "GET",
+        headers = js.Dictionary(
+          "Range" -> "bytes=10-",
+        ),
+      )
+
+      fetch(s"http://localhost:$port/public/index.html", options)
+        .toFuture
+        .map { response =>
+          response.status shouldBe 206
+          response.headers.get("Content-Range") should include("bytes")
+        }
+    }
+
+    "should reject invalid range format" in {
+      val options = FetchOptions(
+        method = "GET",
+        headers = js.Dictionary(
+          "Range" -> "invalid=0-10",
+        ),
+      )
+
+      fetch(s"http://localhost:$port/public/index.html", options)
+        .toFuture
+        .map { response =>
+          response.status shouldBe 400
+        }
+    }
+
+    "should handle unsatisfiable range" in {
+      val options = FetchOptions(
+        method = "GET",
+        headers = js.Dictionary(
+          "Range" -> "bytes=1000000-1000001",
+        ),
+      )
+
+      fetch(s"http://localhost:$port/public/index.html", options)
+        .toFuture
+        .map { response =>
+          response.status shouldBe 416
+          response.headers.get("Content-Range") should startWith("bytes */")
+        }
+    }
+
+    "should respect If-Range header with ETag" in {
+      // First get the ETag
+      fetch(s"http://localhost:$port/public/index.html")
+        .toFuture
+        .flatMap { response =>
+          val etag = response.headers.get("ETag")
+
+          val options = FetchOptions(
+            method = "GET",
+            headers = js.Dictionary(
+              "Range"    -> "bytes=0-9",
+              "If-Range" -> etag,
+            ),
+          )
+
+          fetch(s"http://localhost:$port/public/index.html", options)
+            .toFuture
+            .map { rangeResponse =>
+              rangeResponse.status shouldBe 206
+            }
+        }
+    }
+  }
 }

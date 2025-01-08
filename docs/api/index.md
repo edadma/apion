@@ -5,311 +5,322 @@ nav_order: 2
 has_children: true
 ---
 
-# API Documentation
+# API Reference
 
-## Core Types
+Welcome to the Apion API documentation. This guide provides comprehensive information about Apion's components, patterns, and design principles.
 
-### Request
+## Design Philosophy
 
-The `Request` class represents an HTTP request with immutable properties:
+Apion is built on three core principles:
 
-```scala
-case class Request(
-    method: String,          // HTTP method (GET, POST, etc.)
-    url: String,             // Full request URL
-    path: String,            // URL path component
-    headers: Map[String, String], // Request headers (case-insensitive)
-    params: Map[String, String],  // Path parameters
-    query: Map[String, String],   // Query parameters
-    context: Map[String, Any],    // Request context for middleware
-    cookies: Map[String, String], // Request cookies
-    finalizers: List[Finalizer],  // Response transform functions
-    basePath: String = ""         // Base path from router mounting
-)
+1. **Type Safety**: Leverage Scala's type system to prevent errors at compile time
+2. **Immutability**: Use immutable data structures for predictable behavior
+3. **Composability**: Build complex applications from simple, reusable components
+
+## Core Architecture
+
+```
+Request → Router → Middleware Chain → Handler → Response
+                         ↓
+                   Error Handler
 ```
 
-#### Methods
+### Request/Response Pipeline
 
-- `body: Future[Buffer]` - Get raw request body as Buffer
-- `text: Future[String]` - Get request body as text
-- `json[T: JsonDecoder]: Future[Option[T]]` - Parse body as JSON into type T
-- `form: Future[Map[String, String]]` - Parse body as form data
-- `header(name: String): Option[String]` - Get header value
-- `cookie(name: String): Option[String]` - Get cookie value
+1. Router receives request and matches route
+2. Middleware processes request in order
+3. Handler generates response
+4. Response flows back through middleware
+5. Finalizers transform final response
 
-### Response
+## Core Components
 
-The `Response` class represents an HTTP response:
+### Server & Router
 
-```scala
-case class Response(
-    status: Int = 200,
-    headers: ResponseHeaders = ResponseHeaders.empty,
-    body: ResponseBody = EmptyBody
-)
-```
-
-#### Companion Object Methods
-
-- `text(content: String, status: Int = 200): Response` - Create text response
-- `json[A: JsonEncoder](data: A, status: Int = 200): Response` - Create JSON response
-- `binary(content: Buffer, status: Int = 200): Response` - Create binary response
-- `noContent(): Response` - Create 204 No Content response
-
-#### Extension Methods
+The entry point for your application:
 
 ```scala
-response.withCookie(cookie: Cookie): Response
-response.withCookie(
-    name: String,
-    value: String,
-    domain: Option[String] = None,
-    path: Option[String] = None,
-    maxAge: Option[Int] = None,
-    expires: Option[Instant] = None,
-    secure: Boolean = false,
-    httpOnly: Boolean = false,
-    sameSite: Option[String] = None
-): Response
-```
-
-### Handler
-
-The core request processing type:
-
-```scala
-type Handler = Request => Future[Result]
-
-sealed trait Result
-case class Continue(request: Request) extends Result    // Continue processing
-case class Complete(response: Response) extends Result  // End with response
-case class Fail(error: ServerError) extends Result     // Propagate error
-case object Skip extends Result                        // Try next route
-```
-
-## Router
-
-The `Router` class provides routing functionality:
-
-```scala
-class Router {
-  def use(handler: Handler): Router                     // Add middleware
-  def use(path: String, handler: Handler): Router       // Mount path-specific middleware
-  def use(path: String, router: Router): Router         // Mount subrouter
+val server = Server()
+  .use(globalMiddleware)
+  .get("/users", listUsers)
+  .post("/users", createUser)
   
-  def get(path: String, handlers: Handler*): Router     // Add GET route
-  def post(path: String, handlers: Handler*): Router    // Add POST route
-  def put(path: String, handlers: Handler*): Router     // Add PUT route
-  def delete(path: String, handlers: Handler*): Router  // Add DELETE route
-  def patch(path: String, handlers: Handler*): Router   // Add PATCH route
+// Start server
+server.listen(3000) { 
+  println("Server running") 
 }
 ```
 
-## Built-in Middleware
+Key features:
+- Chainable API
+- Type-safe route handling
+- Middleware support
+- Error propagation
 
-### Authentication
+### Request Processing
 
-```scala
-object AuthMiddleware {
-  case class Config(
-    secretKey: String,
-    requireAuth: Boolean = true,
-    excludePaths: Set[String] = Set.empty,
-    tokenRefreshThreshold: Long = 300,
-    maxTokenLifetime: Long = 86400,
-    issuer: String = "apion-auth",
-    audience: Option[String] = None
-  )
-
-  def apply(config: Config): Handler
-}
-```
-
-### Compression
+Type-safe request handling:
 
 ```scala
-object CompressionMiddleware {
-  case class Options(
-    level: Int = 6,
-    threshold: Int = 1024,
-    memLevel: Int = 8,
-    windowBits: Int = 15,
-    brotliQuality: Int = 11,
-    brotliBlockSize: Int = 4096,
-    filter: Request => Boolean = _ => true,
-    encodings: List[String] = List("br", "gzip", "deflate")
-  )
-
-  def apply(options: Options = Options()): Handler
-}
-```
-
-### CORS
-
-```scala
-object CorsMiddleware {
-  case class Options(
-    origin: Origin = Origin.Any,
-    methods: Set[String] = Set("GET", "HEAD", "PUT", "PATCH", "POST", "DELETE"),
-    allowedHeaders: Set[String] = Set("Content-Type", "Authorization"),
-    exposedHeaders: Set[String] = Set.empty,
-    credentials: Boolean = false,
-    maxAge: Option[Int] = Some(86400),
-    preflightSuccessStatus: Int = 204,
-    optionsSuccessStatus: Int = 204
-  )
-
-  def apply(options: Options = Options()): Handler
-}
-```
-
-### Cookie
-
-```scala
-object CookieMiddleware {
-  case class Options(
-    secret: Option[String] = None,
-    parseJSON: Boolean = false
-  )
-
-  def apply(options: Options = Options()): Handler
-}
-```
-
-### Logging
-
-```scala
-object LoggingMiddleware {
-  case class Options(
-    format: String = Format.Dev,
-    immediate: Boolean = false,
-    skip: Request => Boolean = _ => false,
-    handler: String => Unit = println,
-    debug: Boolean = false
-  )
-
-  object Format {
-    val Combined = ":remote-addr - :remote-user [:date] \":method :url HTTP/:http-version\" :status :res[content-length] \":referrer\" \":user-agent\""
-    val Common = ":remote-addr - :remote-user [:date] \":method :url HTTP/:http-version\" :status :res[content-length]"
-    val Dev = ":method :url :status :response-time ms - :res[content-length]"
-    val Short = ":remote-addr :remote-user :method :url HTTP/:http-version :status :res[content-length] - :response-time ms"
-    val Tiny = ":method :url :status :res[content-length] - :response-time ms"
+def handler(request: Request): Future[Result] = {
+  // Access request data safely
+  val userId = request.params("id")
+  val auth = request.context.get("auth")
+  
+  // Type-safe body parsing
+  request.json[User].flatMap {
+    case Some(user) => processUser(user)
+    case None => request.failValidation("Invalid user data")
   }
-
-  def apply(options: Options = Options()): Handler
 }
 ```
 
-### Rate Limiter
+Components:
+- [Request](request.md) - Request data and operations
+- [Response](response.md) - Response building
+- [Error Handling](errors.md) - Error types and handling
 
+## Middleware System
+
+### Middleware Types
+
+1. **Request Transformation**
+   ```scala
+   request => Future.successful(Continue(
+     request.copy(context = request.context + ("key" -> "value"))
+   ))
+   ```
+
+2. **Response Generation**
+   ```scala
+   request => "Response".asText
+   ```
+
+3. **Error Handling**
+   ```scala
+   request => request.failAuth("Unauthorized")
+   ```
+
+4. **Response Transformation**
+   ```scala
+   val finalizer: Finalizer = (req, res) => 
+     Future.successful(res.withHeader("X-Custom", "value"))
+   ```
+
+### Built-in Middleware
+
+Security:
+- [Authentication](middleware/auth.md) - JWT-based auth
+- [Security Headers](middleware/security.md) - Security best practices
+- [CORS](middleware/cors.md) - Cross-origin resource sharing
+- [Rate Limiting](middleware/rate-limiting.md) - Request throttling
+
+Content:
+- [Static Files](middleware/static.md) - File serving
+- [Compression](middleware/compression.md) - Response compression
+
+Utilities:
+- [Cookies](middleware/cookies.md) - Cookie management
+- [Logging](middleware/logging.md) - Request logging
+
+## Type Safety Features
+
+### Route Parameters
 ```scala
-object RateLimiterMiddleware {
-  case class RateLimit(
-    maxRequests: Int,
-    window: Duration,
-    burst: Int = 0,
-    skipFailedRequests: Boolean = false,
-    skipSuccessfulRequests: Boolean = false,
-    statusCode: Int = 429,
-    errorMessage: String = "Too many requests",
-    headers: Boolean = true
-  )
+// Type-safe parameter extraction
+server.get("/users/:id", request => {
+  val userId: String = request.params("id")
+  getUserById(userId).asJson
+})
+```
 
-  case class Options(
-    limit: RateLimit,
-    store: RateLimitStore = new InMemoryStore,
-    ipSources: Seq[IpSource.Value] = Seq(IpSource.Forward, IpSource.Real, IpSource.Direct),
-    keyGenerator: Request => Future[String] = defaultKeyGenerator,
-    skip: Request => Boolean = _ => false
-  )
+### JSON Handling
+```scala
+case class User(name: String, email: String) derives JsonEncoder, JsonDecoder
 
-  def apply(options: Options = Options()): Handler
+// Compile-time JSON validation
+request.json[User].flatMap {
+  case Some(user) => user.asJson(201)
+  case None => request.failValidation("Invalid JSON")
 }
 ```
 
-### Security
+### Error Propagation
+```scala
+sealed trait ServerError
+case class ValidationError(msg: String) extends ServerError
+case class AuthError(msg: String) extends ServerError
+
+// Type-safe error handling
+def secured(handler: Handler): Handler = request =>
+  request.context.get("auth") match {
+    case Some(_) => handler(request)
+    case None => request.failAuth("Unauthorized")
+  }
+```
+
+## Common Patterns
+
+### Middleware Composition
 
 ```scala
-object SecurityMiddleware {
-  case class Options(
-    contentSecurityPolicy: Boolean = true,
-    cspDirectives: Map[String, String] = Map(
-      "default-src" -> "'self'",
-      "base-uri" -> "'self'",
-      "font-src" -> "'self' https: data:",
-      "form-action" -> "'self'",
-      "frame-ancestors" -> "'self'",
-      "img-src" -> "'self' data: https:",
-      "object-src" -> "'none'",
-      "script-src" -> "'self'",
-      "script-src-attr" -> "'none'",
-      "style-src" -> "'self' https: 'unsafe-inline'",
-      "upgrade-insecure-requests" -> ""
-    ),
-    crossOriginEmbedderPolicy: Boolean = true,
-    crossOriginOpenerPolicy: Boolean = true,
-    crossOriginResourcePolicy: Boolean = true,
-    dnsPrefetchControl: Boolean = true,
-    expectCt: Boolean = true,
-    frameguard: Boolean = true,
-    hsts: Boolean = true,
-    ieNoOpen: Boolean = true,
-    noSniff: Boolean = true,
-    referrerPolicy: Boolean = true
-  )
+// Compose multiple middleware
+val api = Router()
+  .use(auth)        // Authentication
+  .use(rateLimit)   // Rate limiting
+  .use(compress)    // Compression
+  
+server.use("/api", api)
+```
 
-  def apply(options: Options = Options()): Handler
+### Error Handling Chain
+
+```scala
+// Chain of responsibility pattern
+def errorHandler(error: ServerError): Response = error match {
+  case ValidationError(msg) => Response.json(
+    Map("error" -> msg), 400)
+  case AuthError(msg) => Response.json(
+    Map("error" -> msg), 401)
+  case _ => Response.json(
+    Map("error" -> "Internal error"), 500)
 }
 ```
 
-### Static Files
+### Request Context
 
 ```scala
-object StaticMiddleware {
-  case class Options(
-    index: Boolean = true,
-    dotfiles: String = "ignore",
-    etag: Boolean = true,
-    maxAge: Int = 0,
-    redirect: Boolean = true,
-    fallthrough: Boolean = true
-  )
+// Share data between middleware
+val withUser = request => {
+  val userId = request.params("id")
+  val user = getUserById(userId)
+  
+  Future.successful(Continue(
+    request.copy(context = request.context + ("user" -> user))
+  ))
+}
 
-  def apply(root: String, options: Options = Options()): Handler
+val requireAdmin = request => {
+  request.context.get("user")
+    .collect { case user: User if user.isAdmin => 
+      Continue(request)
+    }
+    .getOrElse(Fail(AuthError("Admin required")))
 }
 ```
 
-## DSL Extensions
+## Testing
 
-### Response DSL
-
+### Unit Testing
 ```scala
-// Extension methods on any type with JsonEncoder
-def asJson: Future[Complete]
-def asJson(status: Int): Future[Complete]
+// Test handler directly
+val request = Request.mock(
+  method = "GET",
+  url = "/users/123",
+  params = Map("id" -> "123")
+)
 
-// Extension methods on String
-def asText: Future[Complete]
-def asText(status: Int): Future[Complete]
-
-// Extension methods on Buffer
-def asBinary: Future[Complete]
-def asBinary(status: Int): Future[Complete]
-
-// Common responses
-val notFound: Future[Complete]
-val badRequest: Future[Complete]
-val serverError: Future[Complete]
-
-// Created with location
-def created[A: JsonEncoder](data: A, location: Option[String]): Future[Result]
+handler(request).map { result =>
+  result shouldBe Complete(
+    Response.json(user, 200))
+}
 ```
 
-### Cookie DSL
-
+### Integration Testing
 ```scala
-// Request extensions
-def getSignedCookie(name: String): Option[String]
-def getJsonCookie[A: JsonDecoder](name: String): Option[A]
-def signCookie(name: String, value: String): Option[Cookie]
+// Test full server
+val port = 3000
+var httpServer: NodeServer = null
+
+// Set up server before tests
+override def beforeAll(): Unit = {
+  val server = Server()
+    .use(authMiddleware)
+    .get("/users/:id", handler)
+
+  httpServer = server.listen(port) {}
+}
+
+// Clean up after tests
+override def afterAll(): Unit = {
+  if (httpServer != null) {
+    httpServer.close(() => ())
+  }
+}
+
+// Test endpoints
+"Server endpoints" - {
+  "should handle GET /users/:id" in {
+    fetch(s"http://localhost:$port/users/123")
+      .toFuture
+      .flatMap(response => {
+        response.status shouldBe 200
+        response.json().toFuture
+      })
+      .map(json => {
+        // Verify response JSON
+        json.id shouldBe "123"
+      })
+  }
+}
 ```
+
+## Performance Considerations
+
+1. **Request Processing**
+    - Use streaming for large bodies
+    - Avoid unnecessary parsing
+    - Leverage type-safe parsing
+
+2. **Middleware**
+    - Order middleware by frequency
+    - Use conditional middleware
+    - Minimize context modifications
+
+3. **Response Generation**
+    - Use compression when appropriate
+    - Stream large responses
+    - Leverage caching headers
+
+## Node.js Integration
+
+### Using Node.js Modules
+```scala
+// Access Node.js functionality
+import io.github.edadma.nodejs.fs
+
+val stats = fs.promises.stat(path)
+val stream = fs.createReadStream(path)
+```
+
+### Express.js Migration
+```scala
+// Express.js
+app.use(express.json())
+app.post("/users", (req, res) => {
+  const user = req.body
+  res.json(user)
+})
+app.get("/users/:id", (req, res) => {
+  res.json({ id: req.params.id })
+})
+
+// Apion equivalent
+server
+  .post("/users", request => {
+    // Built-in body parsing
+    request.json[User].flatMap {
+      case Some(user) => user.asJson
+      case None => "Invalid JSON".asText(400)
+    }
+  })
+  .get("/users/:id", request => 
+    Map("id" -> request.params("id")).asJson
+  )
+```
+
+## Additional Resources
+
+- [GitHub Repository](https://github.com/edadma/apion)
+- [Bug Reports](https://github.com/edadma/apion/issues)
+- [Release Notes](../releases)

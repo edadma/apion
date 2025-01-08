@@ -8,6 +8,16 @@ nav_order: 5
 
 ## Latest Release
 
+## [0.0.6] - January 2025
+
+### Added
+- add more documentation
+
+### Fixed
+- improve memory usage and responsiveness for large file downloads
+
+[0.0.6]: https://github.com/edadma/apion/releases/tag/v0.0.6
+
 ### [0.0.5] - January 2025
 
 Improve request and response streaming.

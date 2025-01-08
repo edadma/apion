@@ -5,18 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - 2025-
+## [0.0.6] - 2025-01-07
 
 ### Added
-- [ ] add request validation: explore using `refined` library
-- [ ] add support for HTTP Range headers
+- add more documentation
 
 ### Fixed
-- [ ] *** improve memory usage and responsiveness for large file downloads
+- improve memory usage and responsiveness for large file downloads
 
-### Changed
-
-### Removed
+[0.0.6]: https://github.com/edadma/apion/releases/tag/v0.0.6
 
 ## [0.0.5] - 2025-01-05
 

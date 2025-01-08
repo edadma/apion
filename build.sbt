@@ -5,7 +5,7 @@ ThisBuild / scalaVersion         := "3.6.2"
 ThisBuild / organization         := "io.github.edadma"
 ThisBuild / organizationName     := "edadma"
 ThisBuild / organizationHomepage := Some(url("https://github.com/edadma"))
-ThisBuild / version              := "0.0.5"
+ThisBuild / version              := "0.0.6"
 
 ThisBuild / sonatypeCredentialHost := "s01.oss.sonatype.org"
 ThisBuild / sonatypeRepository     := "https://s01.oss.sonatype.org/service/local"
@@ -42,25 +42,16 @@ ThisBuild / publishTo := {
   else Some("releases" at nexus + "service/local/staging/deploy/maven2")
 }
 ThisBuild / publishMavenStyle := true
-ThisBuild / pomExtra := {
-  <properties>
-    <maven.compiler.source>3.6.2</maven.compiler.source>
-    <maven.compiler.target>3.6.2</maven.compiler.target>
-    <encoding>UTF-8</encoding>
-    <scala.version>3.6.2</scala.version>
-    <scala.compat.version>3.6.2</scala.compat.version>
-    <maven.plugin.version>2.15.2</maven.plugin.version>
-  </properties>
-    <tags>
-      <tag>scala</tag>
-      <tag>scalajs</tag>
-      <tag>nodejs</tag>
-      <tag>http</tag>
-      <tag>server</tag>
-      <tag>web-framework</tag>
-      <tag>api</tag>
-    </tags>
-}
+//ThisBuild / pomExtra :=
+//  <properties>
+//    <maven.tag>scala</maven.tag>
+//    <maven.tag>scalajs</maven.tag>
+//    <maven.tag>nodejs</maven.tag>
+//    <maven.tag>http</maven.tag>
+//    <maven.tag>server</maven.tag>
+//    <maven.tag>web-framework</maven.tag>
+//    <maven.tag>api</maven.tag>
+//  </properties>
 
 lazy val commonSettings = Seq(
   scalacOptions ++= Seq(

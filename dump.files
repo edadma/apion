@@ -74,9 +74,12 @@ plugins.sbt
 README.md
 CHANGELOG.md
 ./docs
+Gemfile
 _config.yml
 index.md
 ./docs/api
 index.md
+request.md
+response.md
 ./docs/releases
 index.md

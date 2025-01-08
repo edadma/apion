@@ -16,6 +16,7 @@ assignees: edadma
 ## Version Updates
 - [ ] Update version in `build.sbt`
 - [ ] Update version in README installation instructions
+- [ ] Update version in docs
 - [ ] Update version badges in README
 - [ ] Check example code snippets in README use current version
 
@@ -33,7 +34,6 @@ assignees: edadma
 
 ## Release Verification
 - [ ] Clean build: `sbt clean`
-- [ ] Compile all modules: `sbt compile`
 - [ ] Run full test suite again: `sbt test`
 - [ ] Verify documentation site builds correctly
 - [ ] Test published artifacts locally:
@@ -44,12 +44,12 @@ assignees: edadma
 ## Publishing
 - [ ] Push all changes to GitHub
 - [ ] Wait for CI checks to pass
-- [ ] Create GitHub release with changelog content
 - [ ] Publish to Sonatype:
     - [ ] `sbt publishSigned`
     - [ ] Login to Sonatype and verify artifacts
     - [ ] `sbt sonatypeRelease`
     - [ ] Verify artifacts appear on Maven Central
+- [ ] Create GitHub release with changelog content
 
 ## Post-release
 - [ ] Verify installation instructions work with published version

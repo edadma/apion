@@ -22,7 +22,7 @@ Apion is a lightweight, type-safe HTTP server framework for Scala.js that combin
 
 Add to your `build.sbt`:
 ```scala
-libraryDependencies += "io.github.edadma" %%% "apion" % "0.0.5"
+libraryDependencies += "io.github.edadma" %%% "apion" % "0.0.6"
 ```
 
 Create a basic server:
@@ -34,14 +34,5 @@ def run(): Unit =
   Server()
     .use(LoggingMiddleware())
     .get("/hello", _ => "Hello World!".asText)
-    .listen(3000) {
-      println("Server running at http://localhost:3000")
-    }
+    .listen(3000) { println("Server running at http://localhost:3000") }
 ```
-
-## Next Steps
-
-- See the [Getting Started Guide](guides/getting-started) for a complete introduction
-- Browse the [API Reference](api) for detailed documentation
-- Follow the [Tutorials](tutorials) for step-by-step examples
-- Check [Release Notes](releases) for latest updates

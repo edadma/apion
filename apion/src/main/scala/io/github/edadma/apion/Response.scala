@@ -1,6 +1,6 @@
 package io.github.edadma.apion
 
-import io.github.edadma.nodejs.{Buffer, bufferMod}
+import io.github.edadma.nodejs.{Buffer, ReadableStream, bufferMod}
 import zio.json.*
 
 import scala.language.implicitConversions
@@ -43,6 +43,20 @@ object Response:
       "Expires"       -> "0",
       "X-Powered-By"  -> "Apion",
     )
+
+  /** Create a streaming response */
+  def stream(
+      stream: ReadableStream,
+      status: Int = 200,
+      additionalHeaders: Seq[(String, String)] = Nil,
+  ): Response = {
+    // Don't set Content-Length for streams
+    Response(
+      status = status,
+      headers = ResponseHeaders(standardHeaders.appendedAll(additionalHeaders)),
+      body = ReadableStreamBody(stream),
+    )
+  }
 
   def noContent(additionalHeaders: Seq[(String, String)] = Nil): Response = Response(
     status = 204,

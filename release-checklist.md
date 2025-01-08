@@ -44,12 +44,12 @@ assignees: edadma
 ## Publishing
 - [ ] Push all changes to GitHub
 - [ ] Wait for CI checks to pass
-- [ ] Create GitHub release with changelog content
 - [ ] Publish to Sonatype:
     - [ ] `sbt publishSigned`
     - [ ] Login to Sonatype and verify artifacts
     - [ ] `sbt sonatypeRelease`
     - [ ] Verify artifacts appear on Maven Central
+- [ ] Create GitHub release with changelog content
 
 ## Post-release
 - [ ] Verify installation instructions work with published version

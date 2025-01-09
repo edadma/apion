@@ -10,26 +10,11 @@ private case class ParamSegment(name: String)   extends RouteSegment
 private case class WildcardSegment()            extends RouteSegment
 
 trait Process
-
-private case class Middleware(
-    handler: Handler,
-) extends Process
-
-private case class Endpoint(
-    method: String,
-    segments: List[RouteSegment],
-    handlers: List[Handler],
-) extends Process
-
-private case class Route(
-    segments: List[RouteSegment],
-    handler: Handler,
-) extends Process
-
-private case class SubRouter(
-    path: String,
-    router: Router,
-) extends Process
+private case class ErrorHandler(handler: (ServerError, Request) => Future[Result])                 extends Process
+private case class Middleware(handler: Handler)                                                    extends Process
+private case class Endpoint(method: String, segments: List[RouteSegment], handlers: List[Handler]) extends Process
+private case class Route(segments: List[RouteSegment], handler: Handler)                           extends Process
+private case class SubRouter(path: String, router: Router)                                         extends Process
 
 object Router:
   private def parsePath(path: String): List[RouteSegment] =
@@ -46,14 +31,30 @@ class Router extends Handler:
   private lazy val routes  = routesBuffer.toList
 
   def apply(request: Request): Future[Result] =
-    processNext(routes, request, request.path.split("/").filter(_.nonEmpty).toList)
+    processNext(routes, request, request.path.split("/").filter(_.nonEmpty).toList, None)
 
-  private def processNext(ps: List[Process], req: Request, remainingPath: List[String]): Future[Result] =
+  private def processNext(
+      ps: List[Process],
+      req: Request,
+      remainingPath: List[String],
+      currentError: Option[ServerError],
+  ): Future[Result] =
     logger.debug(s"Processing next handler, path: /${remainingPath.mkString("/")}")
     ps match
       case Nil =>
         logger.debug("No more handlers")
         Future.successful(Skip)
+
+      case ErrorHandler(handler) :: rest =>
+        currentError match {
+          case Some(error) =>
+            handler(error, req).flatMap {
+              case Skip   => processNext(rest, req, remainingPath, Some(error))
+              case result => Future.successful(result)
+            }
+          case None =>
+            processNext(rest, req, remainingPath, None)
+        }
       case p :: rest =>
         logger.debug(s"Processing handler of type: ${p.getClass.getSimpleName}")
         val result: Future[Result] = p match
@@ -67,12 +68,12 @@ class Router extends Handler:
                 )
                 router(subRequest)
               case None =>
-                processNext(rest, req, remainingPath)
+                processNext(rest, req, remainingPath, None)
 
           case Endpoint(method, segments, handlers) =>
             logger.debug(s"Checking endpoint: $method /${segments.mkString("/")}")
             if (method != req.method) {
-              processNext(rest, req, remainingPath)
+              processNext(rest, req, remainingPath, None)
             } else {
               matchSegments(segments, remainingPath, Map()) match {
                 case Some((params, Nil)) =>
@@ -96,7 +97,7 @@ class Router extends Handler:
                     ),
                   )
                 case _ =>
-                  processNext(rest, req, remainingPath)
+                  processNext(rest, req, remainingPath, None)
               }
             }
 
@@ -109,7 +110,7 @@ class Router extends Handler:
                   basePath = req.basePath,
                 ))
               case None =>
-                processNext(rest, req, remainingPath)
+                processNext(rest, req, remainingPath, None)
 
           case Middleware(handler) =>
             handler(req.copy(basePath = req.basePath)).map { result =>
@@ -118,9 +119,10 @@ class Router extends Handler:
             }
 
         result.flatMap {
-          case Continue(newReq)   => processNext(rest, newReq, remainingPath)
-          case Skip               => processNext(rest, req, remainingPath)
+          case Continue(newReq)   => processNext(rest, newReq, remainingPath, None)
+          case Skip               => processNext(rest, req, remainingPath, None)
           case Complete(response) => Future.successful(InternalComplete(req, response))
+          case Fail(error)        => processNext(rest, req, remainingPath, Some(error))
           case result             => Future.successful(result)
         }
 
@@ -149,6 +151,10 @@ class Router extends Handler:
 
   def use(path: String, handler: Handler): Router =
     routesBuffer += Route(Router.parsePath(path), handler)
+    this
+
+  def use(handler: (ServerError, Request) => Future[Result]): Router =
+    routesBuffer += ErrorHandler(handler)
     this
 
   private def addEndpoint(method: String, path: String, handlers: List[Handler]): Router =

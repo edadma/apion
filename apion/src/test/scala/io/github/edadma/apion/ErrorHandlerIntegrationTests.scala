@@ -41,10 +41,13 @@ class ErrorHandlerIntegrationTests extends AsyncBaseSpec with BeforeAndAfterAll 
       .use { (error, request) =>
         error match {
           case e: ValidationError =>
-            Future.successful(Complete(Response.json(
-              Map("caught_by" -> "first_handler", "error" -> e.message),
-              400,
-            )))
+            Future.successful(InternalComplete(
+              request,
+              Response.json(
+                Map("caught_by" -> "first_handler", "error" -> e.message),
+                400,
+              ),
+            ))
           case _ => skip
         }
       }

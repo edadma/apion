@@ -37,11 +37,10 @@ class Router extends Handler:
     def tryNextHandler(handlers: List[Process]): Future[Result] = handlers match {
       case ErrorHandler(handler) :: rest =>
         handler(error, request).flatMap {
-          case Skip               => tryNextHandler(rest)
-          case Complete(response) => Future.successful(InternalComplete(request, response))
-          case Fail(nextError)    => processError(nextError, request)
-          case InternalComplete(_, _) =>
-            sys.error("InternalComplete should not appear here")
+          case Skip                       => tryNextHandler(rest)
+          case Complete(response)         => Future.successful(InternalComplete(request, response))
+          case Fail(nextError)            => processError(nextError, request)
+          case InternalComplete(req, res) => Future.successful(InternalComplete(req, res))
           case Continue(_) =>
             sys.error("Continue not valid in error handler")
         }

@@ -64,6 +64,17 @@ class MockFS(files: Map[String, MockFile]) extends FSInterface:
       case None =>
         throw js.JavaScriptException(js.Error(s"File not found: $path"))
 
+  def createReadStream(path: String, options: ReadStreamOptions): ReadableStream =
+    files.get(path) match
+      case Some(MockFile(content, _)) =>
+        val buffer        = bytesToBuffer(content)
+        val start         = options.start.toOption.getOrElse(0.0).toInt
+        val end           = options.end.toOption.getOrElse(content.length - 1.0).toInt
+        val slicedContent = content.slice(start, end + 1)
+        stream.Readable.from(bytesToBuffer(slicedContent))
+      case None =>
+        throw js.JavaScriptException(js.Error(s"File not found: $path"))
+
   def stat(path: String): js.Promise[Stats] =
     files.get(path) match
       case Some(MockFile(_, stats)) => js.Promise.resolve(stats)

@@ -30,23 +30,6 @@ object ReadFileOptions:
     flag.foreach(f => opts.updateDynamic("flag")(f))
     opts.asInstanceOf[ReadFileOptions]
 
-trait ReadStreamOptions extends js.Object {
-  val start: js.UndefOr[Double]
-  val end: js.UndefOr[Double]
-}
-
-object ReadStreamOptions {
-  def apply(
-      start: Option[Double] = None,
-      end: Option[Double] = None,
-  ): ReadStreamOptions = {
-    val opts = js.Dynamic.literal()
-    start.foreach(s => opts.updateDynamic("start")(s))
-    end.foreach(e => opts.updateDynamic("end")(e))
-    opts.asInstanceOf[ReadStreamOptions]
-  }
-}
-
 @js.native
 trait Stats extends js.Object:
   def isDirectory(): Boolean = js.native
@@ -59,16 +42,22 @@ trait Stats extends js.Object:
 trait ReadStreamOptions extends js.Object {
   val highWaterMark: js.UndefOr[Int]
   val encoding: js.UndefOr[String]
+  val start: js.UndefOr[Double]
+  val end: js.UndefOr[Double]
 }
 
 object ReadStreamOptions {
   def apply(
       highWaterMark: Int = 64 * 1024,
       encoding: String = null,
+      start: Option[Double] = None,
+      end: Option[Double] = None,
   ): ReadStreamOptions = {
     val opts = js.Dynamic.literal()
     opts.updateDynamic("highWaterMark")(highWaterMark)
     if (encoding != null) opts.updateDynamic("encoding")(encoding)
+    start.foreach(s => opts.updateDynamic("start")(s))
+    end.foreach(e => opts.updateDynamic("end")(e))
     opts.asInstanceOf[ReadStreamOptions]
   }
 }

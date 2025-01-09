@@ -10,6 +10,7 @@ trait FSInterface:
   def readFile(path: String, options: ReadFileOptions): js.Promise[String | Buffer]
 
   def createReadStream(path: String): ReadableStream
+  def createReadStream(path: String, options: ReadStreamOptions): ReadableStream // Add this overload
 
   def stat(path: String): js.Promise[Stats]
 
@@ -27,6 +28,9 @@ object RealFS extends FSInterface:
         encoding = null,           // Binary
       ),
     )
+
+  def createReadStream(path: String, options: ReadStreamOptions): ReadableStream =
+    fs.createReadStream(path, options)
 
   def stat(path: String): js.Promise[Stats] =
     fs.promises.stat(path)

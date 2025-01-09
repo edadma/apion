@@ -2,9 +2,9 @@ package io.github.edadma.apion
 
 import scala.concurrent.Future
 import scala.scalajs.js
-import scala.util.{Success, Failure}
+import scala.util.{Failure, Success}
 import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits.global
-import io.github.edadma.nodejs.Stats
+import io.github.edadma.nodejs.{ReadStreamOptions, Stats}
 
 object StaticMiddleware:
   case class Options(
@@ -28,6 +28,70 @@ object StaticMiddleware:
     ".svg"  -> "image/svg+xml",
     ".ico"  -> "image/x-icon",
   )
+
+  /** A byte range specification */
+  sealed trait ByteRange {
+    def length(totalLength: Double): Double
+
+    def offset(totalLength: Double): Double
+
+    def isValid(totalLength: Double): Boolean
+  }
+
+  /** A range specifying a start and optional end position */
+  case class RangeFromTo(start: Double, end: Option[Double]) extends ByteRange {
+    def length(totalLength: Double): Double =
+      end match {
+        case Some(endPos) if endPos < totalLength => endPos - start + 1
+        case _                                    => totalLength - start
+      }
+
+    def offset(totalLength: Double): Double = start
+
+    def isValid(totalLength: Double): Boolean =
+      start >= 0 && start < totalLength && end.forall(e => e >= start && e < totalLength)
+  }
+
+  case class RangeLastN(n: Double) extends ByteRange {
+    def length(totalLength: Double): Double = math.min(n, totalLength)
+
+    def offset(totalLength: Double): Double = math.max(0, totalLength - n)
+
+    def isValid(totalLength: Double): Boolean = n > 0
+  }
+
+  /** Range parsing utilities */
+  object RangeParser {
+    def parseRange(rangeHeader: String): Option[ByteRange] = {
+      if (!rangeHeader.startsWith("bytes=")) return None
+
+      val rangeValue = rangeHeader.substring(6)
+
+      rangeValue.split("-", 2) match {
+        case Array("", suffixLength) =>
+          suffixLength.toDoubleOption.map(n => RangeLastN.apply(n))
+
+        case Array(start, end) =>
+          for {
+            startPos <- start.toDoubleOption
+            endPos   <- if (end.isEmpty) Some(None) else end.toDoubleOption.map(Some(_))
+          } yield RangeFromTo(startPos, endPos)
+
+        case _ => None
+      }
+    }
+
+    def longToDouble(l: Long): Double = l.toDouble
+
+    def unsatisfiableRange(size: Double): String =
+      s"bytes */$size"
+
+    def contentRange(range: ByteRange, totalSize: Double): String = {
+      val start = range.offset(totalSize)
+      val end   = start + range.length(totalSize) - 1
+      s"bytes $start-$end/$totalSize"
+    }
+  }
 
   /** Creates static file serving middleware
     *
@@ -72,25 +136,6 @@ object StaticMiddleware:
       else
         sendFile(path, stats)
 
-    def parseRange(header: String, fileSize: Double): Option[(Double, Double)] = {
-      if (!header.startsWith("bytes=")) return None
-
-      val range = header.substring(6).split("-", 2) match {
-        case Array("", n) => // suffix length
-          n.toDoubleOption.map(len => (math.max(0, fileSize - len), fileSize - 1))
-        case Array(start, "") => // to end
-          start.toDoubleOption.map(s => (s, fileSize - 1))
-        case Array(start, end) => // explicit range
-          for {
-            s <- start.toDoubleOption
-            e <- end.toDoubleOption
-            if s <= e && s < fileSize
-          } yield (s, math.min(e, fileSize - 1))
-        case _ => None
-      }
-      range.filter { case (start, end) => start < fileSize }
-    }
-
     def sendFile(path: String, stats: Stats): Future[Result] =
       // Get MIME type from extension
       val mimeType = path.split('.').lastOption
@@ -108,15 +153,69 @@ object StaticMiddleware:
       if etag.exists(e => ifNoneMatch.contains(e)) then
         Future.successful(Complete(Response(304)))
       else
-        // Create read stream
-        val stream = fs.createReadStream(path)
-        val headers = ResponseHeaders(Seq(
-          "Content-Type"   -> mimeType,
-          "Content-Length" -> stats.size.toString,
-          "Cache-Control"  -> s"max-age=${options.maxAge}",
-        ) ++ etag.map("ETag" -> _))
+        // Check for range request
+        val rangeHeader = request.header("range")
+        val ifRange     = request.header("if-range")
 
-        Future.successful(Complete(Response(200, headers, ReadableStreamBody(stream))))
+        // Validate If-Range header if present
+        val validRange = ifRange match {
+          case Some(value) =>
+            // If-Range can be either ETag or Last-Modified date
+            if (value.startsWith("\"")) {
+              // ETag comparison
+              etag.exists(_ == value)
+            } else {
+              // Date comparison (simplified - could be more robust)
+              true
+            }
+          case None => true
+        }
+
+        if (options.acceptRanges && validRange && rangeHeader.isDefined) {
+          // Handle range request
+          RangeParser.parseRange(rangeHeader.get) match {
+            case Some(range) if range.isValid(stats.size) =>
+              // Create read stream for range
+              val offset = range.offset(stats.size)
+              val length = range.length(stats.size)
+
+              val streamOptions = ReadStreamOptions(start = Some(offset), end = Some(offset + length - 1))
+              val stream        = fs.createReadStream(path, streamOptions)
+              val headers = ResponseHeaders(Seq(
+                "Content-Type"   -> mimeType,
+                "Content-Length" -> length.toString,
+                "Content-Range"  -> RangeParser.contentRange(range, stats.size),
+                "Accept-Ranges"  -> "bytes",
+                "Cache-Control"  -> s"max-age=${options.maxAge}",
+              ) ++ etag.map("ETag" -> _))
+
+              Future.successful(Complete(Response(206, headers, ReadableStreamBody(stream))))
+
+            case Some(_) =>
+              // Range not satisfiable
+              Future.successful(Complete(Response(
+                416,
+                ResponseHeaders(Seq(
+                  "Content-Range" -> RangeParser.unsatisfiableRange(stats.size),
+                )),
+              )))
+
+            case None =>
+              // Invalid range header format
+              Future.successful(Complete(Response(400)))
+          }
+        } else {
+          // Create read stream
+          val stream = fs.createReadStream(path)
+          val headers = ResponseHeaders(Seq(
+            "Content-Type"   -> mimeType,
+            "Content-Length" -> stats.size.toString,
+            "Cache-Control"  -> s"max-age=${options.maxAge}",
+            "Accept-Ranges"  -> (if options.acceptRanges then "bytes" else "none"),
+          ) ++ etag.map("ETag" -> _))
+
+          Future.successful(Complete(Response(200, headers, ReadableStreamBody(stream))))
+        }
     end sendFile
 
     logger.debug(s"static middleware url: ${request.url}, $options")

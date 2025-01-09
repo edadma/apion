@@ -1,13 +1,43 @@
 package io.github.edadma.apion
 
+import io.github.edadma.logger.LogLevel
+
 import scala.concurrent.Future
 
-sealed trait ServerError                extends RuntimeException
-case class ValidationError(msg: String) extends ServerError
-case class AuthError(msg: String)       extends ServerError
-case class NotFoundError(msg: String)   extends ServerError
+trait ServerError {
+  def message: String
 
-type ErrorHandler = ServerError => Response
+  def toResponse: Response
+
+  def logLevel: LogLevel = LogLevel.ERROR
+}
+
+case class ValidationError(message: String) extends ServerError {
+  def toResponse: Response = Response.json(
+    Map("error" -> "validation_error", "message" -> message),
+    400,
+  )
+
+  override def logLevel: LogLevel = LogLevel.WARN
+}
+
+case class AuthError(message: String) extends ServerError {
+  def toResponse: Response = Response.json(
+    Map("error" -> "auth_error", "message" -> message),
+    401,
+  )
+}
+
+case class NotFoundError(message: String) extends ServerError {
+  def toResponse: Response = Response.json(
+    Map("error" -> "not_found", "message" -> message),
+    404,
+  )
+
+  override def logLevel: LogLevel = LogLevel.INFO
+}
+
+type ErrorHandler = (ServerError, Request) => Future[Result]
 
 sealed trait Result
 case class Continue(request: Request)                                            extends Result

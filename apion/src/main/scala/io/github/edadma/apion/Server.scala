@@ -58,9 +58,13 @@ class Server {
   }
 
   def use(path: String, router: Router): Server = {
-    this.router.use(path, router)
+    router.use(path, router)
     this
   }
+
+  def use(handler: (ServerError, Request) => Future[Result]): Server =
+    router.use(handler)
+    this
 
   private def handleRequest(req: ServerRequest, res: ServerResponse): Unit = {
     // Convert Node.js request to our Request type

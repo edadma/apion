@@ -57,4 +57,17 @@ assignees: edadma
 - [ ] Merge `dev` branch into release branch
 - [ ] Merge release branch into `stable` branch
 - [ ] Create new "Unreleased" section in CHANGELOG.md
+  ```
+  ## [Unreleased]
+  
+  ### Added
+  
+  ### Fixed
+  
+  ### Changed
+  
+  ### Removed
+  
+  ### Deprecated
+  ```
 - [ ] Push post-release changes

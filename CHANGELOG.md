@@ -8,9 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- support for range headers in the static file server middleware
+- add support for range headers in the static file server middleware
+- add support for error handlers
 
 ### Fixed
+- [ ] fix handling of errors not caught by an error handler
+- [ ] fix handling of internally generated errors
 
 ### Changed
 

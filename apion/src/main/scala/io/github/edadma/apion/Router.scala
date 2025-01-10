@@ -41,8 +41,7 @@ class Router extends Handler:
           case Complete(response)         => Future.successful(InternalComplete(request, response))
           case Fail(nextError)            => processError(nextError, request)
           case InternalComplete(req, res) => Future.successful(InternalComplete(req, res))
-          case Continue(_) =>
-            sys.error("Continue not valid in error handler")
+          case Continue(_)                => Future.failed(new Exception("Continue not valid in error handler"))
         }
       case _ :: rest => tryNextHandler(rest)
       case Nil       =>

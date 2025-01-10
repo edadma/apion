@@ -14,14 +14,14 @@ class ErrorHandlerIntegrationTests extends AsyncBaseSpec with BeforeAndAfterAll 
 
   // Custom error types for testing
   case class CustomError(message: String, code: String) extends ServerError {
-    def toResponse = Response.json(
+    def toResponse: Response = Response.json(
       Map("error" -> code, "message" -> message),
       418, // I'm a teapot - distinctive status for testing
     )
   }
 
   case class TransformedError(message: String) extends ServerError {
-    def toResponse = Response.json(
+    def toResponse: Response = Response.json(
       Map("error" -> "transformed", "message" -> message),
       422, // Another distinctive status
     )

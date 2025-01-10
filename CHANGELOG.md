@@ -13,8 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [ ] add error handler integration tests
 
 ### Fixed
-- [ ] fix handling of errors not caught by an error handler
-- [ ] fix handling of internally generated errors
+- fix handling of errors not caught by an error handler
+- fix handling of internally generated errors
 
 ### Changed
 

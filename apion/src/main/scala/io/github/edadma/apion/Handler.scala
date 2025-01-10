@@ -37,8 +37,6 @@ case class NotFoundError(message: String) extends ServerError {
   override def logLevel: LogLevel = LogLevel.INFO
 }
 
-type ErrorHandler = (ServerError, Request) => Future[Result]
-
 sealed trait Result
 case class Continue(request: Request)                                            extends Result
 case class Complete(response: Response)                                          extends Result

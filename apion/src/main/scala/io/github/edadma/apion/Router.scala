@@ -66,17 +66,6 @@ class Router extends Handler:
           case Some(error) => processError(error, req)
           case None        => Future.successful(Skip)
         }
-
-      case ErrorHandler(handler) :: rest =>
-        currentError match {
-          case Some(error) =>
-            handler(error, req).flatMap {
-              case Skip   => processNext(rest, req, remainingPath, Some(error))
-              case result => Future.successful(result)
-            }
-          case None =>
-            processNext(rest, req, remainingPath, None)
-        }
       case p :: rest =>
         logger.debug(s"Processing handler of type: ${p.getClass.getSimpleName}")
         if (currentError.isDefined) {
@@ -143,8 +132,16 @@ class Router extends Handler:
                 result
               }
 
-            case ErrorHandler(_) =>
-              Future.successful(Skip)
+            case ErrorHandler(handler) =>
+              currentError match {
+                case Some(error) =>
+                  handler(error, req).flatMap {
+                    case Skip   => processNext(rest, req, remainingPath, Some(error))
+                    case result => Future.successful(result)
+                  }
+                case None =>
+                  processNext(rest, req, remainingPath, None)
+              }
 
           result.flatMap {
             case Continue(newReq)   => processNext(rest, newReq, remainingPath, None)

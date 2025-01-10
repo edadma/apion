@@ -197,24 +197,6 @@ class ErrorHandlerIntegrationTests extends AsyncBaseSpec with BeforeAndAfterAll 
 //        }
 //    }
 
-//    "should fallback to final handler for unhandled errors" in {
-//      // Create request with custom error that no specific handler matches
-//      val options = FetchOptions(
-//        method = "POST", // No route matches this
-//        headers = js.Dictionary("Content-Type" -> "application/json"),
-//      )
-//
-//      fetch(s"http://localhost:$port/not-found", options)
-//        .toFuture
-//        .flatMap { response =>
-//          response.status shouldBe 500
-//          response.json().toFuture.map { result =>
-//            val json = js.JSON.stringify(result)
-//            json should include("final_handler")
-//          }
-//        }
-//    }
-
     "should skip non-matching error handlers" in {
       // The ValidationError should skip the AuthError handler
       fetch(s"http://localhost:$port/fail-middleware")

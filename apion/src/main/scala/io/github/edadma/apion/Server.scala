@@ -166,13 +166,8 @@ class Server {
         logger.error(s"Uncaught error processing request: ${e.getMessage}")
         e.printStackTrace()
 
-        res.writeHead(
-          500,
-          js.Dictionary(
-            "Content-Type" -> "application/json",
-          ),
-        )
-        res.end("""{"error": "Internal Server Error"}""")
+        res.writeHead(500)
+        res.end()
     }
   }
 }

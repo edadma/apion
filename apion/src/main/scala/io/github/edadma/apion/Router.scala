@@ -71,77 +71,79 @@ class Router extends Handler:
         if (currentError.isDefined) {
           processError(currentError.get, req)
         } else {
-          val result: Future[Result] = p match
-            case SubRouter(path, router) =>
-              matchSegments(Router.parsePath(path), remainingPath, Map()) match
-                case Some((params, remaining)) =>
-                  val subRequest = req.copy(
-                    path = "/" + remaining.mkString("/"),
-                    params = req.params ++ params,
-                    basePath = req.basePath + path,
-                  )
-                  router(subRequest)
-                case None =>
-                  processNext(rest, req, remainingPath, None)
-
-            case Endpoint(method, segments, handlers) =>
-              logger.debug(s"Checking endpoint: $method /${segments.mkString("/")}")
-              if (method != req.method) {
-                processNext(rest, req, remainingPath, None)
-              } else {
-                matchSegments(segments, remainingPath, Map()) match {
-                  case Some((params, Nil)) =>
-                    def runHandlers(hs: List[Handler], r: Request): Future[Result] =
-                      hs match
-                        case handler :: next =>
-                          handler(r).flatMap {
-                            case Continue(newReq)    => runHandlers(next, newReq)
-                            case Skip                => runHandlers(next, r)
-                            case Complete(response)  => Future.successful(InternalComplete(r, response))
-                            case _: InternalComplete => sys.error(s"InternalComplete should not appear here")
-                            case result              => Future.successful(result)
-                          }
-                        case Nil => Future.successful(Skip)
-
-                    runHandlers(
-                      handlers,
-                      req.copy(
-                        params = req.params ++ params,
-                        basePath = req.basePath,
-                      ),
+          val result: Future[Result] =
+            p match
+              case SubRouter(path, router) =>
+                matchSegments(Router.parsePath(path), remainingPath, Map()) match
+                  case Some((params, remaining)) =>
+                    val subRequest = req.copy(
+                      path = "/" + remaining.mkString("/"),
+                      params = req.params ++ params,
+                      basePath = req.basePath + path,
                     )
-                  case _ =>
+                    router(subRequest)
+                  case None =>
+                    processNext(rest, req, remainingPath, None)
+
+              case Endpoint(method, segments, handlers) =>
+                logger.debug(s"Checking endpoint: $method /${segments.mkString("/")}")
+                if (method != req.method) {
+                  processNext(rest, req, remainingPath, None)
+                } else {
+                  matchSegments(segments, remainingPath, Map()) match {
+                    case Some((params, Nil)) =>
+                      def runHandlers(hs: List[Handler], r: Request): Future[Result] =
+                        hs match
+                          case handler :: next =>
+                            handler(r).flatMap {
+                              case Continue(newReq)    => runHandlers(next, newReq)
+                              case Skip                => runHandlers(next, r)
+                              case Complete(response)  => Future.successful(InternalComplete(r, response))
+                              case _: InternalComplete => sys.error(s"InternalComplete should not appear here")
+                              case result              => Future.successful(result)
+                            }
+                          case Nil => Future.successful(Skip)
+
+                      runHandlers(
+                        handlers,
+                        req.copy(
+                          params = req.params ++ params,
+                          basePath = req.basePath,
+                        ),
+                      )
+                    case _ =>
+                      processNext(rest, req, remainingPath, None)
+                  }
+                }
+
+              case Route(segments, handler) =>
+                matchSegments(segments, remainingPath, Map()) match
+                  case Some((params, remaining)) =>
+                    handler(req.copy(
+                      path = "/" + remaining.mkString("/"),
+                      params = req.params ++ params,
+                      basePath = req.basePath,
+                    ))
+                  case None =>
+                    processNext(rest, req, remainingPath, None)
+
+              case Middleware(handler) =>
+                handler(req.copy(basePath = req.basePath)).map { result =>
+                  logger.debug(s"Middleware result: $result")
+                  result
+                }
+
+              case ErrorHandler(handler) =>
+                currentError match {
+                  case Some(error) =>
+                    handler(error, req).flatMap {
+                      case Skip   => processNext(rest, req, remainingPath, Some(error))
+                      case result => Future.successful(result)
+                    }
+                  case None =>
                     processNext(rest, req, remainingPath, None)
                 }
-              }
-
-            case Route(segments, handler) =>
-              matchSegments(segments, remainingPath, Map()) match
-                case Some((params, remaining)) =>
-                  handler(req.copy(
-                    path = "/" + remaining.mkString("/"),
-                    params = req.params ++ params,
-                    basePath = req.basePath,
-                  ))
-                case None =>
-                  processNext(rest, req, remainingPath, None)
-
-            case Middleware(handler) =>
-              handler(req.copy(basePath = req.basePath)).map { result =>
-                logger.debug(s"Middleware result: $result")
-                result
-              }
-
-            case ErrorHandler(handler) =>
-              currentError match {
-                case Some(error) =>
-                  handler(error, req).flatMap {
-                    case Skip   => processNext(rest, req, remainingPath, Some(error))
-                    case result => Future.successful(result)
-                  }
-                case None =>
-                  processNext(rest, req, remainingPath, None)
-              }
+            end match
 
           result.flatMap {
             case Continue(newReq)   => processNext(rest, newReq, remainingPath, None)

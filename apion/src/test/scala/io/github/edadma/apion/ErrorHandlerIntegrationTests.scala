@@ -41,8 +41,7 @@ class ErrorHandlerIntegrationTests extends AsyncBaseSpec with BeforeAndAfterAll 
       .use { (error, request) =>
         error match {
           case e: ValidationError =>
-            Future.successful(InternalComplete(
-              request,
+            Future.successful(Complete(
               Response.json(
                 Map("caught_by" -> "first_handler", "error" -> e.message),
                 400,
@@ -146,18 +145,18 @@ class ErrorHandlerIntegrationTests extends AsyncBaseSpec with BeforeAndAfterAll 
         }
     }
 
-//    "should handle route errors" in {
-//      fetch(s"http://localhost:$port/fail-route")
-//        .toFuture
-//        .flatMap { response =>
-//          response.status shouldBe 401
-//          response.json().toFuture.map { result =>
-//            val json = js.JSON.stringify(result)
-//            json should include("second_handler")
-//            json should include("Route failure")
-//          }
-//        }
-//    }
+    "should handle route errors" in {
+      fetch(s"http://localhost:$port/fail-route")
+        .toFuture
+        .flatMap { response =>
+          response.status shouldBe 401
+          response.json().toFuture.map { result =>
+            val json = js.JSON.stringify(result)
+            json should include("second_handler")
+            json should include("Route failure")
+          }
+        }
+    }
 
 //    "should handle custom errors" in {
 //      fetch(s"http://localhost:$port/custom-error")
@@ -216,17 +215,17 @@ class ErrorHandlerIntegrationTests extends AsyncBaseSpec with BeforeAndAfterAll 
 //        }
 //    }
 
-//    "should skip non-matching error handlers" in {
-//      // The ValidationError should skip the AuthError handler
-//      fetch(s"http://localhost:$port/fail-middleware")
-//        .toFuture
-//        .flatMap { response =>
-//          response.json().toFuture.map { result =>
-//            val json = js.JSON.stringify(result)
-//            json should include("first_handler")
-//            json should not include "second_handler"
-//          }
-//        }
-//    }
+    "should skip non-matching error handlers" in {
+      // The ValidationError should skip the AuthError handler
+      fetch(s"http://localhost:$port/fail-middleware")
+        .toFuture
+        .flatMap { response =>
+          response.json().toFuture.map { result =>
+            val json = js.JSON.stringify(result)
+            json should include("first_handler")
+            json should not include "second_handler"
+          }
+        }
+    }
   }
 }

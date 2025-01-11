@@ -5,7 +5,6 @@ import scala.scalajs.js
 import scala.scalajs.js.annotation.*
 import io.github.edadma.nodejs.{fs, crypto, ReadableStream, Buffer}
 import zio.json.*
-import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits.global
 
 /** Represents an uploaded file with metadata */
 case class UploadedFile(

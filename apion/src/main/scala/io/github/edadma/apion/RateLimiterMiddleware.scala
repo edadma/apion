@@ -3,7 +3,6 @@ package io.github.edadma.apion
 import scala.concurrent.Future
 import scala.collection.concurrent.TrieMap
 import scala.concurrent.duration.{DurationInt, Duration}
-import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits.global
 import zio.json._
 
 object RateLimiterMiddleware {

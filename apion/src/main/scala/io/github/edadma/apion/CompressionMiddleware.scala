@@ -1,8 +1,6 @@
 package io.github.edadma.apion
 
 import scala.concurrent.{Future, Promise}
-import scala.scalajs.js
-import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits.global
 import io.github.edadma.nodejs.{Buffer, bufferMod, ZlibOptions, BrotliOptions, ReadableStream, zlib}
 
 object CompressionMiddleware:

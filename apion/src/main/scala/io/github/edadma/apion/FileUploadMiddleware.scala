@@ -4,7 +4,6 @@ import scala.concurrent.{Future, Promise}
 import scala.scalajs.js
 import scala.scalajs.js.annotation.*
 import io.github.edadma.nodejs.*
-import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits.global
 
 /** File Upload middleware for handling multipart/form-data uploads */
 object FileUploadMiddleware {

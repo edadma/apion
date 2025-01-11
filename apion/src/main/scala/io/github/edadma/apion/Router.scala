@@ -2,7 +2,6 @@ package io.github.edadma.apion
 
 import scala.annotation.tailrec
 import scala.concurrent.Future
-import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits.global
 
 private sealed trait RouteSegment
 private case class StaticSegment(value: String) extends RouteSegment

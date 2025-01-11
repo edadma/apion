@@ -1,10 +1,14 @@
 package io.github.edadma.apion
 
 import scala.util.Try
+import org.scalajs.macrotaskexecutor.MacrotaskExecutor
+import scala.concurrent.ExecutionContext
 
 import io.github.edadma.nodejs.*
 
 import io.github.edadma.logger.LoggerFactory
+
+implicit val executionContext: ExecutionContext = MacrotaskExecutor
 
 val logger = LoggerFactory.newLogger
 

@@ -3,7 +3,6 @@ package io.github.edadma.apion
 import io.github.edadma.nodejs.Buffer
 
 import scala.concurrent.Future
-import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits.global
 import zio.json.*
 
 import java.time.Instant

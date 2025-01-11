@@ -1,7 +1,6 @@
 package io.github.edadma.apion
 
 import scala.concurrent.Future
-import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits.global
 import zio.json.*
 import io.github.edadma.nodejs.crypto
 

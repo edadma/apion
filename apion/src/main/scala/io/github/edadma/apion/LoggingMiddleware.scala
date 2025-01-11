@@ -1,7 +1,6 @@
 package io.github.edadma.apion
 
 import scala.concurrent.Future
-import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits.global
 
 object LoggingMiddleware:
   // Public interface for formatting logs (needed for testing)

@@ -1,10 +1,9 @@
 import io.github.edadma.apion._
 import zio.json._
-import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits.global
 
 case class User(name: String, email: String) derives JsonEncoder, JsonDecoder
 
-//@main
+@main
 def run(): Unit =
   Server()
     .use(LoggingMiddleware())

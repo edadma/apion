@@ -4,7 +4,6 @@ import io.github.edadma.apion._
 import zio.json._
 import scala.concurrent.Future
 import scala.scalajs.js
-import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits.global
 
 case class UserData(name: String, email: String) derives JsonEncoder, JsonDecoder
 

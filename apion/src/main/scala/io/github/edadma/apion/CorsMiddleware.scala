@@ -1,7 +1,6 @@
 package io.github.edadma.apion
 
 import scala.concurrent.Future
-import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits.global
 
 object CorsMiddleware:
   /** Configuration options for CORS middleware

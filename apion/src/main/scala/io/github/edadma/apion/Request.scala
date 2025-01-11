@@ -7,7 +7,6 @@ import io.github.edadma.nodejs.{Buffer, ServerRequest, bufferMod}
 import scala.concurrent.{Promise, Future}
 
 import scala.scalajs.js
-import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits.global
 
 type Finalizer = (Request, Response) => Future[Response]
 

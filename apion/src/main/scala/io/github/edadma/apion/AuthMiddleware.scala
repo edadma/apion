@@ -4,7 +4,6 @@ import zio.json.*
 
 import scala.concurrent.{Future, Promise}
 import scala.util.{Failure, Success, Try}
-import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits.global
 
 object AuthMiddleware:
   /** Configuration for authentication middleware */

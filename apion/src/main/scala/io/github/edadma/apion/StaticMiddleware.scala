@@ -3,7 +3,6 @@ package io.github.edadma.apion
 import scala.concurrent.Future
 import scala.scalajs.js
 import scala.util.{Failure, Success}
-import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits.global
 import io.github.edadma.nodejs.{ReadStreamOptions, Stats}
 
 object StaticMiddleware:

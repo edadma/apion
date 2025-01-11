@@ -4,7 +4,6 @@ import io.github.edadma.nodejs.{PipeOptions, ServerRequest, ServerResponse, http
 
 import scala.scalajs.js
 import scala.concurrent.Future
-import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits.global
 
 import scala.language.postfixOps
 

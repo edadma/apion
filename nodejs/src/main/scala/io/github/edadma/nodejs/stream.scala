@@ -17,6 +17,8 @@ trait ReadableStream extends js.Object {
   def pipe(destination: WritableStream): this.type                       = js.native
   def pipe(destination: WritableStream, options: PipeOptions): this.type = js.native
   def on(event: String, callback: js.Any): this.type                     = js.native
+  def resume(): this.type                                                = js.native
+  def pause(): this.type                                                 = js.native
 }
 
 @js.native

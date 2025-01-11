@@ -4,7 +4,7 @@ import io.github.edadma.logger.LogLevel
 
 import scala.concurrent.Future
 
-trait ServerError {
+trait ServerError extends Throwable {
   def message: String
 
   def toResponse: Response

@@ -9,6 +9,9 @@ object fs extends js.Object:
   val promises: FSPromises                                                       = js.native
   def createReadStream(path: String): ReadableStream                             = js.native
   def createReadStream(path: String, options: ReadStreamOptions): ReadableStream = js.native
+  def createWriteStream(path: String): WritableStream                            = js.native
+  def unlink(path: String, callback: js.Function1[js.Error | Null, Unit]): Unit  = js.native
+  def unlinkSync(path: String): Unit                                             = js.native
 
 @js.native
 trait FSPromises extends js.Object:

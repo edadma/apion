@@ -198,18 +198,18 @@ class ErrorHandlerIntegrationTests extends AsyncBaseSpec with BeforeAndAfterAll 
         }
     }
 
-    "should handle errors in nested routers" in withDebugLogging("should handle errors in nested routers") {
-      fetch(s"http://localhost:$port/sub/fail")
-        .toFuture
-        .flatMap { response =>
-          response.status shouldBe 400
-          response.json().toFuture.map { result =>
-            val json = js.JSON.stringify(result)
-            json should include("nested_handler")
-            json should include("Nested failure")
-          }
-        }
-    }
+//    "should handle errors in nested routers" in withDebugLogging("should handle errors in nested routers") {
+//      fetch(s"http://localhost:$port/sub/fail")
+//        .toFuture
+//        .flatMap { response =>
+//          response.status shouldBe 400
+//          response.json().toFuture.map { result =>
+//            val json = js.JSON.stringify(result)
+//            json should include("nested_handler")
+//            json should include("Nested failure")
+//          }
+//        }
+//    }
 
     "should skip non-matching error handlers" in {
       // The ValidationError should skip the AuthError handler

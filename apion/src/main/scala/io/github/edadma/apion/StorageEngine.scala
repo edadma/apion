@@ -16,7 +16,7 @@ case class UploadedFile(
     size: Long,                 // File size in bytes
     path: String,               // Path to temp file
     hash: Option[String] = None, // Optional hash for verification
-) derives JsonEncoder
+) derives JsonEncoder, JsonDecoder
 
 /** Interface for file storage engines */
 trait StorageEngine {

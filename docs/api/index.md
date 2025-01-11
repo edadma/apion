@@ -177,13 +177,13 @@ server.use("/api", api)
 
 ```scala
 // Chain of responsibility pattern
-def errorHandler(error: ServerError): Response = error match {
-  case ValidationError(msg) => Response.json(
-    Map("error" -> msg), 400)
-  case AuthError(msg) => Response.json(
-    Map("error" -> msg), 401)
-  case _ => Response.json(
-    Map("error" -> "Internal error"), 500)
+def errorHandler(error: ServerError): Future[Result] = error match {
+   case ValidationError(msg) =>
+      Map("error" -> msg).asJson(400)
+   case AuthError(msg) =>
+      Map("error" -> msg).asJson(401)
+   case _ =>
+      Map("error" -> "Internal error").asJson(500)
 }
 ```
 
@@ -214,11 +214,11 @@ val requireAdmin = request => {
 ### Unit Testing
 ```scala
 // Test handler directly
-val request = Request.mock(
+val request = Request.fromServerRequest(mockServerRequest(
   method = "GET",
   url = "/users/123",
   params = Map("id" -> "123")
-)
+))
 
 handler(request).map { result =>
   result shouldBe Complete(

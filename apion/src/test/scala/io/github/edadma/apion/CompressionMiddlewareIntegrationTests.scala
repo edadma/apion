@@ -84,9 +84,9 @@ class CompressionMiddlewareIntegrationTests extends AsyncBaseSpec with BeforeAnd
         }
     }
 
-    "should verify content is correctly decompressed" in withDebugLogging(
+    "should verify content is correctly decompressed" in /*withDebugLogging(
       "should verify content is correctly decompressed",
-    ) {
+    )*/ {
       val largeText = "a" * 1000
       val options = FetchOptions(
         headers = js.Dictionary(

@@ -40,7 +40,7 @@ class ErrorHandlerIntegrationTests extends AsyncBaseSpec with BeforeAndAfterAll 
       // First error handler - only handles ValidationError
       .use { (error, request) =>
         error match {
-          case e: ValidationError =>
+          case e: ValidationError if request.path != "/transform-error" =>
             Future.successful(Complete(
               Response.json(
                 Map("caught_by" -> "first_handler", "error" -> e.message),
@@ -80,24 +80,35 @@ class ErrorHandlerIntegrationTests extends AsyncBaseSpec with BeforeAndAfterAll 
       // Route that transforms error
       .get(
         "/transform-error",
-        _ =>
-          Future.successful(Fail(ValidationError("Initial error"))),
+        _ => {
+          logger.debug("Route handler called - generating ValidationError")
+          Future.successful(Fail(ValidationError("Initial error")))
+        },
       )
 
       // Error handler that transforms errors
       .use { (error, request) =>
+        logger.debug(s"First error handler called with error type: ${error.getClass.getSimpleName}")
         error match {
           case e: ValidationError =>
+            logger.debug("Transforming ValidationError to TransformedError")
             Future.successful(Fail(TransformedError(s"Transformed: ${e.message}")))
-          case _ => skip
+          case _ =>
+            logger.debug("First handler skipping non-ValidationError")
+            skip
         }
       }
 
       // Handler for transformed errors
       .use { (error, request) =>
+        logger.debug(s"Second error handler called with error type: ${error.getClass.getSimpleName}")
         error match {
-          case e: TransformedError => Future.successful(Complete(e.toResponse))
-          case _                   => skip
+          case e: TransformedError =>
+            logger.debug("Handling TransformedError")
+            Future.successful(Complete(e.toResponse))
+          case _ =>
+            logger.debug("Second handler skipping non-TransformedError")
+            skip
         }
       }
 
@@ -116,10 +127,13 @@ class ErrorHandlerIntegrationTests extends AsyncBaseSpec with BeforeAndAfterAll 
 
       // Final catch-all error handler
       .use { (error, request) =>
-        Future.successful(Complete(Response.json(
-          Map("caught_by" -> "final_handler", "error" -> error.message),
-          500,
-        )))
+        error match
+          case _: CustomError => skip // Let custom errors fall through
+          case _ =>
+            Future.successful(Complete(Response.json(
+              Map("caught_by" -> "final_handler", "error" -> error.message),
+              500,
+            )))
       }
 
     httpServer = server.listen(port) {}
@@ -158,44 +172,44 @@ class ErrorHandlerIntegrationTests extends AsyncBaseSpec with BeforeAndAfterAll 
         }
     }
 
-//    "should handle custom errors" in {
-//      fetch(s"http://localhost:$port/custom-error")
-//        .toFuture
-//        .flatMap { response =>
-//          response.status shouldBe 418 // Custom status from CustomError
-//          response.json().toFuture.map { result =>
-//            val json = js.JSON.stringify(result)
-//            json should include("CUSTOM_ERR")
-//            json should include("Custom failure")
-//          }
-//        }
-//    }
+    "should handle custom errors" in {
+      fetch(s"http://localhost:$port/custom-error")
+        .toFuture
+        .flatMap { response =>
+          response.status shouldBe 418 // Custom status from CustomError
+          response.json().toFuture.map { result =>
+            val json = js.JSON.stringify(result)
+            json should include("CUSTOM_ERR")
+            json should include("Custom failure")
+          }
+        }
+    }
 
-//    "should allow error transformation" in {
-//      fetch(s"http://localhost:$port/transform-error")
-//        .toFuture
-//        .flatMap { response =>
-//          response.status shouldBe 422 // Status from TransformedError
-//          response.json().toFuture.map { result =>
-//            val json = js.JSON.stringify(result)
-//            json should include("transformed")
-//            json should include("Initial error")
-//          }
-//        }
-//    }
+    "should allow error transformation" in /*withDebugLogging("should allow error transformation")*/ {
+      fetch(s"http://localhost:$port/transform-error")
+        .toFuture
+        .flatMap { response =>
+          response.status shouldBe 422 // Status from TransformedError
+          response.json().toFuture.map { result =>
+            val json = js.JSON.stringify(result)
+            json should include("transformed")
+            json should include("Initial error")
+          }
+        }
+    }
 
-//    "should handle errors in nested routers" in {
-//      fetch(s"http://localhost:$port/sub/fail")
-//        .toFuture
-//        .flatMap { response =>
-//          response.status shouldBe 400
-//          response.json().toFuture.map { result =>
-//            val json = js.JSON.stringify(result)
-//            json should include("nested_handler")
-//            json should include("Nested failure")
-//          }
-//        }
-//    }
+    "should handle errors in nested routers" in withDebugLogging("should handle errors in nested routers") {
+      fetch(s"http://localhost:$port/sub/fail")
+        .toFuture
+        .flatMap { response =>
+          response.status shouldBe 400
+          response.json().toFuture.map { result =>
+            val json = js.JSON.stringify(result)
+            json should include("nested_handler")
+            json should include("Nested failure")
+          }
+        }
+    }
 
     "should skip non-matching error handlers" in {
       // The ValidationError should skip the AuthError handler

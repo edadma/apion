@@ -3,9 +3,9 @@
 # Apion library
 ./apion/src/main/scala/io/github/edadma/apion
 AuthMiddleware.scala
+CompressionMiddleware.scala
 Cookie.scala
 CookieMiddleware.scala
-CompressionMiddleware.scala
 CorsMiddleware.scala
 Handler.scala
 JWT.scala
@@ -14,7 +14,6 @@ package.scala
 RateLimiterMiddleware.scala
 RealFS.scala
 Request.scala
-RequestDSL.scala
 Response.scala
 ResponseDSL.scala
 ResponseHeaders.scala
@@ -79,8 +78,15 @@ Gemfile
 _config.yml
 index.md
 ./docs/api
+errors.md
 index.md
 request.md
 response.md
+./docs/api/middleware
+auth.md
+cors.md
+index.md
+rate-limiting.md
+security.md
 ./docs/releases
 index.md

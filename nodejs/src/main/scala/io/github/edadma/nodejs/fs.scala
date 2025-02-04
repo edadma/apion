@@ -18,6 +18,10 @@ trait FSPromises extends js.Object:
   def readFile(path: String): js.Promise[Buffer]                                    = js.native
   def readFile(path: String, options: ReadFileOptions): js.Promise[String | Buffer] = js.native
   def stat(path: String): js.Promise[Stats]                                         = js.native
+  def rename(oldPath: String, newPath: String): js.Promise[Unit]                    = js.native
+  def mkdir(path: String): js.Promise[Unit]                                         = js.native
+  def mkdir(path: String, options: js.Object): js.Promise[Unit]                     = js.native
+  def unlink(path: String): js.Promise[Unit]                                        = js.native
 
 @js.native
 trait ReadFileOptions extends js.Object:

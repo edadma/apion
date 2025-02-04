@@ -19,6 +19,7 @@ trait ReadableStream extends js.Object {
   def on(event: String, callback: js.Any): this.type                     = js.native
   def resume(): this.type                                                = js.native
   def pause(): this.type                                                 = js.native
+  def destroy(error: js.Error = null): this.type                         = js.native
 }
 
 @js.native

@@ -129,3 +129,8 @@ case class MemoryStorage(
 
   def cleanup(result: StorageResult): Future[Unit] = Future.successful(())
 }
+
+case class FileFilter(
+    filter: (Request, FileInfo) => Boolean, // Changed from File to FileInfo
+    errorMessage: String = "File type not allowed",
+)

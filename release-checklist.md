@@ -1,10 +1,5 @@
----
-name: Release
-about: Checklist for creating a new release
-title: 'Release v0.0.x'
-labels: release
-assignees: edadma
----
+Checklist for creating a new release
+====================================
 
 ## Pre-release Preparation
 - [ ] Run all tests: `sbt test`

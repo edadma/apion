@@ -1,4 +1,6 @@
 addSbtPlugin("org.scala-js" % "sbt-scalajs" % "1.19.0")
 //addSbtPlugin("org.scalablytyped.converter" % "sbt-converter" % "1.0.0-beta44")
-addSbtPlugin("com.github.sbt" % "sbt-pgp"      % "2.2.1")
-addSbtPlugin("org.xerial.sbt" % "sbt-sonatype" % "3.10.0")
+addSbtPlugin("com.github.sbt" % "sbt-pgp"          % "2.2.1")
+addSbtPlugin("org.xerial.sbt" % "sbt-sonatype"     % "3.10.0")
+addSbtPlugin("com.github.sbt" % "sbt-site-paradox" % "1.5.0")
+addSbtPlugin("com.eed3si9n"   % "sbt-buildinfo"    % "0.12.0")

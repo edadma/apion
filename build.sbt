@@ -1,20 +1,17 @@
-ThisBuild / licenses += "ISC"    -> url("https://opensource.org/licenses/ISC")
-ThisBuild / versionScheme        := Some("semver-spec")
-ThisBuild / evictionErrorLevel   := Level.Warn
-ThisBuild / scalaVersion         := "3.7.2"
-ThisBuild / organization         := "io.github.edadma"
-ThisBuild / organizationName     := "edadma"
-ThisBuild / organizationHomepage := Some(url("https://github.com/edadma"))
-ThisBuild / version              := "0.0.8"
-
-ThisBuild / sonatypeCredentialHost := "s01.oss.sonatype.org"
-ThisBuild / sonatypeRepository     := "https://s01.oss.sonatype.org/service/local"
+ThisBuild / licenses               := Seq("ISC" -> url("https://opensource.org/licenses/ISC"))
+ThisBuild / versionScheme          := Some("semver-spec")
+ThisBuild / evictionErrorLevel     := Level.Warn
+ThisBuild / scalaVersion           := "3.7.2"
+ThisBuild / organization           := "io.github.edadma"
+ThisBuild / organizationName       := "edadma"
+ThisBuild / organizationHomepage   := Some(url("https://github.com/edadma"))
+ThisBuild / version                := "0.0.8"
+ThisBuild / sonatypeCredentialHost := "central.sonatype.com"
 
 ThisBuild / publishConfiguration := publishConfiguration.value.withOverwrite(true).withChecksums(Vector.empty)
-ThisBuild / resolvers ++= Seq(
-  Resolver.mavenLocal,
-)
-ThisBuild / resolvers ++= Resolver.sonatypeOssRepos("snapshots") ++ Resolver.sonatypeOssRepos("releases")
+ThisBuild / resolvers += Resolver.mavenLocal
+ThisBuild / resolvers += Resolver.sonatypeCentralSnapshots
+ThisBuild / resolvers += Resolver.sonatypeCentralRepo("releases")
 
 ThisBuild / sonatypeProfileName := "io.github.edadma"
 
@@ -35,23 +32,13 @@ ThisBuild / developers := List(
 
 ThisBuild / homepage := Some(url("https://github.com/edadma/apion"))
 
-ThisBuild / pomIncludeRepository := { _ => false }
 ThisBuild / publishTo := {
-  val nexus = "https://s01.oss.sonatype.org/"
-  if (isSnapshot.value) Some("snapshots" at nexus + "content/repositories/snapshots")
-  else Some("releases" at nexus + "service/local/staging/deploy/maven2")
+  val centralSnapshots = "https://central.sonatype.com/repository/maven-snapshots/"
+  if (isSnapshot.value) Some("central-snapshots" at centralSnapshots)
+  else localStaging.value
 }
+
 ThisBuild / publishMavenStyle := true
-//ThisBuild / pomExtra :=
-//  <properties>
-//    <maven.tag>scala</maven.tag>
-//    <maven.tag>scalajs</maven.tag>
-//    <maven.tag>nodejs</maven.tag>
-//    <maven.tag>http</maven.tag>
-//    <maven.tag>server</maven.tag>
-//    <maven.tag>web-framework</maven.tag>
-//    <maven.tag>api</maven.tag>
-//  </properties>
 
 lazy val commonSettings = Seq(
   scalacOptions ++= Seq(
@@ -85,7 +72,6 @@ lazy val apion = project
 //    Test / scalaJSUseTestModuleInitializer := false,
     Test / scalaJSUseMainModuleInitializer := false,
     Test / scalaJSUseTestModuleInitializer := true,
-    publishMavenStyle                      := true,
     Test / publishArtifact                 := false,
   )
 
@@ -96,7 +82,6 @@ lazy val nodejs = project
     name := "nodejs",
     description := "A minimal Scala.js facade library providing the Node.js bindings needed to support the Apion web framework",
     scalaJSUseMainModuleInitializer := true,
-    publishMavenStyle               := true,
     Test / publishArtifact          := false,
   )
 
@@ -104,5 +89,7 @@ lazy val apion_root = project
   .in(file("."))
   .aggregate(apion, nodejs)
   .settings(
-    publish / skip := true,
+    name                := "apion",
+    publish / skip      := true,
+    publishLocal / skip := true,
   )

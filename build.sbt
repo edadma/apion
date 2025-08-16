@@ -1,11 +1,11 @@
 ThisBuild / licenses += "ISC"    -> url("https://opensource.org/licenses/ISC")
 ThisBuild / versionScheme        := Some("semver-spec")
 ThisBuild / evictionErrorLevel   := Level.Warn
-ThisBuild / scalaVersion         := "3.6.2"
+ThisBuild / scalaVersion         := "3.7.2"
 ThisBuild / organization         := "io.github.edadma"
 ThisBuild / organizationName     := "edadma"
 ThisBuild / organizationHomepage := Some(url("https://github.com/edadma"))
-ThisBuild / version              := "0.0.7"
+ThisBuild / version              := "0.0.8"
 
 ThisBuild / sonatypeCredentialHost := "s01.oss.sonatype.org"
 ThisBuild / sonatypeRepository     := "https://s01.oss.sonatype.org/service/local"
@@ -73,9 +73,9 @@ lazy val apion = project
     description := "A type-safe HTTP server framework for Scala.js that combines Express-style ergonomics with Scala's powerful type system",
     libraryDependencies ++= Seq(
       "org.scalatest"     %%% "scalatest"                   % "3.2.19" % "test",
-      "com.lihaoyi"       %%% "pprint"                      % "0.9.0"  % "test",
+      "com.lihaoyi"       %%% "pprint"                      % "0.9.3"  % "test",
       "io.github.edadma"  %%% "logger"                      % "0.0.6",
-      "dev.zio"           %%% "zio-json"                    % "0.7.3",
+      "dev.zio"           %%% "zio-json"                    % "0.7.44",
       "org.scala-js"      %%% "scala-js-macrotask-executor" % "1.1.1",
       "io.github.cquiroz" %%% "scala-java-time"             % "2.6.0",
     ),

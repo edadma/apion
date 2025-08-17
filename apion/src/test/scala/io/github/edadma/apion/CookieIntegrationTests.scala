@@ -159,7 +159,6 @@ class CookieIntegrationTests extends AsyncBaseSpec with BeforeAndAfterAll {
 
       "should read multiple cookies from request" in {
         val options = FetchOptions(
-          method = "GET",
           headers = js.Dictionary(
             "Cookie" -> "cookie1=value1; cookie2=value2",
           ),
@@ -170,7 +169,12 @@ class CookieIntegrationTests extends AsyncBaseSpec with BeforeAndAfterAll {
           .toFuture
           .flatMap(response => response.text().toFuture)
           .map { text =>
-            val expected = """{"cookie1":"value1","cookie2":"value2"}"""
+            val expected =
+              """{
+                |  "cookie1" : "value1",
+                |  "cookie2" : "value2"
+                |}
+                |""".stripMargin
             text shouldBe expected
           }
       }
@@ -288,8 +292,8 @@ class CookieIntegrationTests extends AsyncBaseSpec with BeforeAndAfterAll {
               .flatMap(_.text().toFuture)
           }
           .map { text =>
-            text should include(""""value":"test"""")
-            text should include(""""number":123""")
+            text should include(""""value" : "test"""")
+            text should include(""""number" : 123""")
           }
       }
 

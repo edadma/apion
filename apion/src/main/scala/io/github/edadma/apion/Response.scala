@@ -78,8 +78,9 @@ object Response:
       additionalHeaders: Seq[(String, String)] = Nil,
       encoding: String = "utf8",
   ): Response =
-    val text   = data.toJson
-    val buffer = bufferMod.Buffer.from(text, encoding)
+    val isDevelopment = !sys.env.get("NODE_ENV").contains("production")
+    val text          = if isDevelopment then data.toJsonPretty + '\n' else data.toJson
+    val buffer        = bufferMod.Buffer.from(text, encoding)
 
     Response(
       status = status,

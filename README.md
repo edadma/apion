@@ -14,7 +14,7 @@
   <a href="https://github.com/edadma/apion/releases"><img src="https://img.shields.io/github/release-date-pre/edadma/apion" alt="Release Date"></a>
   <a href="https://github.com/edadma/apion/commits"><img src="https://img.shields.io/github/last-commit/edadma/apion" alt="Last Commit"></a>
   <a href="https://opensource.org/licenses/ISC"><img src="https://img.shields.io/badge/license-ISC-blue.svg" alt="License: ISC"></a>
-  <a href="https://www.scala-js.org"><img src="https://img.shields.io/badge/scala.js-1.17.0-blue.svg" alt="Scala.js: 1.17.0"></a>
+  <a href="https://www.scala-js.org"><img src="https://img.shields.io/badge/scala.js-1.20.2-blue.svg" alt="Scala.js: 1.20.2"></a>
 </p>
 
 ## Key Features
@@ -35,7 +35,7 @@
 Add to your `build.sbt`:
 
 ```scala
-libraryDependencies += "io.github.edadma" %%% "apion" % "0.0.7"
+libraryDependencies += "io.github.edadma" %%% "apion" % "0.0.12"
 ```
 
 ## Quick Start

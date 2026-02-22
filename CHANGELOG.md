@@ -17,6 +17,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Deprecated
 
+## [0.0.12] - 2026-02-22
+
+### Changed
+- Update Scala to 3.8.1 (from 3.7.2)
+- Update sbt to 1.12.1 (from 1.11.4)
+- Update sbt-scalajs to 1.20.2 (from 1.19.0)
+- Update sbt-pgp to 2.3.1 (from 2.2.1)
+- Update sbt-sonatype to 3.12.2 (from 3.10.0)
+- Update sbt-site-paradox to 1.7.0 (from 1.5.0)
+- Update scalafmt to 3.10.7 (from 3.9.9)
+- Modernize Maven Central publishing to use `sonatypePublishToBundle`
+- Replace deprecated `-Xfatal-warnings` with `-Werror`
+
+[0.0.12]: https://github.com/edadma/apion/releases/tag/v0.0.12
+
 ## [0.0.7] - 2025-01-11
 
 ### Added

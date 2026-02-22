@@ -58,9 +58,9 @@ lazy val apion = project
     description := "A type-safe HTTP server framework for Scala.js that combines Express-style ergonomics with Scala's powerful type system",
     libraryDependencies ++= Seq(
       "org.scalatest"     %%% "scalatest"                   % "3.2.19" % "test",
-      "com.lihaoyi"       %%% "pprint"                      % "0.9.3"  % "test",
+      "com.lihaoyi"       %%% "pprint"                      % "0.9.6"  % "test",
       "io.github.edadma"  %%% "logger"                      % "0.0.6",
-      "dev.zio"           %%% "zio-json"                    % "0.7.44",
+      "dev.zio"           %%% "zio-json"                    % "0.9.0",
       "org.scala-js"      %%% "scala-js-macrotask-executor" % "1.1.1",
       "io.github.cquiroz" %%% "scala-java-time"             % "2.6.0",
     ),

@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 ### Changed
+- Update zio-json to 0.9.0 (from 0.7.44)
+- Update pprint to 0.9.6 (from 0.9.3)
 
 ### Removed
 

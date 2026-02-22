@@ -1,12 +1,14 @@
+import xerial.sbt.Sonatype.sonatypeCentralHost
+
 ThisBuild / licenses               := Seq("ISC" -> url("https://opensource.org/licenses/ISC"))
 ThisBuild / versionScheme          := Some("semver-spec")
 ThisBuild / evictionErrorLevel     := Level.Warn
-ThisBuild / scalaVersion           := "3.7.2"
+ThisBuild / scalaVersion           := "3.8.1"
 ThisBuild / organization           := "io.github.edadma"
 ThisBuild / organizationName       := "edadma"
 ThisBuild / organizationHomepage   := Some(url("https://github.com/edadma"))
-ThisBuild / version                := "0.0.11"
-ThisBuild / sonatypeCredentialHost := "central.sonatype.com"
+ThisBuild / version                := "0.0.12"
+ThisBuild / sonatypeCredentialHost := sonatypeCentralHost
 
 ThisBuild / publishConfiguration := publishConfiguration.value.withOverwrite(true).withChecksums(Vector.empty)
 ThisBuild / resolvers += Resolver.mavenLocal
@@ -32,23 +34,19 @@ ThisBuild / developers := List(
 
 ThisBuild / homepage := Some(url("https://github.com/edadma/apion"))
 
-ThisBuild / publishTo := {
-  val centralSnapshots = "https://central.sonatype.com/repository/maven-snapshots/"
-  if (isSnapshot.value) Some("central-snapshots" at centralSnapshots)
-  else localStaging.value
-}
-
-ThisBuild / publishMavenStyle := true
+ThisBuild / publishTo := sonatypePublishToBundle.value
 
 lazy val commonSettings = Seq(
   scalacOptions ++= Seq(
     "-deprecation",
     "-feature",
     "-unchecked",
-    "-Xfatal-warnings",
+    "-Werror",
   ),
   scalaJSLinkerConfig ~= { _.withModuleKind(ModuleKind.CommonJSModule) },
   scalaJSLinkerConfig ~= { _.withSourceMap(false) },
+  publishMavenStyle      := true,
+  Test / publishArtifact := false,
 )
 
 lazy val apion = project
@@ -72,7 +70,6 @@ lazy val apion = project
 //    Test / scalaJSUseTestModuleInitializer := false,
     Test / scalaJSUseMainModuleInitializer := false,
     Test / scalaJSUseTestModuleInitializer := true,
-    Test / publishArtifact                 := false,
   )
 
 lazy val nodejs = project
@@ -82,7 +79,6 @@ lazy val nodejs = project
     name := "nodejs",
     description := "A minimal Scala.js facade library providing the Node.js bindings needed to support the Apion web framework",
     scalaJSUseMainModuleInitializer := true,
-    Test / publishArtifact          := false,
   )
 
 lazy val apion_root = project

@@ -17,6 +17,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Deprecated
 
+## [0.1.0] - 2026-04-18
+
+### Added
+- Native multipart/form-data parser (`MultipartParser`) — pure Scala.js, no npm dependencies
+- BodyLimitMiddleware for configurable per-route body size limits
+- Configurable body size limit and read timeout on Request
+- Node.js fs facade: writeFile, mkdir, readdir, rm, rename, copyFile, access + option types
+- ReadableStream.destroy method in Node.js stream facade
+- 57 new tests (151 total): MultipartParser (30), ResponseDSL (19), Router subrouter edge cases (3), RateLimiter enforcement (2), JWT edge cases (3)
+
+### Fixed
+- Router: unsafe asInstanceOf[StaticSegment] cast replaced with pattern match
+- StaticMiddleware: add missing parentheses on getTime() call (Scala 3.8.3 warning)
+
+### Changed
+- FileUploadMiddleware now uses native MultipartParser instead of busboy npm package
+- Update Scala to 3.8.3 (from 3.8.1)
+- Update sbt to 1.12.9 (from 1.12.1)
+- Update Scala.js to 1.21.0 (from 1.20.2)
+- Update zio-json to 0.9.0 (from 0.7.44)
+- Update pprint to 0.9.6 (from 0.9.3)
+
+### Removed
+- busboy npm dependency — Apion now has zero external npm dependencies
+
+[0.1.0]: https://github.com/edadma/apion/releases/tag/v0.1.0
+
 ## [0.0.13] - 2026-04-17
 
 ### Added

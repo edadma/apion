@@ -12,12 +12,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 ### Changed
-- Update zio-json to 0.9.0 (from 0.7.44)
-- Update pprint to 0.9.6 (from 0.9.3)
 
 ### Removed
 
 ### Deprecated
+
+## [0.0.13] - 2026-04-17
+
+### Added
+- BodyLimitMiddleware for configurable per-route body size limits
+- Configurable body size limit and read timeout on Request (via context or global defaults)
+- Node.js fs facade: writeFile, mkdir, readdir, rm, rename, copyFile, access + option types
+- 27 new tests: ResponseDSL, Router subrouter edge cases, RateLimiter enforcement, JWT edge cases (121 total)
+
+### Fixed
+- Router: unsafe asInstanceOf[StaticSegment] cast replaced with pattern match (prevents ClassCastException on non-static subrouter prefixes)
+- StaticMiddleware: add missing parentheses on getTime() call (Scala 3.8.3 warning)
+
+### Changed
+- Update Scala to 3.8.3 (from 3.8.1)
+- Update sbt to 1.12.9 (from 1.12.1)
+- Update Scala.js to 1.21.0 (from 1.20.2)
+- Update zio-json to 0.9.0 (from 0.7.44)
+- Update pprint to 0.9.6 (from 0.9.3)
+
+[0.0.13]: https://github.com/edadma/apion/releases/tag/v0.0.13
 
 ## [0.0.12] - 2026-02-22
 

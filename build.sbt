@@ -3,11 +3,11 @@ import xerial.sbt.Sonatype.sonatypeCentralHost
 ThisBuild / licenses               := Seq("ISC" -> url("https://opensource.org/licenses/ISC"))
 ThisBuild / versionScheme          := Some("semver-spec")
 ThisBuild / evictionErrorLevel     := Level.Warn
-ThisBuild / scalaVersion           := "3.8.1"
+ThisBuild / scalaVersion           := "3.8.3"
 ThisBuild / organization           := "io.github.edadma"
 ThisBuild / organizationName       := "edadma"
 ThisBuild / organizationHomepage   := Some(url("https://github.com/edadma"))
-ThisBuild / version                := "0.0.12"
+ThisBuild / version                := "0.0.13"
 ThisBuild / sonatypeCredentialHost := sonatypeCentralHost
 
 ThisBuild / publishConfiguration := publishConfiguration.value.withOverwrite(true).withChecksums(Vector.empty)

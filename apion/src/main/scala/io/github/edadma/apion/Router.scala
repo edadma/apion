@@ -130,7 +130,10 @@ class Router extends Handler:
                 val pathSegs  = remainingPath          // e.g. ["sub", "fail"]
 
                 // Try to match just the subrouter prefix
-                if pathSegs.nonEmpty && pathSegs.head == routeSegs.head.asInstanceOf[StaticSegment].value then
+                if pathSegs.nonEmpty && routeSegs.headOption.exists {
+                  case StaticSegment(v) => v == pathSegs.head
+                  case _                => false
+                } then
                   // Pass remaining segments to the subrouter
                   val remaining = pathSegs.drop(1)
                   router(req.copy(

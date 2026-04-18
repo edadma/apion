@@ -15,9 +15,21 @@ object fs extends js.Object:
 
 @js.native
 trait FSPromises extends js.Object:
-  def readFile(path: String): js.Promise[Buffer]                                    = js.native
-  def readFile(path: String, options: ReadFileOptions): js.Promise[String | Buffer] = js.native
-  def stat(path: String): js.Promise[Stats]                                         = js.native
+  def readFile(path: String): js.Promise[Buffer]                                                         = js.native
+  def readFile(path: String, options: ReadFileOptions): js.Promise[String | Buffer]                      = js.native
+  def writeFile(path: String, data: String): js.Promise[Unit]                                            = js.native
+  def writeFile(path: String, data: Buffer): js.Promise[Unit]                                            = js.native
+  def writeFile(path: String, data: String, options: WriteFileOptions): js.Promise[Unit]                 = js.native
+  def mkdir(path: String): js.Promise[js.UndefOr[String]]                                                = js.native
+  def mkdir(path: String, options: MkdirOptions): js.Promise[js.UndefOr[String]]                         = js.native
+  def readdir(path: String): js.Promise[js.Array[String]]                                                = js.native
+  def readdir(path: String, options: ReaddirOptions): js.Promise[js.Array[String | Buffer | js.Object]]  = js.native
+  def rm(path: String): js.Promise[Unit]                                                                 = js.native
+  def rm(path: String, options: RmOptions): js.Promise[Unit]                                             = js.native
+  def rename(oldPath: String, newPath: String): js.Promise[Unit]                                         = js.native
+  def copyFile(src: String, dest: String): js.Promise[Unit]                                              = js.native
+  def access(path: String): js.Promise[Unit]                                                             = js.native
+  def stat(path: String): js.Promise[Stats]                                                              = js.native
 
 @js.native
 trait ReadFileOptions extends js.Object:
@@ -32,6 +44,42 @@ object ReadFileOptions:
     val opts = js.Dynamic.literal(encoding = encoding)
     flag.foreach(f => opts.updateDynamic("flag")(f))
     opts.asInstanceOf[ReadFileOptions]
+
+@js.native
+trait WriteFileOptions extends js.Object:
+  val encoding: js.UndefOr[String] = js.native
+  val flag: js.UndefOr[String]     = js.native
+
+object WriteFileOptions:
+  def apply(encoding: String = "utf8", flag: Option[String] = None): WriteFileOptions =
+    val opts = js.Dynamic.literal(encoding = encoding)
+    flag.foreach(f => opts.updateDynamic("flag")(f))
+    opts.asInstanceOf[WriteFileOptions]
+
+@js.native
+trait MkdirOptions extends js.Object:
+  val recursive: js.UndefOr[Boolean] = js.native
+
+object MkdirOptions:
+  def apply(recursive: Boolean = false): MkdirOptions =
+    js.Dynamic.literal(recursive = recursive).asInstanceOf[MkdirOptions]
+
+@js.native
+trait ReaddirOptions extends js.Object:
+  val withFileTypes: js.UndefOr[Boolean] = js.native
+
+object ReaddirOptions:
+  def apply(withFileTypes: Boolean = false): ReaddirOptions =
+    js.Dynamic.literal(withFileTypes = withFileTypes).asInstanceOf[ReaddirOptions]
+
+@js.native
+trait RmOptions extends js.Object:
+  val recursive: js.UndefOr[Boolean] = js.native
+  val force: js.UndefOr[Boolean]     = js.native
+
+object RmOptions:
+  def apply(recursive: Boolean = false, force: Boolean = false): RmOptions =
+    js.Dynamic.literal(recursive = recursive, force = force).asInstanceOf[RmOptions]
 
 @js.native
 trait Stats extends js.Object:

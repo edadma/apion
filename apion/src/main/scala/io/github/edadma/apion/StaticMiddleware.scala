@@ -143,7 +143,7 @@ object StaticMiddleware:
 
       // Generate ETag if enabled
       val etag = if options.etag then
-        Some(s""""${stats.size}-${stats.mtime.getTime}"""")
+        Some(s""""${stats.size}-${stats.mtime.getTime()}"""")
       else
         None
 

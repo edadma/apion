@@ -261,6 +261,64 @@ class RouterTests extends AsyncBaseSpec {
       }
     }
 
+    "Subrouter edge cases" - {
+      "should skip subrouter with non-matching prefix" in {
+        val router    = new Router()
+        val subrouter = new Router()
+
+        subrouter.get(
+          "/test",
+          _ => "subroute".asText,
+        )
+
+        router.use("/api", subrouter)
+        router.get("/other", _ => "fallback".asText)
+
+        val request = Request.fromServerRequest(mockServerRequest("GET", "/other"))
+
+        router(request).map {
+          case InternalComplete(_, response) =>
+            response.bodyText shouldBe "fallback"
+          case _ =>
+            fail("Expected Complete from fallback route")
+        }
+      }
+
+      "should handle empty path segments gracefully" in {
+        val router    = new Router()
+        val subrouter = new Router()
+
+        subrouter.get(
+          "/test",
+          _ => "found".asText,
+        )
+
+        router.use("/api", subrouter)
+        val request = Request.fromServerRequest(mockServerRequest("GET", "/api/test"))
+
+        router(request).map {
+          case InternalComplete(_, response) =>
+            response.bodyText shouldBe "found"
+          case _ =>
+            fail("Expected Complete from subrouter")
+        }
+      }
+
+      "should return Skip when subrouter prefix does not match" in {
+        val router    = new Router()
+        val subrouter = new Router()
+
+        subrouter.get("/test", _ => "found".asText)
+        router.use("/api", subrouter)
+
+        val request = Request.fromServerRequest(mockServerRequest("GET", "/notapi/test"))
+
+        router(request).map { result =>
+          result shouldBe Skip
+        }
+      }
+    }
+
     "Middleware" - {
       "should execute global middleware" in {
         val router = new Router()

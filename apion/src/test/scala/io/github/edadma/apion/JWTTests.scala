@@ -186,5 +186,28 @@ class JWTTests extends AnyFreeSpec with Matchers:
           case Right(payload) => payload shouldBe emptyPayload
           case Left(error)    => fail(s"Should verify with empty string: $error")
       }
+
+      "should fail for completely empty token string" in {
+        JWT.verify[TestPayload]("", secret) match
+          case Right(_)    => fail("Should not verify empty token")
+          case Left(error) => error.message should include("Invalid")
+      }
+
+      "should fail for token with only dots" in {
+        JWT.verify[TestPayload]("..", secret) match
+          case Right(_)    => fail("Should not verify dots-only token")
+          case Left(error) => error.message should include("Invalid")
+      }
+
+      "should produce consistent tokens for same input" in {
+        val token1 = JWT.sign(validPayload, secret)
+        val token2 = JWT.sign(validPayload, secret)
+
+        // Header and payload should be identical (signature may differ if timing-dependent)
+        val parts1 = token1.split('.')
+        val parts2 = token2.split('.')
+        parts1(0) shouldBe parts2(0)
+        parts1(1) shouldBe parts2(1)
+      }
     }
   }

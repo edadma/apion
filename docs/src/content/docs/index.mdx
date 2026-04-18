@@ -1,0 +1,32 @@
+---
+title: Apion
+description: A lightweight, type-safe HTTP server framework for Scala.js
+template: splash
+hero:
+  tagline: Express-like API with Scala's type safety. Zero npm dependencies.
+  actions:
+    - text: Get Started
+      link: /getting-started/introduction/
+      icon: right-arrow
+      variant: primary
+    - text: View on GitHub
+      link: https://github.com/edadma/apion
+      icon: external
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+<CardGrid>
+  <Card title="Unified Handler System" icon="puzzle">
+    Middleware, routes, and error handlers all share one type: `Request => Future[Result]`.
+  </Card>
+  <Card title="Type-Safe" icon="approve-check">
+    Compile-time JSON validation with zio-json. Immutable request/response types.
+  </Card>
+  <Card title="10 Built-in Middleware" icon="setting">
+    Auth, CORS, compression, static files, rate limiting, file uploads, and more.
+  </Card>
+  <Card title="Zero npm Dependencies" icon="rocket">
+    Pure Scala.js — only Node.js is required at runtime.
+  </Card>
+</CardGrid>

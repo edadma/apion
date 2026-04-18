@@ -40,15 +40,21 @@ case class Request(
 
   private var bodyPromise: Option[Promise[Buffer]] = None
 
+  /** Maximum body size in bytes. Default 50MB. Override via Request.maxBodySize. */
+  private val maxBody: Long = context.get("maxBodySize").map(_.asInstanceOf[Long]).getOrElse(Request.maxBodySize)
+
+  /** Read timeout in milliseconds. Default 30s. Override via Request.bodyTimeout. */
+  private val bodyTimeoutMs: Int = context.get("bodyTimeout").map(_.asInstanceOf[Int]).getOrElse(Request.bodyTimeout)
+
   // Get raw body as Buffer
   def body: Future[Buffer] = {
     if (bodyPromise.isEmpty) {
       bodyPromise = Some(Promise[Buffer]())
       val chunks    = new scala.collection.mutable.ArrayBuffer[Buffer]()
-      var totalSize = 0
+      var totalSize = 0L
 
-      // Set up timeout (e.g., 30 seconds)
-      val timeoutTimer = js.timers.setTimeout(30000) {
+      // Set up timeout
+      val timeoutTimer = js.timers.setTimeout(bodyTimeoutMs) {
         if (!bodyPromise.get.isCompleted) {
           bodyPromise.get.failure(new Exception("Body read timeout"))
           rawRequest.destroy(js.Error("Read timeout"))
@@ -59,8 +65,7 @@ case class Request(
         "data",
         (chunk: Buffer) => {
           totalSize += chunk.length
-          // Check if body exceeds reasonable size (e.g., 50MB)
-          if (totalSize > 50 * 1024 * 1024) {
+          if (totalSize > maxBody) {
             bodyPromise.get.failure(new Exception("Request body too large"))
             rawRequest.destroy(js.Error("Body too large"))
           } else {
@@ -132,6 +137,12 @@ case class Request(
 }
 
 object Request {
+  /** Default maximum body size: 50MB */
+  var maxBodySize: Long = 50L * 1024 * 1024
+
+  /** Default body read timeout: 30 seconds */
+  var bodyTimeout: Int = 30000
+
   def fromServerRequest(req: ServerRequest): Request = {
     val (path, query) = parseUrl(req.url)
     val headers       = req.headers.map { case (k, v) => k.toLowerCase -> v }.toMap

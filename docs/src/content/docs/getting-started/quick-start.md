@@ -108,7 +108,7 @@ Server()
 
 ## Next Steps
 
-- Learn about [Handlers & Results](/core/handlers/) — the unified type system
-- Explore [Request](/core/request/) and [Response](/core/response/) APIs
-- Set up [Authentication](/middleware/auth/) with JWT
-- See a full [API Server example](/guides/api-server/)
+- Learn about [Handlers & Results](../../core/handlers/) — the unified type system
+- Explore [Request](../../core/request/) and [Response](../../core/response/) APIs
+- Set up [Authentication](../../middleware/auth/) with JWT
+- See a full [API Server example](../../guides/api-server/)

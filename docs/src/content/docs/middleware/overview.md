@@ -97,13 +97,13 @@ val addHeader: Handler = request => {
 
 | Middleware | Purpose |
 |-----------|---------|
-| [`AuthMiddleware`](/middleware/auth/) | JWT authentication with RBAC |
-| [`CorsMiddleware`](/middleware/cors/) | Cross-origin resource sharing |
-| [`SecurityMiddleware`](/middleware/security/) | Security headers |
-| [`LoggingMiddleware`](/middleware/logging/) | Request/response logging |
-| [`CompressionMiddleware`](/middleware/compression/) | Response compression |
-| [`StaticMiddleware`](/middleware/static/) | Static file serving |
-| [`CookieMiddleware`](/middleware/cookies/) | Cookie management |
-| [`RateLimiterMiddleware`](/middleware/rate-limiting/) | Request throttling |
-| [`FileUploadMiddleware`](/middleware/file-uploads/) | Multipart file uploads |
-| [`BodyLimitMiddleware`](/middleware/body-limit/) | Request body size limits |
+| [`AuthMiddleware`](../auth/) | JWT authentication with RBAC |
+| [`CorsMiddleware`](../cors/) | Cross-origin resource sharing |
+| [`SecurityMiddleware`](../security/) | Security headers |
+| [`LoggingMiddleware`](../logging/) | Request/response logging |
+| [`CompressionMiddleware`](../compression/) | Response compression |
+| [`StaticMiddleware`](../static/) | Static file serving |
+| [`CookieMiddleware`](../cookies/) | Cookie management |
+| [`RateLimiterMiddleware`](../rate-limiting/) | Request throttling |
+| [`FileUploadMiddleware`](../file-uploads/) | Multipart file uploads |
+| [`BodyLimitMiddleware`](../body-limit/) | Request body size limits |

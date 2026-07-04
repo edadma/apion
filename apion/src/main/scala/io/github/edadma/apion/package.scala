@@ -1,6 +1,7 @@
 package io.github.edadma.apion
 
 import scala.util.Try
+import scala.scalajs.js
 import org.scalajs.macrotaskexecutor.MacrotaskExecutor
 import scala.concurrent.ExecutionContext
 
@@ -42,48 +43,26 @@ def base64UrlDecode(str: String): String =
       .toString("utf8")
   }.getOrElse(throw JWT.JWTError("Invalid base64url encoding"))
 
-def decodeURIComponent(s: String): String = {
-  def hexToChar(hex: String): Char =
-    Integer.parseInt(hex, 16).toChar
+/** Percent-decode a URI component using the JavaScript runtime, which decodes
+  * multi-byte UTF-8 sequences correctly (unlike a naive byte-per-`%xx` decoder).
+  * Malformed input is returned unchanged rather than throwing.
+  *
+  * This follows JS `decodeURIComponent` semantics: `+` is a literal plus, not a
+  * space. For `application/x-www-form-urlencoded` data (query strings, form
+  * bodies) use [[decodeFormComponent]] instead.
+  */
+def decodeURIComponent(s: String): String =
+  Try(js.URIUtils.decodeURIComponent(s)).getOrElse(s)
 
-  val result = new StringBuilder
-  var i      = 0
-  while (i < s.length) {
-    if (s(i) == '%' && i + 2 < s.length) {
-      result.append(hexToChar(s.substring(i + 1, i + 3)))
-      i += 3
-    } else if (s(i) == '+') {
-      result.append(' ')
-      i += 1
-    } else {
-      result.append(s(i))
-      i += 1
-    }
-  }
-  result.toString
-}
+/** Decode an `application/x-www-form-urlencoded` component, where `+` denotes a
+  * space in addition to percent-encoding. Used for query strings and form bodies.
+  */
+def decodeFormComponent(s: String): String =
+  decodeURIComponent(s.replace('+', ' '))
 
-def encodeURIComponent(s: String): String = {
-  def shouldEncode(c: Char): Boolean = {
-    val allowedChars = ('a' to 'z') ++ ('A' to 'Z') ++ ('0' to '9') ++ Set('-', '_', '.', '!', '~', '*', '\'', '(', ')')
-    !allowedChars.contains(c)
-  }
-
-  val sb = new StringBuilder
-  for (c <- s) {
-    if (shouldEncode(c)) {
-      val bytes = c.toString.getBytes("UTF-8")
-      for (b <- bytes) {
-        sb.append('%')
-        sb.append(Character.forDigit((b >> 4) & 0xf, 16).toUpper)
-        sb.append(Character.forDigit(b & 0xf, 16).toUpper)
-      }
-    } else {
-      sb.append(c)
-    }
-  }
-  sb.toString
-}
+/** Percent-encode a URI component using the JavaScript runtime (UTF-8 aware). */
+def encodeURIComponent(s: String): String =
+  js.URIUtils.encodeURIComponent(s)
 
 def generateUUID(): String = {
   val bytes = crypto.randomBytes(16)

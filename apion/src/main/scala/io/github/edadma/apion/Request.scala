@@ -16,7 +16,7 @@ case class Request(
     path: String,
     headers: Map[String, String] = Map(),
     params: Map[String, String] = Map(),
-    query: Map[String, String] = Map(),
+    query: Map[String, Seq[String]] = Map(),
     context: Map[String, Any] = Map(),
     rawRequest: ServerRequest,
     basePath: String = "", // Track the accumulated base path
@@ -38,35 +38,45 @@ case class Request(
   // Raw headers exactly as received (preserves case and duplicates)
   def rawHeaders: List[String] = rawRequest.rawHeaders.toList
 
-  private var bodyPromise: Option[Promise[Buffer]] = None
-
   /** Maximum body size in bytes. Default 50MB. Override via Request.maxBodySize. */
   private val maxBody: Long = context.get("maxBodySize").map(_.asInstanceOf[Long]).getOrElse(Request.maxBodySize)
 
   /** Read timeout in milliseconds. Default 30s. Override via Request.bodyTimeout. */
   private val bodyTimeoutMs: Int = context.get("bodyTimeout").map(_.asInstanceOf[Int]).getOrElse(Request.bodyTimeout)
 
-  // Get raw body as Buffer
+  /** Raw request body as a Buffer.
+    *
+    * The body is streamed and memoized on the underlying connection (`rawRequest`),
+    * not on this immutable value. Because every `copy`-derived request shares the
+    * same `rawRequest`, reading the body after middleware has copied the request
+    * still attaches the stream listeners and consumes the socket exactly once — no
+    * matter which copy calls `body` first.
+    */
   def body: Future[Buffer] = {
-    if (bodyPromise.isEmpty) {
-      bodyPromise = Some(Promise[Buffer]())
+    val holder = rawRequest.asInstanceOf[js.Dynamic]
+
+    if (js.isUndefined(holder.__apionBody)) {
+      val promise = Promise[Buffer]()
+      holder.__apionBody = promise.asInstanceOf[js.Any]
+
       val chunks    = new scala.collection.mutable.ArrayBuffer[Buffer]()
       var totalSize = 0L
 
-      // Set up timeout
       val timeoutTimer = js.timers.setTimeout(bodyTimeoutMs) {
-        if (!bodyPromise.get.isCompleted) {
-          bodyPromise.get.failure(new Exception("Body read timeout"))
+        if (!promise.isCompleted) {
+          promise.failure(new Exception("Body read timeout"))
           rawRequest.destroy(js.Error("Read timeout"))
         }
       }
+
+      def clearTimer(): Unit = js.timers.clearTimeout(timeoutTimer)
 
       rawRequest.on(
         "data",
         (chunk: Buffer) => {
           totalSize += chunk.length
           if (totalSize > maxBody) {
-            bodyPromise.get.failure(new Exception("Request body too large"))
+            if (!promise.isCompleted) promise.failure(new Exception("Request body too large"))
             rawRequest.destroy(js.Error("Body too large"))
           } else {
             chunks += chunk
@@ -77,9 +87,9 @@ case class Request(
       rawRequest.on(
         "end",
         () => {
-          if (!bodyPromise.get.isCompleted) {
+          if (!promise.isCompleted) {
             val finalBuffer = bufferMod.Buffer.concat(js.Array(chunks.toArray*))
-            bodyPromise.get.success(finalBuffer)
+            promise.success(finalBuffer)
             clearTimer()
           }
         },
@@ -88,16 +98,15 @@ case class Request(
       rawRequest.on(
         "error",
         (error: js.Error) => {
-          bodyPromise.get.failure(new Exception(s"Body read error: ${error.message}"))
+          if (!promise.isCompleted) promise.failure(new Exception(s"Body read error: ${error.message}"))
           clearTimer()
         },
       )
 
-      // Clear timer on success or error
-      def clearTimer(): Unit = js.timers.clearTimeout(timeoutTimer)
+      promise.future
+    } else {
+      holder.__apionBody.asInstanceOf[Promise[Buffer]].future
     }
-
-    bodyPromise.get.future
   }
 
   // Higher level helpers
@@ -118,16 +127,17 @@ case class Request(
   def json[T: JsonDecoder]: Future[Option[T]] =
     text.map(_.fromJson[T].toOption)
 
-  def form: Future[Map[String, String]] =
-    text.map { content =>
-      content.split("&").flatMap { param =>
-        param.split("=", 2) match {
-          case Array(key, value) =>
-            Some(decodeURIComponent(key) -> decodeURIComponent(value))
-          case _ => None
-        }
-      }.toMap
-    }
+  /** Parse an `application/x-www-form-urlencoded` body, preserving repeated keys. */
+  def form: Future[Map[String, Seq[String]]] =
+    text.map(Request.parseUrlEncoded)
+
+  /** First value of a form field, if present. */
+  def formField(name: String): Future[Option[String]] =
+    form.map(_.get(name).flatMap(_.headOption))
+
+  /** First value of a query-string parameter, if present. */
+  def queryParam(name: String): Option[String] =
+    query.get(name).flatMap(_.headOption)
 
   def header(h: String): Option[String] = headers.get(h.toLowerCase)
 
@@ -152,7 +162,7 @@ object Request {
       url = req.url,
       path = path,
       headers = headers,
-      query = parseQueryString(query),
+      query = parseUrlEncoded(query),
       rawRequest = req,
     )
   }
@@ -165,15 +175,18 @@ object Request {
     }
   }
 
-  private def parseQueryString(query: String): Map[String, String] =
-    if (query.isEmpty) Map.empty
-    else {
-      query.split("&").flatMap { param =>
+  /** Parse an `application/x-www-form-urlencoded` string (query strings and form
+    * bodies) into a multi-valued map, preserving the order of repeated keys.
+    * A bare `key` with no `=` maps to a single empty-string value.
+    */
+  private[apion] def parseUrlEncoded(s: String): Map[String, Seq[String]] =
+    if (s.isEmpty) Map.empty
+    else
+      s.split("&").toSeq.flatMap { param =>
         param.split("=", 2) match {
-          case Array(key, value) =>
-            Some(decodeURIComponent(key) -> decodeURIComponent(value))
-          case _ => None
+          case Array(key, value) => Some(decodeFormComponent(key) -> decodeFormComponent(value))
+          case Array(key)        => Some(decodeFormComponent(key) -> "")
+          case _                 => None
         }
-      }.toMap
-    }
+      }.groupMap(_._1)(_._2)
 }

@@ -32,8 +32,8 @@ class BasicIntegrationTests extends AsyncBaseSpec with BeforeAndAfterAll {
       .get(
         "/search",
         request => {
-          val query = request.query.getOrElse("q", "")
-          val page  = request.query.get("page").map(_.toInt).getOrElse(1)
+          val query = request.queryParam("q").getOrElse("")
+          val page  = request.queryParam("page").map(_.toInt).getOrElse(1)
           SearchParams(query, page).asJson
         },
       )

@@ -18,31 +18,32 @@ case class Response(
       case EmptyBody              => sys.error(s"bodyText: no body")
 
 object Response:
-  // Global configuration for default headers
-  private var defaultHeaders = Seq(
-    "server"        -> "Apion",
-    "cache-control" -> "no-store, no-cache, must-revalidate, max-age=0",
-    "pragma"        -> "no-cache",
-    "expires"       -> "0",
-    "x-powered-by"  -> "Apion",
+  /** The out-of-the-box default headers applied to every response. */
+  private val initialDefaultHeaders = Seq(
+    "Server"        -> "Apion",
+    "Cache-Control" -> "no-store, no-cache, must-revalidate, max-age=0",
+    "Pragma"        -> "no-cache",
+    "Expires"       -> "0",
+    "X-Powered-By"  -> "Apion",
   )
 
-  /** Configure global default headers
+  // Global configuration for default headers
+  private var defaultHeaders = initialDefaultHeaders
+
+  /** Configure global default headers. Any header whose name matches an existing
+    * default (case-insensitively) replaces it, so callers can override built-ins
+    * such as `Server` without producing duplicates.
     * @param headers
-    *   Map of headers to set globally
+    *   Headers to set or override globally
     */
   def configure(headers: Seq[(String, String)]): Unit =
-    defaultHeaders = defaultHeaders ++ headers
+    defaultHeaders = headers.foldLeft(defaultHeaders) { (acc, header) =>
+      acc.filterNot(_._1.equalsIgnoreCase(header._1)) :+ header
+    }
 
-  /** Reset default headers to original state */
+  /** Reset default headers to their original out-of-the-box state. */
   def resetDefaultHeaders(): Unit =
-    defaultHeaders = Seq(
-      "Server"        -> "Apion",
-      "Cache-Control" -> "no-store, no-cache, must-revalidate, max-age=0",
-      "Pragma"        -> "no-cache",
-      "Expires"       -> "0",
-      "X-Powered-By"  -> "Apion",
-    )
+    defaultHeaders = initialDefaultHeaders
 
   /** Create a streaming response */
   def stream(

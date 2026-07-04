@@ -40,7 +40,7 @@ class ResponseHeaders private (private val headers: Map[String, List[String]]):
   override def toString: String = s"ResponseHeaders($headers)"
 
 object ResponseHeaders:
-  private val multiHeader = Set("set-cookie", "wwww-authenticate")
+  private val multiHeader = Set("set-cookie", "www-authenticate")
 
   private val allCaps = Set(
     "api",

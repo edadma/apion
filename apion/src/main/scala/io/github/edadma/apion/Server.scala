@@ -45,6 +45,21 @@ class Server {
     this
   }
 
+  def head(path: String, handlers: Handler*): Server = {
+    router.head(path, handlers*)
+    this
+  }
+
+  def options(path: String, handlers: Handler*): Server = {
+    router.options(path, handlers*)
+    this
+  }
+
+  def all(path: String, handlers: Handler*): Server = {
+    router.all(path, handlers*)
+    this
+  }
+
   // Middleware and routing
   def use(handler: Handler): Server = {
     router.use(handler)

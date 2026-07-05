@@ -10,6 +10,8 @@ Middleware in Apion is just a `Handler` — a function from `Request` to `Future
 Add data to the request context for downstream handlers:
 
 ```scala
+val UserKey: TypedKey[User] = TypedKey("user")
+
 def userLookup(userService: UserService): Handler = request =>
   request.header("authorization") match {
     case Some(auth) if auth.startsWith("Bearer ") =>
@@ -17,7 +19,7 @@ def userLookup(userService: UserService): Handler = request =>
       userService.getUserFromToken(token).map {
         case Some(user) =>
           Continue(request.copy(
-            context = request.context + ("user" -> user)
+            context = request.context.updated(UserKey, user)
           ))
         case None =>
           Fail(AuthError("Invalid token"))
@@ -67,12 +69,14 @@ Finalizers run in LIFO order — the last one added runs first.
 A single middleware can modify the request, add a finalizer, and conditionally short-circuit:
 
 ```scala
+val RequestIdKey: TypedKey[String] = TypedKey("requestId")
+
 def requestId: Handler = request => {
   val id = generateUUID()
 
   // Add to context
   val updated = request.copy(
-    context = request.context + ("requestId" -> id)
+    context = request.context.updated(RequestIdKey, id)
   )
 
   // Add to response headers via finalizer

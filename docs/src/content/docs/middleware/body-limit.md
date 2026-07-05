@@ -31,13 +31,15 @@ The middleware sets the `maxBodySize` and optionally `bodyTimeout` values on the
 
 If the body exceeds the limit, the body read fails with an error.
 
-## Global Defaults
+## Server Defaults
 
-You can also set global defaults that apply to all requests:
+Set the defaults for all requests on `ServerConfig`:
 
 ```scala
-Request.maxBodySize = 50 * 1024 * 1024  // 50 MB (default)
-Request.bodyTimeout = 30000             // 30 seconds (default)
+val server = Server(ServerConfig(
+  maxBodySize = 50 * 1024 * 1024,  // 50 MB (default)
+  bodyTimeout = 30000,             // 30 seconds (default)
+))
 ```
 
 `BodyLimitMiddleware` overrides these defaults on a per-route basis.

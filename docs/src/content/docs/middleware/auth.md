@@ -34,6 +34,9 @@ case class Config(
 )
 ```
 
+`excludePaths` matches by path prefix, segment-aware: `/health` excludes `/health`
+and `/health/live`, but not `/healthcheck`.
+
 ## Token Management
 
 ### Create Tokens
@@ -126,7 +129,9 @@ server.post("/auth/logout", request => {
 
 ## Accessing Auth Data
 
-When authentication succeeds, an `Auth` object is placed in the request context:
+When authentication succeeds, an `Auth` object is placed in the request context
+under `AuthMiddleware.authKey` (a typed key, so reads recover `Option[Auth]` with no
+cast):
 
 ```scala
 case class Auth(user: String, roles: Set[String]) {
@@ -136,10 +141,10 @@ case class Auth(user: String, roles: Set[String]) {
 
 ```scala
 server.get("/profile", request => {
-  request.context.get("auth") match {
-    case Some(auth: Auth) =>
+  request.context.get(authKey) match {
+    case Some(auth) =>
       getUserProfile(auth.user).asJson
-    case _ =>
+    case None =>
       "Unauthorized".asText(401)
   }
 })
@@ -151,12 +156,12 @@ Check roles in handlers:
 
 ```scala
 server.get("/admin", request => {
-  request.context.get("auth") match {
-    case Some(auth: Auth) if auth.hasRequiredRoles(Set("admin")) =>
+  request.context.get(authKey) match {
+    case Some(auth) if auth.hasRequiredRoles(Set("admin")) =>
       getAdminData().asJson
     case Some(_) =>
       "Insufficient permissions".asText(403)
-    case _ =>
+    case None =>
       "Unauthorized".asText(401)
   }
 })
@@ -166,8 +171,8 @@ Create a reusable role-checking middleware:
 
 ```scala
 def requireRoles(roles: Set[String]): Handler = request =>
-  request.context.get("auth") match {
-    case Some(auth: Auth) if auth.hasRequiredRoles(roles) =>
+  request.context.get(authKey) match {
+    case Some(auth) if auth.hasRequiredRoles(roles) =>
       Future.successful(Continue(request))
     case Some(_) =>
       "Insufficient permissions".asText(403)

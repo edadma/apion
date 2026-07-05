@@ -25,9 +25,8 @@ import org.scalatest.freespec.AsyncFreeSpec
 import org.scalatest.matchers.should.Matchers
 
 class MyTests extends AsyncFreeSpec with Matchers {
-  // MacrotaskExecutor is provided by Apion's package object
-  implicit override def executionContext = 
-    scala.scalajs.concurrent.MacrotaskExecutor
+  implicit override def executionContext =
+    org.scalajs.macrotaskexecutor.MacrotaskExecutor
 
   "my handler" - {
     "returns 200" in {

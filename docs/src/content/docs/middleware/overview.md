@@ -52,10 +52,12 @@ server.get("/protected", authMiddleware, handler)
 Add data to the context for downstream handlers:
 
 ```scala
+val UserKey: TypedKey[User] = TypedKey("user")
+
 val withUser: Handler = request => {
   val user = lookupUser(request.params("id"))
   Future.successful(Continue(
-    request.copy(context = request.context + ("user" -> user))
+    request.copy(context = request.context.updated(UserKey, user))
   ))
 }
 ```

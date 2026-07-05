@@ -7,7 +7,7 @@ import scala.concurrent.Future
 
 import scala.language.postfixOps
 
-class Server {
+class Server(config: ServerConfig = ServerConfig()) {
   private val router = new Router()
   private val server = http.createServer((req: ServerRequest, res: ServerResponse) =>
     handleRequest(req, res),
@@ -93,24 +93,23 @@ class Server {
             }
           }
       }.map { finalResponse =>
-        logger.debug(finalResponse.headers.toMap.flatMap { case (key, values) =>
-          values.map(value => key -> value)
-        }.toSeq)
+        // Stamp this server's default headers (and Date) on the way out.
+        val stamped = config.applyDefaults(finalResponse)
 
         // Write response headers
-        logger.debug(s"Writing response headers: ${finalResponse.headers.toMap}")
+        logger.debug(s"Writing response headers: ${stamped.headers.toMap}")
         // Convert headers to dictionary, preserving multiple values
         val headerDict = js.Dictionary[String | js.Array[String]]()
-        finalResponse.headers.toMap.foreach { case (key, values) =>
+        stamped.headers.toMap.foreach { case (key, values) =>
           if (values.length > 1) {
             headerDict(key) = js.Array(values*)
           } else {
             headerDict(key) = values.head
           }
         }
-        res.writeHead(finalResponse.status, headerDict) // Write body and end response
+        res.writeHead(stamped.status, headerDict) // Write body and end response
 
-        finalResponse.body match
+        stamped.body match
           case StringBody(_, data) => res.end(data)
           case BufferBody(content) => res.end(content)
           case ReadableStreamBody(stream) =>
@@ -133,8 +132,9 @@ class Server {
       }
     }
 
-    // Convert Node.js request to our Request type
-    val request = Request.fromServerRequest(req)
+    // Convert Node.js request to our Request type, seeding this server's body limits.
+    val incoming = Request.fromServerRequest(req)
+    val request  = incoming.copy(context = config.seedContext(incoming.context))
     logger.debug(s"handleRequest: $request")
 
     // Process the request through our router

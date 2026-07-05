@@ -147,11 +147,11 @@ case class Request(
 }
 
 object Request {
-  /** Default maximum body size: 50MB */
-  var maxBodySize: Long = 50L * 1024 * 1024
+  /** Fallback maximum body size (50MB) when no server config seeds the context. */
+  val maxBodySize: Long = 50L * 1024 * 1024
 
-  /** Default body read timeout: 30 seconds */
-  var bodyTimeout: Int = 30000
+  /** Fallback body read timeout (30s) when no server config seeds the context. */
+  val bodyTimeout: Int = 30000
 
   /** Per-request override of the maximum body size, set by BodyLimitMiddleware. */
   val maxBodySizeKey: TypedKey[Long] = TypedKey("maxBodySize")

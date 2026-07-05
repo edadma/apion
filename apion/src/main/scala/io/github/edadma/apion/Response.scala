@@ -18,33 +18,6 @@ case class Response(
       case EmptyBody              => sys.error(s"bodyText: no body")
 
 object Response:
-  /** The out-of-the-box default headers applied to every response. */
-  private val initialDefaultHeaders = Seq(
-    "Server"        -> "Apion",
-    "Cache-Control" -> "no-store, no-cache, must-revalidate, max-age=0",
-    "Pragma"        -> "no-cache",
-    "Expires"       -> "0",
-    "X-Powered-By"  -> "Apion",
-  )
-
-  // Global configuration for default headers
-  private var defaultHeaders = initialDefaultHeaders
-
-  /** Configure global default headers. Any header whose name matches an existing
-    * default (case-insensitively) replaces it, so callers can override built-ins
-    * such as `Server` without producing duplicates.
-    * @param headers
-    *   Headers to set or override globally
-    */
-  def configure(headers: Seq[(String, String)]): Unit =
-    defaultHeaders = headers.foldLeft(defaultHeaders) { (acc, header) =>
-      acc.filterNot(_._1.equalsIgnoreCase(header._1)) :+ header
-    }
-
-  /** Reset default headers to their original out-of-the-box state. */
-  def resetDefaultHeaders(): Unit =
-    defaultHeaders = initialDefaultHeaders
-
   /** Create a streaming response */
   def stream(
       stream: ReadableStream,
@@ -54,18 +27,19 @@ object Response:
     // Don't set Content-Length for streams
     Response(
       status = status,
-      headers = ResponseHeaders(standardHeaders.appendedAll(additionalHeaders)),
+      headers = ResponseHeaders(additionalHeaders),
       body = ReadableStreamBody(stream),
     )
   }
 
   def noContent(additionalHeaders: Seq[(String, String)] = Nil): Response = Response(
     status = 204,
-    headers = ResponseHeaders(standardHeaders.appendedAll(additionalHeaders)),
+    headers = ResponseHeaders(additionalHeaders),
     body = EmptyBody,
   )
 
-  /** Create a JSON response with standard headers
+  /** Create a JSON response (Content-Type and Content-Length set; server default
+    * headers are applied later at the send boundary)
     * @param data
     *   Data to be JSON encoded
     * @param status
@@ -85,15 +59,17 @@ object Response:
 
     Response(
       status = status,
-      headers =
-        ResponseHeaders(standardHeaders
-          .appended("Content-Type" -> s"application/json; charset=$encoding")
-          .appended("Content-Length" -> buffer.length.toString)
-          .appendedAll(additionalHeaders)),
+      headers = ResponseHeaders(
+        Seq(
+          "Content-Type"   -> s"application/json; charset=$encoding",
+          "Content-Length" -> buffer.length.toString,
+        ) ++ additionalHeaders,
+      ),
       body = StringBody(text, buffer),
     )
 
-  /** Create a plain text response with standard headers
+  /** Create a plain text response (Content-Type and Content-Length set; server
+    * default headers are applied later at the send boundary)
     * @param content
     *   Text content
     * @param status
@@ -111,17 +87,17 @@ object Response:
 
     Response(
       status = status,
-      headers =
-        ResponseHeaders(
-          standardHeaders
-            .appended("Content-Type" -> s"text/plain; charset=$encoding")
-            .appended("Content-Length" -> buffer.length.toString)
-            .appendedAll(additionalHeaders),
-        ),
+      headers = ResponseHeaders(
+        Seq(
+          "Content-Type"   -> s"text/plain; charset=$encoding",
+          "Content-Length" -> buffer.length.toString,
+        ) ++ additionalHeaders,
+      ),
       body = StringBody(content, buffer),
     )
 
-  /** Create a binary response with standard headers
+  /** Create a binary response (Content-Type and Content-Length set; server default
+    * headers are applied later at the send boundary)
     *
     * @param content
     *   Binary content
@@ -137,26 +113,11 @@ object Response:
   ): Response =
     Response(
       status = status,
-      headers =
-        ResponseHeaders(
-          standardHeaders
-            .appended("Content-Type" -> "application/octet-stream")
-            .appended("Content-Length" -> content.length.toString)
-            .appendedAll(additionalHeaders),
-        ),
+      headers = ResponseHeaders(
+        Seq(
+          "Content-Type"   -> "application/octet-stream",
+          "Content-Length" -> content.length.toString,
+        ) ++ additionalHeaders,
+      ),
       body = BufferBody(content),
     )
-
-  /** Generate standard HTTP response headers Includes common headers like Date, Server, Cache-Control
-    */
-  private def standardHeaders: Seq[(String, String)] = {
-    import java.time.{ZonedDateTime, ZoneOffset}
-    import java.time.format.DateTimeFormatter
-    import java.util.Locale
-
-    val dateFormatter = DateTimeFormatter.RFC_1123_DATE_TIME
-      .withLocale(Locale.CANADA)
-      .withZone(ZoneOffset.UTC)
-
-    defaultHeaders :+ ("Date" -> dateFormatter.format(ZonedDateTime.now(ZoneOffset.UTC)))
-  }

@@ -36,13 +36,18 @@ server.get("/users/:userId/posts/:postId", request => {
 
 ## Wildcards
 
-Use `*` for catch-all segments:
+`*` matches exactly one path segment:
 
 ```scala
-server.get("/files/*", request => {
-  // Matches /files/foo, /files/foo/bar, etc.
-  StaticMiddleware("uploads")(request)
-})
+server.get("/files/*", request => "matched one segment".asText)
+// Matches /files/report — but not /files/2024/report
+```
+
+To serve everything under a prefix (at any depth), mount path-scoped middleware
+instead of a wildcard route:
+
+```scala
+server.use("/files", StaticMiddleware("uploads"))
 ```
 
 ## Multiple Handlers Per Route
@@ -57,7 +62,10 @@ server.get("/admin/users",
 )
 ```
 
-If any handler returns `Complete`, `Fail`, or `Skip`, the chain stops.
+Handlers run in order: `Continue` passes the (possibly modified) request to the next
+handler, and `Skip` moves to the next handler unchanged. `Complete` ends the request
+and `Fail` diverts to the error handlers — both stop the chain. If every handler
+skips, routing continues to the next matching route.
 
 ## Subrouters
 
@@ -126,14 +134,17 @@ server.use("/assets", StaticMiddleware("public/assets"))
 
 ## Route Matching
 
-Routes are matched by splitting paths into segments:
+Paths are split into segments and matched left to right:
 
-1. Static segments are matched literally (`/users` matches `/users`)
-2. Parameter segments (`:name`) match any single segment
-3. Wildcard (`*`) matches remaining segments
-4. Static segments take priority over parameter segments
+1. Static segments match literally (`/users` matches `/users`)
+2. Parameter segments (`:name`) capture any single segment
+3. A wildcard (`*`) matches any single segment
 
-Route patterns are compiled once at server startup for efficient matching.
+The router is an **ordered pipeline**: entries are tried in the order you register
+them, and the first one that fully matches and returns a response wins. There is no
+static-over-parameter precedence, so register more specific routes first. Paths are
+parsed into segments once at registration; matching itself is a linear walk, not a
+compiled dispatch tree.
 
 ## Global Middleware
 

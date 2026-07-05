@@ -161,12 +161,13 @@ def handler(request: Request): Future[Result] = {
   val method = request.method
   val headers = request.headers
   val params = request.params
-  val query = request.query
-  
-  // Get typed body from context
+  val page = request.queryParam("page")     // first value, if present: Option[String]
+  val tags = request.query.getOrElse("tag", Nil) // all values for a repeated key: Seq[String]
+
+  // Get typed body
   request.json[User].flatMap {
     case Some(user) => // Handle user data
-    case _ => request.failValidation("Invalid body")
+    case _ => failValidation("Invalid body")
   }
 }
 ```
@@ -196,15 +197,17 @@ ServerError                      // 500 Internal Error
 Type-safe error propagation:
 
 ```scala
-sealed trait ServerError extends RuntimeException
-case class ValidationError(msg: String) extends ServerError
-case class AuthError(msg: String) extends ServerError
-case class NotFoundError(msg: String) extends ServerError
+trait ServerError extends Throwable:
+  def message: String
+  def toResponse: Response          // each error renders itself
+case class ValidationError(message: String) extends ServerError
+case class AuthError(message: String) extends ServerError
+case class NotFoundError(message: String) extends ServerError
 
-// In handlers
-request.failValidation("Invalid input")
-request.failAuth("Unauthorized")
-request.failNotFound("Not found")
+// In handlers — these return a failed Result you can return directly:
+failValidation("Invalid input")
+failAuth("Unauthorized")
+failNotFound("Not found")
 ```
 
 ## Additional Features

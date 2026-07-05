@@ -21,27 +21,37 @@ A lightweight, Express-inspired API server framework for Scala.js, providing a f
 
 ### Handler Type
 ```scala
-sealed trait ServerError extends Throwable
-case class ValidationError(msg: String) extends ServerError
-case class AuthError(msg: String) extends ServerError
-case class NotFoundError(msg: String) extends ServerError
+trait ServerError extends Throwable:
+  def message: String
+  def toResponse: Response          // each error renders itself
+case class ValidationError(message: String) extends ServerError
+case class AuthError(message: String) extends ServerError
+case class NotFoundError(message: String) extends ServerError
 
-type ErrorHandler = ServerError => Response
-
+// What a single handler returns:
 sealed trait Result
 case class Continue(request: Request) extends Result
 case class Complete(response: Response) extends Result
-case class Fail(error: ServerError) extends HandlerResult
+case class Fail(error: ServerError) extends Result
 case object Skip extends Result
 
 type Handler = Request => Future[Result]
+
+// An error handler is just a handler with the current error in hand:
+type ErrorHandler = (ServerError, Request) => Future[Result]
 ```
 
 Return values signify:
-- Skip: Try next route
-- Continue(Request): Continue with modified request
-- Complete(Response): End processing and send response
-- Fail(ServerError): propagate error
+- Skip: decline; try the next entry in the pipeline
+- Continue(Request): proceed with a (possibly modified) request
+- Complete(Response): finish and send this response
+- Fail(ServerError): raise an error, diverting to the error handlers
+
+A `Handler` describes one step. Running a whole `Router` yields an internal
+`Outcome` — either `Handled(request, response)` (the request is carried out so its
+finalizers can run) or `Missed` (nothing matched; the server sends 404). `Outcome`
+is deliberately separate from `Result`: handlers speak Continue/Complete/Fail/Skip,
+the router as a whole reports Handled/Missed.
 
 ### Server Configuration
 Fully chainable API supporting:
@@ -78,42 +88,51 @@ Response contains:
 ### Routing System
 
 #### Route Matching Implementation
-Routes are compiled during server setup into an efficient matching structure:
+A router holds an **ordered pipeline** of entries — middleware, routes, endpoints,
+sub-routers, and error handlers — in registration order (Express-style). Handling a
+request walks the pipeline in that order; there is no separate compiled dispatch
+tree, because middleware and routes are interleaved and their relative order is
+significant.
 
-Internal representation:
+Each registered path is parsed **once, at registration time**, into a list of
+segments; matching is then a linear, segment-wise comparison against the request
+path:
+
 ```scala
-case class RoutePattern(
-  segments: List[Segment],
-  handler: Handler
-)
-
-sealed trait Segment
-case class StaticSegment(value: String) extends Segment  // Fast exact matches
-case class ParamSegment(name: String) extends Segment    // Named parameters
-case object WildcardSegment extends Segment             // Wildcards
+sealed trait RouteSegment
+case class StaticSegment(value: String) extends RouteSegment  // exact match
+case class ParamSegment(name: String) extends RouteSegment    // captures one segment
+case object WildcardSegment extends RouteSegment              // matches one segment
 ```
 
-Matching strategy:
-- Pre-compiled patterns for performance
-- Static segments matched first (fastest)
-- Parameter extraction in single pass
-- Early exit on non-matches
-- Efficient parameter storage
+Matching behaviour:
+- Segments are compared left to right; a static segment must match exactly, a
+  parameter segment captures the corresponding path segment, a wildcard matches any
+  single segment.
+- Endpoints require a full match (all segments consumed); sub-routers and
+  path-scoped middleware match a prefix and pass the remainder down.
+- Paths are normalised by dropping empty segments, so `/users` and `/users/` are
+  equivalent.
+- The `*` method matches any HTTP method (`all`).
 
 Features:
 - Path parameter extraction
-- Query string parsing
-- Route grouping
-- Path prefixing
-- HTTP method handling
-- Wildcard support
+- Query string parsing (multi-valued)
+- Route grouping and sub-router mounting (including multi-segment mount paths)
+- Path prefixing with accumulated `basePath`
+- HTTP method handling (GET/POST/PUT/DELETE/PATCH/HEAD/OPTIONS/ALL)
+- Single-segment wildcards
+
+Note: this is a linear pipeline, not a radix/trie router. For the route counts a
+typical service registers, the cost is dominated by middleware anyway; a compiled
+index would be a future optimisation, not a current claim.
 
 ### Type Safety Features
-- Compile-time route validation
-- Type-safe body parsing
-- Header validation
-- Response type checking
-- Error type handling
+- Type-safe request extension context via typed keys (`TypedKey[A]` / `Context`) —
+  no stringly-typed `Map[String, Any]` casts
+- Type-safe body parsing (`request.json[T]`)
+- Typed path/query parameter access
+- Typed error propagation (`ServerError` subtypes render themselves)
 
 ### Error Handling
 - Error boundary middleware
@@ -131,11 +150,12 @@ Features:
 - Chained processing
 
 ### Performance Considerations
-- Minimal object creation
-- Efficient route matching
-- Fast middleware composition
-- Lightweight request context
-- Smart path parameter extraction
+- Immutable request threaded through the pipeline; the streamed body is memoised
+  once on the connection, so `copy`-derived requests never re-read it
+- Linear pipeline walk (see Route Matching Implementation); paths parsed once at
+  registration
+- Lightweight, immutable request-extension context keyed by identity
+- Scala.js dead-code elimination keeps unused middleware out of the final bundle
 
 ## Usage Patterns
 
@@ -182,63 +202,64 @@ val server = Server()
 ## Request Flow and Handler Results
 
 ### Request State Management
-- Router maintains mutable reference to current request state
-- Request objects themselves are immutable
-- Each handler receives latest request state
-- When handler returns Some(newRequest), router updates state
-- Subsequent handlers receive updated state
+- Request objects are immutable; there is no mutable "current request" reference.
+- The request is threaded functionally through the pipeline: a handler that returns
+  `Continue(req)` hands `req` to the next entry; `Skip` passes the request through
+  unchanged; `Complete`/`Fail` end the walk.
+- Middleware add data by returning `Continue(request.copy(...))` — e.g. attaching a
+  value under a `TypedKey`, or registering a finalizer that post-processes the
+  response on the way out.
 
 ## Pattern Matching System
 
 ### Route Pattern Structure
 ```scala
-sealed trait PathSegment
-case class StaticSegment(value: String) extends PathSegment    
-case class ParamSegment(name: String) extends PathSegment      
-case class WildcardSegment() extends PathSegment              
+sealed trait RouteSegment
+case class StaticSegment(value: String) extends RouteSegment
+case class ParamSegment(name: String) extends RouteSegment
+case object WildcardSegment extends RouteSegment
 ```
 
-### Route Compilation
-- Split path into segments
-- Convert to pattern matching tree
-- Store param names for extraction
-- Compile once at router creation
+### Route Parsing
+- Split the registered path into segments (empty segments dropped).
+- Classify each as static / parameter / wildcard.
+- Parse once, at registration time (not per request).
 
 ### Matching Process
-1. Split incoming path into segments
-2. Match against compiled patterns
-3. Extract parameters into Map
-4. Store in Request context
-5. None if no match found
+1. Split the incoming path into segments.
+2. Walk the router's ordered pipeline; for each route/endpoint/sub-router, compare
+   its segments against the path.
+3. Capture parameters into the request's `params` map.
+4. Endpoints require the whole path to be consumed; sub-routers and path-scoped
+   middleware match a prefix and pass the remainder down.
+5. If nothing in the pipeline produces a response, the outcome is `Missed`.
 
 ## Router Implementation
 
 ### Core Router Interface
 ```scala
-trait Router:
-  def use(path: String, router: Router): Router   // Mount subrouter
-  def use(handler: Handler): Router               // Add handler
-  def get(path: String, handler: Handler): Router // Add route handler
-  // other HTTP methods...
+class Router:
+  def use(path: String, router: Router): Router     // mount a sub-router
+  def use(handler: Handler): Router                 // add middleware
+  def use(path: String, handler: Handler): Router   // path-scoped middleware
+  def use(handler: ErrorHandler): Router            // add an error handler
+  def get(path: String, handlers: Handler*): Router // register a route (one or more handlers)
+  // post, put, delete, patch, head, options, all ...
 ```
 
 ### Request Processing Example
 ```scala
-// Initial request state
-var currentRequest = incomingRequest
-
-// Process handlers in order
-for 
-  handler <- handlers
-  result <- handler(currentRequest)
-yield result match
-  case Some(req: Request) => 
-    currentRequest = req  // Update state
-    continue           
-  case Some(res: Response) => 
-    return res        // End chain
-  case None =>
-    continue          // Try next handler
+// Walk the pipeline in order, threading the (immutable) request along.
+def walk(entries: List[Process], req: Request, path: List[String]): Future[Outcome] =
+  entries match
+    case Nil => Future.successful(Outcome.Missed)
+    case entry :: rest =>
+      run(entry, req, path).flatMap {
+        case Continue(next)     => walk(rest, next, path) // proceed with updated request
+        case Skip               => walk(rest, req, path)  // decline; try the next entry
+        case Complete(response) => Future.successful(Outcome.Handled(req, response))
+        case Fail(error)        => handleError(error, req)
+      }
 ```
 
 ### Example Router Structure

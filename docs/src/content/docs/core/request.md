@@ -14,8 +14,8 @@ case class Request(
   path: String,                          // URL path only
   headers: Map[String, String],          // Request headers (lowercase keys)
   params: Map[String, String],           // Path parameters from route
-  query: Map[String, String],            // Query string parameters
-  context: Map[String, Any],             // Extensible context for middleware data
+  query: Map[String, Seq[String]],       // Query string parameters (multi-valued)
+  context: Context,                      // Type-safe extensible context for middleware data
   rawRequest: ServerRequest,             // Underlying Node.js request object
   basePath: String,                      // Accumulated base path from subrouters
   finalizers: List[Finalizer],           // Response transformers (LIFO)
@@ -39,12 +39,16 @@ server.get("/users/:id/posts/:postId", request => {
 
 Access query string values:
 
+Query strings are multi-valued (repeated keys are preserved). Use `queryParam` for
+the first value, or index `query` for all values of a key:
+
 ```scala
-// GET /search?q=scala&page=2
+// GET /search?q=scala&page=2&tag=fp&tag=web
 server.get("/search", request => {
-  val query = request.query.getOrElse("q", "")
-  val page = request.query.getOrElse("page", "1").toInt
-  s"Searching '$query' page $page".asText
+  val q    = request.queryParam("q").getOrElse("")            // first value: Option[String]
+  val page = request.queryParam("page").map(_.toInt).getOrElse(1)
+  val tags = request.query.getOrElse("tag", Nil)              // all values: Seq[String]
+  s"Searching '$q' page $page tags ${tags.mkString(",")}".asText
 })
 ```
 
@@ -100,10 +104,13 @@ request.json[User].flatMap {
 
 URL-encoded form bodies (`application/x-www-form-urlencoded`):
 
+Form bodies are multi-valued too (`Map[String, Seq[String]]`); `formField` returns
+the first value of a field:
+
 ```scala
-request.form.flatMap { formData: Map[String, String] =>
-  val username = formData.getOrElse("username", "")
-  val password = formData.getOrElse("password", "")
+request.form.flatMap { formData: Map[String, Seq[String]] =>
+  val username = formData.get("username").flatMap(_.headOption).getOrElse("")
+  val password = formData.get("password").flatMap(_.headOption).getOrElse("")
   processLogin(username, password)
 }
 ```
@@ -113,9 +120,11 @@ request.form.flatMap { formData: Map[String, String] =>
 Configure maximum body size and read timeout:
 
 ```scala
-// Global defaults
-Request.maxBodySize = 50 * 1024 * 1024  // 50 MB (default)
-Request.bodyTimeout = 30000             // 30 seconds (default)
+// Per-server defaults via ServerConfig
+val server = Server(ServerConfig(
+  maxBodySize = 50 * 1024 * 1024,  // 50 MB (default)
+  bodyTimeout = 30000,             // 30 seconds (default)
+))
 ```
 
 For per-route limits, use `BodyLimitMiddleware`:
@@ -156,33 +165,37 @@ request.getJsonCookie[Settings]("prefs") // Parse JSON cookie
 
 ## Context
 
-The context is a `Map[String, Any]` used by middleware to pass data to downstream handlers:
+The context is a type-safe, immutable store (`Context`) that middleware use to pass
+data to downstream handlers. Values are keyed by a `TypedKey[A]`, so reads recover
+the value's type with no casting — define each key once and share it between the
+writer and the reader:
 
 ```scala
+// Define a key (typically a val in a companion object)
+val UserKey: TypedKey[User] = TypedKey("user")
+
 // Middleware adds data
 val withUser: Handler = request => {
   val user = lookupUser(request.params("id"))
   Future.successful(Continue(
-    request.copy(context = request.context + ("user" -> user))
+    request.copy(context = request.context.updated(UserKey, user))
   ))
 }
 
-// Handler reads it
-val handler: Handler = request => {
-  request.context.get("user") match {
-    case Some(user: User) => user.asJson
-    case _                => failNotFound("User not found")
+// Handler reads it — typed as Option[User], no cast needed
+val handler: Handler = request =>
+  request.context.get(UserKey) match {
+    case Some(user) => user.asJson
+    case None       => failNotFound("User not found")
   }
-}
 ```
 
-The `AuthMiddleware` stores an `Auth` object in context under the `"auth"` key:
+`AuthMiddleware` stores its `Auth` under `AuthMiddleware.authKey`:
 
 ```scala
-request.context.get("auth") match {
-  case Some(auth: AuthMiddleware.Auth) =>
-    println(s"User: ${auth.user}, Roles: ${auth.roles}")
-  case _ => // Not authenticated
+request.context.get(AuthMiddleware.authKey) match {
+  case Some(auth) => println(s"User: ${auth.user}, Roles: ${auth.roles}")
+  case None       => // Not authenticated
 }
 ```
 

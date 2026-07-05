@@ -4,8 +4,7 @@ import starlight from '@astrojs/starlight';
 
 // https://astro.build/config
 export default defineConfig({
-	site: 'https://edadma.github.io',
-	base: '/apion',
+	site: 'https://apion.edadma.dev',
 	integrations: [
 		starlight({
 			title: 'Apion',

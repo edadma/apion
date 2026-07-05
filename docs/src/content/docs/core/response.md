@@ -95,7 +95,11 @@ Headers are normalized with smart casing — `content-type` becomes `Content-Typ
 
 ### Default Headers
 
-Every response includes these headers automatically:
+Factory methods set only the response-specific headers (`Content-Type`,
+`Content-Length`). The server stamps its default headers — and a fresh `Date` — on
+every response as it's sent, without overwriting any header the response already set.
+
+By default these are:
 
 | Header | Value |
 |--------|-------|
@@ -106,16 +110,15 @@ Every response includes these headers automatically:
 | `X-Powered-By` | `Apion` |
 | `Date` | RFC 1123 formatted current time |
 
-Configure or override defaults:
+Defaults are per-server, configured on `ServerConfig` (no global mutable state):
 
 ```scala
-Response.configure(Seq(
-  "Server" -> "MyApp",
-  "X-Powered-By" -> "MyApp"
+val server = Server(ServerConfig(
+  defaultHeaders = Seq(
+    "Server"       -> "MyApp",
+    "X-Powered-By" -> "MyApp",
+  ),
 ))
-
-// Reset to defaults
-Response.resetDefaultHeaders()
 ```
 
 ## Cookies

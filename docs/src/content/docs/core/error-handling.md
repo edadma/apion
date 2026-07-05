@@ -10,6 +10,7 @@ Apion provides a sealed trait hierarchy for typed errors:
 ```scala
 trait ServerError extends Throwable {
   def message: String
+  def toResponse: Response   // how the error renders if no handler catches it
 }
 
 case class ValidationError(message: String) extends ServerError
@@ -99,9 +100,7 @@ server.use { (error: ServerError, _: Request) =>
     case e: ConflictError =>
       Map("error" -> "conflict", "message" -> e.message).asJson(409)
     case e: RateLimitExceeded =>
-      Response.json(Map("error" -> e.message), 429)
-        .withHeader("Retry-After", e.retryAfter.toString)
-        .pipe(r => Future.successful(Complete(r)))
+      Map("error" -> e.message).asJson(429).withHeader("Retry-After", e.retryAfter.toString)
     case _ => skip
   }
 }
@@ -115,9 +114,7 @@ Transform low-level errors into domain errors:
 server.use { (error: ServerError, _: Request) =>
   error match {
     case e: ValidationError =>
-      Future.successful(Fail(
-        DomainError(s"Validation failed: ${e.message}", "VALIDATION_001")
-      ))
+      Future.successful(Fail(ConflictError(s"Validation failed: ${e.message}")))
     case _ => skip
   }
 }

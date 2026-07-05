@@ -27,9 +27,11 @@ case object Skip extends Result
 Pass a (possibly modified) request to the next handler. This is how middleware works — it transforms the request and passes it along:
 
 ```scala
+val StartTimeKey: TypedKey[Long] = TypedKey("startTime")
+
 val addTimestamp: Handler = request =>
   Future.successful(Continue(
-    request.copy(context = request.context + ("startTime" -> System.currentTimeMillis()))
+    request.copy(context = request.context.updated(StartTimeKey, System.currentTimeMillis()))
   ))
 ```
 
@@ -83,7 +85,9 @@ server.use { (error: ServerError, request: Request) =>
 Apion provides three built-in error types:
 
 ```scala
-trait ServerError extends Throwable
+trait ServerError extends Throwable:
+  def message: String
+  def toResponse: Response   // how the error renders if no handler catches it
 
 case class ValidationError(message: String) extends ServerError
 case class AuthError(message: String) extends ServerError

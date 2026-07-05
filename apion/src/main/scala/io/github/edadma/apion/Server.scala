@@ -139,11 +139,8 @@ class Server(config: ServerConfig = ServerConfig()) {
 
     // Process the request through our router
     router(request).map {
-      case Complete(_)                          => sys.error("Complete should be transformed to InternalComplete")
-      case InternalComplete(finalReq, response) => sendResponse(finalReq, response)
-      case Skip                                 => sendResponse(request, Response.text("Not Found", 404))
-      case Continue(request) => sendResponse(request, Response.text("Internal Server Error - Unexpected Continue", 500))
-      case Fail(error)       => sendResponse(request, error.toResponse)
+      case Outcome.Handled(finalReq, response) => sendResponse(finalReq, response)
+      case Outcome.Missed                      => sendResponse(request, Response.text("Not Found", 404))
     }.recover {
       case e: Exception =>
         // Handle uncaught exceptions

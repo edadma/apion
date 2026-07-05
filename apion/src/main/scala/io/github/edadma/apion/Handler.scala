@@ -37,11 +37,13 @@ case class NotFoundError(message: String) extends ServerError {
   override def logLevel: LogLevel = LogLevel.INFO
 }
 
+/** The result an individual handler returns. What the router as a whole produces is
+  * an `Outcome`, not a `Result`.
+  */
 sealed trait Result
-case class Continue(request: Request)                                            extends Result
-case class Complete(response: Response)                                          extends Result
-case class Fail(error: ServerError)                                              extends Result
-case object Skip                                                                 extends Result
-private[apion] case class InternalComplete(request: Request, response: Response) extends Result
+case class Continue(request: Request)   extends Result
+case class Complete(response: Response) extends Result
+case class Fail(error: ServerError)     extends Result
+case object Skip                        extends Result
 
 type Handler = Request => Future[Result]

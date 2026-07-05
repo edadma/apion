@@ -15,9 +15,9 @@ class RouterEnhancementsTests extends AsyncBaseSpec {
     Request.fromServerRequest(req.asInstanceOf[ServerRequest])
   }
 
-  private def bodyOf(result: Result): String = result match
-    case InternalComplete(_, response) => response.bodyText
-    case other                         => fail(s"Expected a completed response, got $other")
+  private def bodyOf(outcome: Outcome): String = outcome match
+    case Outcome.Handled(_, response) => response.bodyText
+    case Outcome.Missed               => fail("Expected a completed response, got Missed")
 
   "Multi-segment sub-router mounts" - {
     // Regression: the old router only stripped a single segment of the mount path,
@@ -40,7 +40,7 @@ class RouterEnhancementsTests extends AsyncBaseSpec {
       val api = new Router().get("/users", _ => "users".asText)
       val app = new Router().use("/api/v1", api)
 
-      app(request("GET", "/api/v2/users")).map(_ shouldBe Skip)
+      app(request("GET", "/api/v2/users")).map(_ shouldBe Outcome.Missed)
     }
   }
 
@@ -54,7 +54,7 @@ class RouterEnhancementsTests extends AsyncBaseSpec {
 
     "should not match when there are extra segments beyond the wildcard" in {
       val router = new Router().get("/files/*", _ => "file".asText)
-      router(request("GET", "/files/a/b")).map(_ shouldBe Skip)
+      router(request("GET", "/files/a/b")).map(_ shouldBe Outcome.Missed)
     }
   }
 

@@ -15,6 +15,17 @@ private case class Endpoint(method: String, segments: List[RouteSegment], handle
 private case class SubRouter(segments: List[RouteSegment], mount: String, router: Router)          extends Process
 private case class ErrorHandler(handler: (ServerError, Request) => Future[Result])    extends Process
 
+/** The result of running a router pipeline.
+  *
+  * This is deliberately distinct from [[Result]] (what an individual handler returns):
+  * a handler says Continue/Complete/Fail/Skip, but the router as a whole either
+  * produces a finished response — carrying the final request, whose finalizers the
+  * Server still needs to run — or matches nothing.
+  */
+private[apion] enum Outcome:
+  case Handled(request: Request, response: Response)
+  case Missed
+
 object Router:
   /** Split a path into segments, dropping empty segments so that leading, trailing
     * and doubled slashes are all normalised away (`/users/` and `/users` are equal).
@@ -38,17 +49,20 @@ object Router:
   * turn resolve, decline, or transform the error into another. If no handler
   * resolves it, the error renders itself via `ServerError.toResponse`.
   *
-  * A `Router` is itself a `Handler`, so mounting one as a sub-router is just adding
-  * a handler that runs its own pipeline against the remaining path.
+  * Running a router yields an [[Outcome]], not a [[Result]]: handlers speak in
+  * Continue/Complete/Fail/Skip, the router as a whole reports Handled/Missed.
   */
-class Router extends Handler:
+class Router:
   private var processes: Vector[Process] = Vector.empty
 
   private def add(p: Process): Router =
     processes = processes :+ p
     this
 
-  def apply(request: Request): Future[Result] =
+  /** Run the pipeline against a request. A sub-router runs its own pipeline the same
+    * way against the remaining path.
+    */
+  def apply(request: Request): Future[Outcome] =
     walk(processes.toList, request, Router.splitPath(request.path))
 
   // -- Registration -----------------------------------------------------------
@@ -74,9 +88,9 @@ class Router extends Handler:
 
   // -- Processing -------------------------------------------------------------
 
-  private def walk(ps: List[Process], req: Request, path: List[String]): Future[Result] =
+  private def walk(ps: List[Process], req: Request, path: List[String]): Future[Outcome] =
     ps match
-      case Nil => Future.successful(Skip)
+      case Nil => Future.successful(Outcome.Missed)
       case p :: rest =>
         p match
           case Middleware(handler) =>
@@ -99,8 +113,8 @@ class Router extends Handler:
               matchFull(segments, path) match
                 case Some(params) =>
                   runHandlers(handlers, req.copy(params = req.params ++ params)).flatMap {
-                    case Skip  => walk(rest, req, path)
-                    case other => Future.successful(other)
+                    case Outcome.Missed => walk(rest, req, path) // all handlers skipped: try next
+                    case handled        => Future.successful(handled)
                   }
                 case None => walk(rest, req, path)
 
@@ -112,8 +126,8 @@ class Router extends Handler:
                   params = req.params ++ params,
                   basePath = req.basePath + mount,
                 )).flatMap {
-                  case Skip  => walk(rest, req, path)
-                  case other => Future.successful(other)
+                  case Outcome.Missed => walk(rest, req, path) // sub-router matched prefix but no route inside
+                  case handled        => Future.successful(handled)
                 }
               case None => walk(rest, req, path)
 
@@ -121,44 +135,41 @@ class Router extends Handler:
             // Error handlers are inert unless an error is being processed.
             walk(rest, req, path)
 
-  /** Continuation applied to the result of a middleware/route handler. */
-  private def step(rest: List[Process], req: Request, path: List[String]): Result => Future[Result] =
-    case Continue(newReq)         => walk(rest, newReq, path)
-    case Skip                     => walk(rest, req, path)
-    case Complete(response)       => Future.successful(InternalComplete(req, response))
-    case InternalComplete(r, res) => Future.successful(InternalComplete(r, res))
-    case Fail(error)              => handleError(error, req)
+  /** Continuation applied to the result a middleware/route handler returned. */
+  private def step(rest: List[Process], req: Request, path: List[String]): Result => Future[Outcome] =
+    case Continue(newReq)   => walk(rest, newReq, path)
+    case Skip               => walk(rest, req, path)
+    case Complete(response) => Future.successful(Outcome.Handled(req, response))
+    case Fail(error)        => handleError(error, req)
 
-  private def runHandlers(hs: List[Handler], req: Request): Future[Result] =
+  private def runHandlers(hs: List[Handler], req: Request): Future[Outcome] =
     hs match
       case handler :: next =>
         handler(req).flatMap {
-          case Continue(newReq)         => runHandlers(next, newReq)
-          case Skip                     => runHandlers(next, req)
-          case Complete(response)       => Future.successful(InternalComplete(req, response))
-          case InternalComplete(r, res) => Future.successful(InternalComplete(r, res))
-          case Fail(error)              => handleError(error, req)
+          case Continue(newReq)   => runHandlers(next, newReq)
+          case Skip               => runHandlers(next, req)
+          case Complete(response) => Future.successful(Outcome.Handled(req, response))
+          case Fail(error)        => handleError(error, req)
         }
-      case Nil => Future.successful(Skip)
+      case Nil => Future.successful(Outcome.Missed)
 
   /** Divert to the registered error handlers, tried in registration order from the
     * top. A handler may resolve the error (`Complete`), decline it (`Skip`), or
     * transform it into another error (`Fail`), which restarts the search. If none
     * resolves it, the error renders itself.
     */
-  private def handleError(error: ServerError, req: Request): Future[Result] =
-    def tryHandlers(ps: List[Process]): Future[Result] =
+  private def handleError(error: ServerError, req: Request): Future[Outcome] =
+    def tryHandlers(ps: List[Process]): Future[Outcome] =
       ps match
         case ErrorHandler(handler) :: rest =>
           handler(error, req).flatMap {
-            case Skip                     => tryHandlers(rest)
-            case Complete(response)       => Future.successful(InternalComplete(req, response))
-            case InternalComplete(r, res) => Future.successful(InternalComplete(r, res))
-            case Fail(next)               => handleError(next, req)
-            case Continue(_)              => Future.failed(new Exception("Continue is not a valid result from an error handler"))
+            case Skip               => tryHandlers(rest)
+            case Complete(response) => Future.successful(Outcome.Handled(req, response))
+            case Fail(next)         => handleError(next, req)
+            case Continue(_)        => Future.failed(new Exception("Continue is not a valid result from an error handler"))
           }
         case _ :: rest => tryHandlers(rest)
-        case Nil       => Future.successful(InternalComplete(req, error.toResponse))
+        case Nil       => Future.successful(Outcome.Handled(req, error.toResponse))
 
     tryHandlers(processes.toList)
 

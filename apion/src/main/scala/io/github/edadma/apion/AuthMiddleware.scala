@@ -101,12 +101,21 @@ object AuthMiddleware:
     )
     JWT.sign(payload, config.secretKey)
 
+  /** Whether a request path falls under one of the configured exclude prefixes.
+    *
+    * Matching is segment-aware and operates on the path only (the query string is
+    * ignored): `/public` excludes `/public` and `/public/hello` but not
+    * `/publicfoo`. This is what prevents an exclude prefix from being bypassed — or,
+    * worse, from accidentally excluding an unrelated path that merely shares a
+    * character prefix.
+    */
+  private[apion] def isExcluded(path: String, excludePaths: Set[String]): Boolean =
+    val segments = Router.splitPath(path)
+    excludePaths.exists(prefix => segments.startsWith(Router.splitPath(prefix)))
+
   /** Main authentication middleware */
   def apply(config: Config, tokenStore: TokenStore = new InMemoryTokenStore()): Handler = request =>
-    // Check if path should bypass auth
-    val shouldExclude = config.excludePaths.exists(path => request.url.startsWith(path))
-
-    if shouldExclude then skip
+    if isExcluded(request.path, config.excludePaths) then skip
     else
       def handleAuthFailure(
           requireAuth: Boolean,

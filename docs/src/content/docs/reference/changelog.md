@@ -3,7 +3,7 @@ title: Changelog
 description: Version history and release notes
 ---
 
-## Unreleased
+## 0.2.0 — July 4, 2026
 
 Hardening pass with breaking API changes (no backward compatibility).
 

@@ -3,6 +3,11 @@ package io.github.edadma.apion
 import scala.concurrent.Future
 
 object LoggingMiddleware:
+  /** Context keys for the timing/format/handler data carried to the finalizer. */
+  val startTimeKey: TypedKey[Long]              = TypedKey("logging-start-time")
+  val formatKey: TypedKey[String]               = TypedKey("logging-format")
+  val handlerKey: TypedKey[String => Unit]      = TypedKey("logging-handler")
+
   // Public interface for formatting logs (needed for testing)
   def formatRequestLog(format: String, req: Request, startTime: Long, res: Response): String =
     logger.debug(s"Formatting log with response headers: ${res.headers}") // Debug headers
@@ -104,10 +109,10 @@ object LoggingMiddleware:
       else
         // Store timing info in request context
         val reqWithTiming = request.copy(
-          context = request.context +
-            ("logging-start-time" -> startTime) +
-            ("logging-format"     -> opts.format) +
-            ("logging-handler"    -> opts.handler),
+          context = request.context
+            .updated(startTimeKey, startTime)
+            .updated(formatKey, opts.format)
+            .updated(handlerKey, opts.handler),
         )
         debug("Added timing info to request context")
 

@@ -17,7 +17,7 @@ case class Request(
     headers: Map[String, String] = Map(),
     params: Map[String, String] = Map(),
     query: Map[String, Seq[String]] = Map(),
-    context: Map[String, Any] = Map(),
+    context: Context = Context.empty,
     rawRequest: ServerRequest,
     basePath: String = "", // Track the accumulated base path
     finalizers: List[Finalizer] = Nil,
@@ -38,11 +38,11 @@ case class Request(
   // Raw headers exactly as received (preserves case and duplicates)
   def rawHeaders: List[String] = rawRequest.rawHeaders.toList
 
-  /** Maximum body size in bytes. Default 50MB. Override via Request.maxBodySize. */
-  private val maxBody: Long = context.get("maxBodySize").map(_.asInstanceOf[Long]).getOrElse(Request.maxBodySize)
+  /** Maximum body size in bytes. Default 50MB. Override per-request via Request.maxBodySizeKey. */
+  private val maxBody: Long = context.get(Request.maxBodySizeKey).getOrElse(Request.maxBodySize)
 
-  /** Read timeout in milliseconds. Default 30s. Override via Request.bodyTimeout. */
-  private val bodyTimeoutMs: Int = context.get("bodyTimeout").map(_.asInstanceOf[Int]).getOrElse(Request.bodyTimeout)
+  /** Read timeout in milliseconds. Default 30s. Override per-request via Request.bodyTimeoutKey. */
+  private val bodyTimeoutMs: Int = context.get(Request.bodyTimeoutKey).getOrElse(Request.bodyTimeout)
 
   /** Raw request body as a Buffer.
     *
@@ -152,6 +152,12 @@ object Request {
 
   /** Default body read timeout: 30 seconds */
   var bodyTimeout: Int = 30000
+
+  /** Per-request override of the maximum body size, set by BodyLimitMiddleware. */
+  val maxBodySizeKey: TypedKey[Long] = TypedKey("maxBodySize")
+
+  /** Per-request override of the body read timeout, set by BodyLimitMiddleware. */
+  val bodyTimeoutKey: TypedKey[Int] = TypedKey("bodyTimeout")
 
   def fromServerRequest(req: ServerRequest): Request = {
     val (path, query) = parseUrl(req.url)

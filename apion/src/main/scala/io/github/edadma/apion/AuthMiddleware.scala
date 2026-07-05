@@ -55,6 +55,9 @@ object AuthMiddleware:
     def hasRequiredRoles(requiredRoles: Set[String]): Boolean =
       requiredRoles.isEmpty || roles.intersect(requiredRoles).nonEmpty
 
+  /** Context key under which a successful authentication stores its [[Auth]]. */
+  val authKey: TypedKey[Auth] = TypedKey("auth")
+
   /** Error responses for authentication failures */
   case class ErrorResponse(
       error: String,
@@ -168,7 +171,7 @@ object AuthMiddleware:
                     // Continue with authenticated request
                     Future.successful(Continue(
                       request
-                        .copy(context = request.context + ("auth" -> Auth(payload.sub, payload.roles)))
+                        .copy(context = request.context.updated(authKey, Auth(payload.sub, payload.roles)))
                         .addFinalizer(authFinalizer),
                     ))
                   else

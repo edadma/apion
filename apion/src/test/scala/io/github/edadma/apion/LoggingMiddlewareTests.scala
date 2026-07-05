@@ -25,9 +25,9 @@ class LoggingMiddlewareTests extends AsyncBaseSpec:
   def createLoggingHandler(): Handler = request =>
     // Get stored timing info from context
     (for
-      startTime <- request.context.get("logging-start-time").map(_.asInstanceOf[Long])
-      format    <- request.context.get("logging-format").map(_.asInstanceOf[String])
-      handler   <- request.context.get("logging-handler").map(_.asInstanceOf[String => Unit])
+      startTime <- request.context.get(LoggingMiddleware.startTimeKey)
+      format    <- request.context.get(LoggingMiddleware.formatKey)
+      handler   <- request.context.get(LoggingMiddleware.handlerKey)
     yield (startTime, format, handler)) match
       case Some((startTime, format, handler)) =>
         val logMsg = LoggingMiddleware.formatRequestLog(format, request, startTime, testResponse)

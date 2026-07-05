@@ -11,7 +11,7 @@ object BodyLimitMiddleware:
    */
   def apply(maxBytes: Long): Handler = request =>
     Future.successful(Continue(request.copy(
-      context = request.context + ("maxBodySize" -> maxBytes),
+      context = request.context.updated(Request.maxBodySizeKey, maxBytes),
     )))
 
   /**
@@ -21,5 +21,7 @@ object BodyLimitMiddleware:
    */
   def apply(maxBytes: Long, timeoutMs: Int): Handler = request =>
     Future.successful(Continue(request.copy(
-      context = request.context + ("maxBodySize" -> maxBytes) + ("bodyTimeout" -> timeoutMs),
+      context = request.context
+        .updated(Request.maxBodySizeKey, maxBytes)
+        .updated(Request.bodyTimeoutKey, timeoutMs),
     )))

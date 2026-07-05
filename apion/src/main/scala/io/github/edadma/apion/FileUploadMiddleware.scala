@@ -7,6 +7,9 @@ import io.github.edadma.nodejs.*
 /** File Upload middleware for handling multipart/form-data uploads. */
 object FileUploadMiddleware {
 
+  /** Context key under which parsed uploads are stored, keyed by form field name. */
+  val filesKey: TypedKey[Map[String, List[UploadedFile]]] = TypedKey("files")
+
   private def isMultipart(request: Request): Boolean =
     request.header("content-type").exists(_.toLowerCase.startsWith("multipart/form-data"))
 
@@ -22,7 +25,7 @@ object FileUploadMiddleware {
         case Some(boundary) =>
           processFileUpload(request, options, boundary).map { files =>
             Continue(request.copy(
-              context = request.context + ("files" -> files),
+              context = request.context.updated(FileUploadMiddleware.filesKey, files),
             ))
           }.recover { case e: Throwable =>
             Fail(FileUploadSystemError(e))
@@ -89,8 +92,7 @@ object FileUploadMiddleware {
 /** Request extensions for file upload operations. */
 implicit class RequestFileUploadOps(val request: Request) extends FileUploadOps {
   private def getFiles = request.context
-    .get("files")
-    .map(_.asInstanceOf[Map[String, List[UploadedFile]]])
+    .get(FileUploadMiddleware.filesKey)
     .getOrElse(Map.empty)
 
   def file(fieldname: String): Future[Option[UploadedFile]] =

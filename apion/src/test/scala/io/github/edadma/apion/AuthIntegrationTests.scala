@@ -45,11 +45,9 @@ class AuthIntegrationTests extends AsyncBaseSpec with BeforeAndAfterAll {
       .get(
         "/secure/data",
         request => {
-          request.context.get("auth") match {
-            case Some(auth: Auth) =>
+          request.context.get(authKey) match {
+            case Some(auth) =>
               SecureData(s"Secret data for ${auth.user}").asJson
-            case Some(_) =>
-              "Invalid auth context type".asText(500)
             case None =>
               "No auth context found".asText(500)
           }
@@ -58,11 +56,9 @@ class AuthIntegrationTests extends AsyncBaseSpec with BeforeAndAfterAll {
       .post(
         "/secure/data",
         request => {
-          request.context.get("auth") match {
-            case Some(auth: Auth) =>
+          request.context.get(authKey) match {
+            case Some(auth) =>
               SecureData(s"Secret data for ${auth.user}").asJson
-            case Some(_) =>
-              "Invalid auth context type".asText(500)
             case None =>
               "No auth context found".asText(500)
           }
@@ -72,13 +68,11 @@ class AuthIntegrationTests extends AsyncBaseSpec with BeforeAndAfterAll {
       .get(
         "/secure/admin",
         request => {
-          request.context.get("auth") match {
-            case Some(auth: Auth) if auth.hasRequiredRoles(Set("admin")) =>
+          request.context.get(authKey) match {
+            case Some(auth) if auth.hasRequiredRoles(Set("admin")) =>
               SecureData("Admin console").asJson
-            case Some(auth: Auth) =>
-              "Insufficient permissions".asText(403)
             case Some(_) =>
-              "Invalid auth context type".asText(500)
+              "Insufficient permissions".asText(403)
             case None =>
               "No auth context found".asText(500)
           }

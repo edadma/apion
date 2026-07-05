@@ -69,6 +69,12 @@ object CookieMiddleware:
       }
   }
 
+  /** Context key under which the configured cookie signer is stored. */
+  val signerKey: TypedKey[CookieSigner] = TypedKey("cookieSigner")
+
+  /** Context key under which the JSON cookie parser is stored. */
+  val jsonParserKey: TypedKey[JsonCookieParser] = TypedKey("jsonCookieParser")
+
   /** Create cookie management middleware with default options */
   def apply(options: Options = Options()): Handler = request => {
     // Parse cookies from request headers
@@ -86,9 +92,9 @@ object CookieMiddleware:
     // Add parsed cookies and utilities to request
     val reqWithCookies = request.copy(
       cookies = cookies,
-      context = request.context +
-        ("cookieSigner"     -> signer) +
-        ("jsonCookieParser" -> jsonParser),
+      context = request.context
+        .updated(signerKey, signer)
+        .updated(jsonParserKey, jsonParser),
     )
 
     Future.successful(Continue(reqWithCookies))
@@ -99,22 +105,19 @@ object CookieMiddleware:
     /** Get a signed cookie value */
     def getSignedCookie(name: String): Option[String] =
       for {
-        signer <- request.context.get("cookieSigner").map(_.asInstanceOf[CookieSigner])
+        signer <- request.context.get(signerKey)
         signed <- request.cookie(name)
         value  <- signer.unsign(signed)
       } yield value
 
     /** Get a JSON cookie value */
     def getJsonCookie[A](name: String)(using decoder: JsonDecoder[A]): Option[A] =
-      request.context.get("jsonCookieParser")
-        .map(_.asInstanceOf[JsonCookieParser])
-        .flatMap(_.parse[A](name))
+      request.context.get(jsonParserKey).flatMap(_.parse[A](name))
 
     /** Create a signed cookie to be used with Response.withCookie */
     def signCookie(name: String, value: String): Option[Cookie] =
-      request.context.get("cookieSigner").map { signer =>
-        val signed = signer.asInstanceOf[CookieSigner].sign(value)
-        Cookie(name, signed)
+      request.context.get(signerKey).map { signer =>
+        Cookie(name, signer.sign(value))
       }
 
   /** Common configurations */

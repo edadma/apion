@@ -8,7 +8,7 @@ Apion is a lightweight HTTP server framework for Scala.js that provides an Expre
 ## Why Apion?
 
 - **Express-like API** — Familiar chainable API for JavaScript/Node.js developers
-- **Type safety** — Compile-time validation with Scala's type system and zio-json
+- **Type safety** — Type-safe request handling with Scala's type system and zio-json, plus a typed request context (`TypedKey`, no stringly-typed casts)
 - **Immutable by design** — Pure functions with immutable request/response types
 - **Unified handler system** — Middleware, routes, and error handlers all share a single type
 - **Zero npm dependencies** — Pure Scala.js implementation running on Node.js

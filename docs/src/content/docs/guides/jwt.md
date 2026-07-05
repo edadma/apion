@@ -101,15 +101,18 @@ Build a custom auth flow using `JWT` directly:
 case class MyPayload(userId: String, tier: String, exp: Long)
   derives JsonEncoder, JsonDecoder
 
+val UserIdKey: TypedKey[String] = TypedKey("userId")
+val TierKey: TypedKey[String]   = TypedKey("tier")
+
 val customAuth: Handler = request =>
   request.header("authorization") match {
     case Some(h) if h.startsWith("Bearer ") =>
       JWT.verify[MyPayload](h.substring(7), "secret") match {
         case Right(payload) =>
           Future.successful(Continue(request.copy(
-            context = request.context +
-              ("userId" -> payload.userId) +
-              ("tier" -> payload.tier)
+            context = request.context
+              .updated(UserIdKey, payload.userId)
+              .updated(TierKey, payload.tier)
           )))
         case Left(err) =>
           failAuth(err.message)

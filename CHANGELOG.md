@@ -7,15 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Hardening pass. Contains breaking API changes (no backward compatibility).
+
 ### Added
+- Multi-valued query and form parsing (`Map[String, Seq[String]]`) with `queryParam` / `formField` first-value accessors
+- Type-safe request context via `TypedKey[A]` / `Context`, replacing the untyped `Map[String, Any]`
+- Per-server configuration via `ServerConfig` (default headers, body size, read timeout); `Server(config)`
+- Route helpers `head`, `options`, `all`, and single-segment `*` wildcard matching
 
 ### Fixed
+- `decodeURIComponent` corrupted multi-byte UTF-8 (decoded one char per `%xx` byte); now uses the JS runtime, with `+`-as-space handled for query/form
+- Request body could be re-read after `Request.copy` reset its promise; the body is now memoised on the connection and consumed once
+- Multiple `WWW-Authenticate` headers were overwritten (a typo in the multi-value header set)
+- `AuthMiddleware.excludePaths` bypass: matching is now segment-aware on `request.path` (was `url.startsWith`, which included the query string and matched character-prefixes like `/publicfoo` against `/public`)
+- Multi-segment sub-router mounts (`use("/api/v1", r)`) only stripped one segment
+- The router froze its route table on the first request, silently ignoring later registrations
+- Wildcard (`*`) routes never matched (the matcher had no wildcard case)
 
 ### Changed
+- Default response headers are applied per-server at the send boundary rather than baked into `Response` factories
+- The router is documented as the ordered pipeline it is (removed the "pre-compiled matching" framing)
 
 ### Removed
-
-### Deprecated
+- `Response.configure` / `Response.resetDefaultHeaders` and the global default-header var — configure via `ServerConfig`
+- Global mutable `Request.maxBodySize` / `Request.bodyTimeout` vars — now `val` fallbacks; set defaults via `ServerConfig`
+- `InternalComplete` from the public `Result` type (the router uses an internal `Outcome`)
 
 ## [0.1.0] - 2026-04-18
 

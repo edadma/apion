@@ -3,6 +3,34 @@ title: Changelog
 description: Version history and release notes
 ---
 
+## Unreleased
+
+Hardening pass with breaking API changes (no backward compatibility).
+
+### Added
+- Multi-valued query and form parsing (`Map[String, Seq[String]]`) with `queryParam` / `formField` accessors
+- Type-safe request context via `TypedKey` / `Context` (replaces `Map[String, Any]`)
+- Per-server configuration via `ServerConfig` (default headers, body size, timeout); `Server(config)`
+- `head`, `options`, `all` route helpers; single-segment `*` wildcard matching
+
+### Fixed
+- `decodeURIComponent` corrupted multi-byte UTF-8
+- Request body could be re-read after `Request.copy`; it is now consumed once per connection
+- Multiple `WWW-Authenticate` headers were overwritten
+- `AuthMiddleware.excludePaths` bypass — matching is now segment-aware on the path
+- Multi-segment sub-router mounts and wildcard routes now match correctly
+- The router no longer freezes its route table on the first request
+
+### Changed
+- Default headers applied per-server at the send boundary, not by `Response` factories
+
+### Removed
+- `Response.configure` / `resetDefaultHeaders` (use `ServerConfig`)
+- Global mutable `Request.maxBodySize` / `bodyTimeout` vars (use `ServerConfig`)
+- `InternalComplete` from the public `Result` type
+
+---
+
 ## 0.1.0 — April 18, 2026
 
 ### Added

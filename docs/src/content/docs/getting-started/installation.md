@@ -15,7 +15,7 @@ description: How to add Apion to your Scala.js project
 Add Apion to your `build.sbt`:
 
 ```scala
-libraryDependencies += "io.github.edadma" %%% "apion" % "0.2.0"
+libraryDependencies += "io.github.edadma" %%% "apion" % "0.2.1"
 ```
 
 ## SBT Project Setup
@@ -29,7 +29,7 @@ enablePlugins(ScalaJSPlugin)
 
 scalaJSLinkerConfig ~= { _.withModuleKind(ModuleKind.CommonJSModule) }
 
-libraryDependencies += "io.github.edadma" %%% "apion" % "0.2.0"
+libraryDependencies += "io.github.edadma" %%% "apion" % "0.2.1"
 ```
 
 Also add the `sbt-scalajs` plugin in `project/plugins.sbt`:

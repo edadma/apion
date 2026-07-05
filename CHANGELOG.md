@@ -17,6 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Deprecated
 
+## [0.2.1] - 2026-07-05
+
+Re-release of 0.2.0 with no source changes. The 0.2.0 artifacts published to Maven
+Central successfully, but a Central Portal status-check timeout made the publish
+appear to fail, so 0.2.1 was cut to retry. Both versions are on Central and identical.
+
 ## [0.2.0] - 2026-07-04
 
 Hardening pass. Contains breaking API changes (no backward compatibility).
@@ -69,6 +75,8 @@ Hardening pass. Contains breaking API changes (no backward compatibility).
 
 ### Removed
 - busboy npm dependency — Apion now has zero external npm dependencies
+
+[0.2.1]: https://github.com/edadma/apion/releases/tag/v0.2.1
 
 [0.2.0]: https://github.com/edadma/apion/releases/tag/v0.2.0
 

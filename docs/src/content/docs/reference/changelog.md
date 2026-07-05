@@ -3,6 +3,11 @@ title: Changelog
 description: Version history and release notes
 ---
 
+## 0.2.1 — July 5, 2026
+
+Re-release of 0.2.0 with no source changes (published to work around a Central Portal
+status-check timeout during the 0.2.0 publish). Both versions are on Central and identical.
+
 ## 0.2.0 — July 4, 2026
 
 Hardening pass with breaking API changes (no backward compatibility).
